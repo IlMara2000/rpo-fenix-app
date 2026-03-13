@@ -39,9 +39,9 @@ export default function Home() {
   };
 
   return (
-    /* AGGIORNATO: Sfondo Corallo #ee5556 che sfuma in nero verso il basso */
+    /* FISSA: Gradiente Corallo #ee5556 potente in alto che sfuma in nero */
     <div className="min-h-screen flex flex-col items-center py-12 px-6 text-white" 
-         style={{ background: 'linear-gradient(to bottom, #ee5556 0%, #1a0a0a 40%, #000000 100%)' }}>
+         style={{ background: 'linear-gradient(180deg, #ee5556 0%, #000000 70%)', backgroundAttachment: 'fixed' }}>
       
       <Head>
         <title>FENIX GROUP | RPO TOOL</title>
@@ -57,19 +57,19 @@ export default function Home() {
             alt="Logo GR Fenix"
             width="315"
             height="160"
-            className="h-[156px] w-auto object-contain drop-shadow-[0_15px_40px_rgba(0,0,0,0.6)]"
+            className="h-[156px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.7)]"
            />
         </div>
         <div className="flex items-center justify-center gap-3 mb-6">
-          <span className="h-[1px] w-8 bg-white/30"></span>
-          <p className="text-white/70 text-[10px] tracking-[0.5em] uppercase font-bold">
+          <span className="h-[1px] w-8 bg-white/40"></span>
+          <p className="text-white text-[10px] tracking-[0.5em] uppercase font-bold drop-shadow-md">
             OFFICIAL FENIX TOOL SUITE
           </p>
-          <span className="h-[1px] w-8 bg-white/30"></span>
+          <span className="h-[1px] w-8 bg-white/40"></span>
         </div>
-        <div className="status-badge shadow-2xl shadow-black/30 border-white/20 bg-black/40 backdrop-blur-md">
+        <div className="status-badge shadow-2xl shadow-black/40 border-white/20 bg-black/60 backdrop-blur-xl">
           <span className="dot" style={{ backgroundColor: '#00d1ff' }}></span>
-          <span className="text-white">{status.msg}</span>
+          <span className="text-white font-bold">{status.msg}</span>
         </div>
       </header>
 
@@ -77,8 +77,8 @@ export default function Home() {
       <main className="w-full max-w-[1400px] grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
         {/* STEP 1: CONVERTER */}
-        <section className="box-lavoro relative overflow-hidden group h-full border-white/10 bg-black/20 backdrop-blur-sm">
-          <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.03] select-none group-hover:text-[#00d1ff]/[0.05] transition-colors">
+        <section className="box-lavoro relative overflow-hidden group h-full border-white/20 bg-black/40 backdrop-blur-md">
+          <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.05] select-none group-hover:text-[#00d1ff]/[0.1] transition-colors">
             01
           </div>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
@@ -87,13 +87,13 @@ export default function Home() {
             </span>
             <span className="text-white">RPO Converter</span>
           </h2>
-          <p className="text-gray-300 text-xs leading-relaxed mb-8 pr-10">
+          <p className="text-gray-200 text-xs leading-relaxed mb-8 pr-10">
             Carica il file Excel duplicato per generare il TXT da inviare al Registro delle Opposizioni.
           </p>
           <div className="space-y-6">
             
-            <div className="bg-white/[0.05] p-4 rounded-2xl border border-white/[0.1] flex items-center gap-3">
-              <label className="px-4 py-2 rounded-xl text-xs font-bold uppercase text-black shadow-md cursor-pointer transition-all hover:brightness-110 active:scale-95" 
+            <div className="bg-white/[0.1] p-4 rounded-2xl border border-white/[0.1] flex items-center gap-3">
+              <label className="px-4 py-2 rounded-xl text-xs font-bold uppercase text-black shadow-md cursor-pointer transition-all hover:scale-105 active:scale-95" 
                      style={{ background: '#00d1ff' }}>
                 <input
                   type="file"
@@ -105,7 +105,7 @@ export default function Home() {
                 />
                 Scegli File
               </label>
-              <span className="flex-1 text-gray-200 text-xs truncate">{fileNameExcel}</span>
+              <span className="flex-1 text-white text-xs truncate font-medium">{fileNameExcel}</span>
             </div>
 
             <button
@@ -120,15 +120,15 @@ export default function Home() {
                 setLoading(false);
               }}
               disabled={loading || !tempFile}
-              className="bottone-blu w-full shadow-lg shadow-[#00d1ff]/10"
+              className="bottone-blu w-full shadow-xl shadow-[#00d1ff]/20"
               style={{ background: 'linear-gradient(135deg, #00d1ff 0%, #00a8cc 100%)', color: '#001a1a' }}
             >
-              <span className="font-black tracking-widest">{loading ? "ELABORAZIONE..." : "CREA FILE"}</span>
+              <span className="font-black tracking-widest uppercase">{loading ? "ELABORAZIONE..." : "CREA FILE"}</span>
             </button>
             
             {converterFiles && (
               <div className="grid grid-cols-2 gap-4 animate-in fade-in">
-                <button onClick={() => saveAs(converterFiles.txt, `perinvio${converterFiles.fileName}.txt`)} className="bottone-download text-[10px] border-[#00d1ff]/50 text-[#00d1ff] bg-[#00d1ff]/5">⬇️ TXT ⬇️</button>
+                <button onClick={() => saveAs(converterFiles.txt, `perinvio${converterFiles.fileName}.txt`)} className="bottone-download text-[10px] border-[#00d1ff]/50 text-[#00d1ff] bg-[#00d1ff]/10 backdrop-blur-sm">⬇️ TXT ⬇️</button>
                 <button onClick={() => saveAs(converterFiles.zip, `perinvio${converterFiles.fileName}.zip`)} className="bottone-download text-[10px]" style={{ background: '#00d1ff', color: 'black', fontWeight: 'bold' }}>📦 ZIP 📦</button>
               </div>
             )}
@@ -136,8 +136,8 @@ export default function Home() {
         </section>
 
         {/* STEP 2: DIVIDER */}
-        <section className="box-lavoro relative overflow-hidden group h-full border-white/10 bg-black/20 backdrop-blur-sm">
-          <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.03] select-none group-hover:text-[#00d1ff]/[0.05] transition-colors">
+        <section className="box-lavoro relative overflow-hidden group h-full border-white/20 bg-black/40 backdrop-blur-md">
+          <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.05] select-none group-hover:text-[#00d1ff]/[0.1] transition-colors">
             02
           </div>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
@@ -146,13 +146,13 @@ export default function Home() {
             </span>
             <span className="text-white">RPO Divider</span>
           </h2>
-          <p className="text-gray-300 text-xs leading-relaxed mb-8 pr-10">
+          <p className="text-gray-200 text-xs leading-relaxed mb-8 pr-10">
             Carica il file TXT di risposta RPO e separa i numeri in due liste (Iscritti e Contattabili).
           </p>
           <form onSubmit={handleDividerSubmit} className="space-y-6">
             
-            <div className="bg-white/[0.05] p-4 rounded-2xl border border-white/[0.1] flex items-center gap-3">
-              <label className="px-4 py-2 rounded-xl text-xs font-bold uppercase text-black shadow-md cursor-pointer transition-all hover:brightness-110 active:scale-95" 
+            <div className="bg-white/[0.1] p-4 rounded-2xl border border-white/[0.1] flex items-center gap-3">
+              <label className="px-4 py-2 rounded-xl text-xs font-bold uppercase text-black shadow-md cursor-pointer transition-all hover:scale-105 active:scale-95" 
                      style={{ background: '#00d1ff' }}>
                 <input
                   type="file"
@@ -165,17 +165,17 @@ export default function Home() {
                 />
                 Scegli File
               </label>
-              <span className="flex-1 text-gray-200 text-xs truncate">{fileNameTxt}</span>
+              <span className="flex-1 text-white text-xs truncate font-medium">{fileNameTxt}</span>
             </div>
 
-            <button type="submit" disabled={loading} className="bottone-blu w-full shadow-lg shadow-[#00d1ff]/10" 
+            <button type="submit" disabled={loading} className="bottone-blu w-full shadow-xl shadow-[#00d1ff]/20" 
                     style={{ background: 'linear-gradient(135deg, #00d1ff 0%, #00a8cc 100%)', color: '#001a1a' }}>
-              <span className="font-black tracking-widest">{loading ? "DIVISIONE..." : "DIVIDI LISTE"}</span>
+              <span className="font-black tracking-widest uppercase">{loading ? "DIVISIONE..." : "DIVIDI LISTE"}</span>
             </button>
             
             {dividerFiles && (
-              <div className="pt-6 border-t border-white/10 mt-4 grid grid-cols-2 gap-4 animate-in fade-in">
-                <button type="button" onClick={() => saveAs(dividerFiles.txtUno, `rpo_1_${dividerFiles.fileName}.txt`)} className="bottone-download text-[10px] py-3 border-[#00d1ff]/50 text-[#00d1ff] bg-[#00d1ff]/5">📄 RPO (1)</button>
+              <div className="pt-6 border-t border-white/20 mt-4 grid grid-cols-2 gap-4 animate-in fade-in">
+                <button type="button" onClick={() => saveAs(dividerFiles.txtUno, `rpo_1_${dividerFiles.fileName}.txt`)} className="bottone-download text-[10px] py-3 border-[#00d1ff]/50 text-[#00d1ff] bg-[#00d1ff]/10 backdrop-blur-sm">📄 RPO (1)</button>
                 <button type="button" onClick={() => saveAs(dividerFiles.txtZero, `rpo_0_${dividerFiles.fileName}.txt`)} className="bottone-download text-[10px] py-3" style={{ background: '#00d1ff', color: 'black', fontWeight: 'bold' }}>📄 OK (0)</button>
               </div>
             )}
@@ -183,20 +183,20 @@ export default function Home() {
         </section>
 
         {/* STEP 3: SCANNER WIP */}
-        <section className="box-lavoro relative overflow-hidden group h-full border-dashed border-white/10 opacity-40">
-          <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.01] select-none">
+        <section className="box-lavoro relative overflow-hidden group h-full border-dashed border-white/20 bg-white/[0.02] opacity-60">
+          <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.02] select-none">
             03
           </div>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3 grayscale">
             <span className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-gray-400 text-base shadow-inner">
               3
             </span>
-            RPO Scanner
+            <span className="text-gray-400">RPO Scanner</span>
           </h2>
           <p className="text-gray-500 text-xs leading-relaxed mb-8 pr-10 italic">
             Confronto diretto tra anagrafica Excel ed esito TXT per la bonifica automatica dei file.
           </p>
-          <div className="mt-12 flex flex-col items-center justify-center py-8 border-2 border-dashed border-white/5 rounded-3xl">
+          <div className="mt-12 flex flex-col items-center justify-center py-8 border-2 border-dashed border-white/10 rounded-3xl">
              <div className="animate-pulse bg-white/5 px-4 py-2 rounded-full text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400">
                Work In Progress
              </div>
@@ -205,8 +205,8 @@ export default function Home() {
 
       </main>
 
-      <footer className="mt-24 text-center opacity-40">
-        <p className="text-[9px] text-white uppercase tracking-[0.5em] font-medium drop-shadow-[0_0_10px_rgba(238,85,86,0.3)]">
+      <footer className="mt-24 text-center opacity-60">
+        <p className="text-[9px] text-white uppercase tracking-[0.5em] font-medium drop-shadow-lg">
           FENIX GROUP RPO TOOL SUITE | Private & Lock by Realindi®Den © 2026
         </p>
       </footer>
