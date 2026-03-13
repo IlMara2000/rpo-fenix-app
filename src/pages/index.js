@@ -152,7 +152,7 @@ export default function Home() {
                     type="button" 
                     onClick={() => {
                       console.log("Tentativo download file:", scannerFiles.excelCensored);
-                      saveAs(scannerFiles.excelBonificato, `LISTA_MODIFICATA_${fileaname}.xlsx`);
+                      saveAs(scannerFiles.excelBonificato, `LISTA_MODIFICATA_${filename}.xlsx`);
                     }} 
                     className="bottone-download py-4 shadow-2xl" 
                     style={{background: '#22c55e', color: 'white', border: 'none'}}
