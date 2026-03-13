@@ -36,47 +36,50 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-12 px-6 bg-[#0a0a0a] text-white">
+    /* AGGIORNATO: Background con sfumatura radiale azzurra */
+    <div className="min-h-screen flex flex-col items-center py-12 px-6 text-white" 
+         style={{ background: 'radial-gradient(circle at top, #002b36 0%, #0a0a0a 100%)' }}>
+      
       <Head>
         <title>FENIX GROUP | RPO TOOL</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      {/* 1. HEADER CENTRATO IN ALTO */}
+      {/* 1. HEADER CENTRATO IN ALTO - AGGIORNATO: Logo +5% e ombre azzurre */}
       <header className="w-full max-w-4xl mb-12 flex flex-col items-center">
         <div className="flex justify-center mb-4">
           <img
             src="/logo.png"
             alt="Logo GR Fenix"
-            width="250"
-            height="128"
-            className="h-28 w-auto object-contain drop-shadow-[0_0_20px_rgba(59,130,246,0.2)]"
+            width="263"
+            height="134"
+            className="h-[118px] w-auto object-contain drop-shadow-[0_0_25px_rgba(0,209,255,0.3)]"
           />
         </div>
         <div className="flex items-center justify-center gap-3 mb-6">
-          <span className="h-[1px] w-8 bg-blue-500/50"></span>
+          <span className="h-[1px] w-8 bg-[#00d1ff]/50"></span>
           <p className="text-gray-500 text-[10px] tracking-[0.5em] uppercase font-bold">
             OFFICIAL FENIX TOOL SUITE
           </p>
-          <span className="h-[1px] w-8 bg-blue-500/50"></span>
+          <span className="h-[1px] w-8 bg-[#00d1ff]/50"></span>
         </div>
-        <div className="status-badge shadow-lg shadow-blue-500/5">
-          <span className="dot"></span>
+        <div className="status-badge shadow-lg shadow-[#00d1ff]/10 border-[#00d1ff]/20">
+          <span className="dot" style={{ backgroundColor: '#00d1ff' }}></span>
           {status.msg}
         </div>
       </header>
 
-      {/* CONTENITORE GRID: 1 colonna su Mobile, 3 colonne su PC */}
+      {/* CONTENITORE GRID */}
       <main className="w-full max-w-[1400px] grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
-        {/* 2. STEP 1: CONVERTER (SINISTRA SU PC) */}
-        <section className="box-lavoro relative overflow-hidden group h-full">
-          <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.02] select-none group-hover:text-blue-500/[0.04] transition-colors">
+        {/* 2. STEP 1: CONVERTER - AGGIORNATO: Colore azzurro */}
+        <section className="box-lavoro relative overflow-hidden group h-full border-white/5 bg-white/[0.01]">
+          <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.02] select-none group-hover:text-[#00d1ff]/[0.04] transition-colors">
             01
           </div>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-base shadow-inner">
+            <span className="w-10 h-10 rounded-xl bg-[#00d1ff]/10 border border-[#00d1ff]/20 flex items-center justify-center text-[#00d1ff] text-base shadow-inner">
               1
             </span>
             RPO Converter
@@ -97,31 +100,32 @@ export default function Home() {
                 try {
                   const res = await runRpoConverter(tempFile);
                   setConverterFiles(res);
-                  setStatus({ msg: "FILE PRONTO PER L'RPO!", type: 'yellow' });
+                  setStatus({ msg: "FILE PRONTO!", type: 'yellow' });
                 } catch (e) { alert("Errore nel file Excel"); }
                 setLoading(false);
               }}
               disabled={loading || !tempFile}
               className="bottone-blu w-full"
+              style={{ background: 'linear-gradient(135deg, #00d1ff 0%, #0077b6 100%)' }}
             >
-              <span>{loading ? "Generazione..." : "Crea File"}</span>
+              <span className="font-bold tracking-widest">{loading ? "ELABORAZIONE..." : "CREA FILE"}</span>
             </button>
             {converterFiles && (
               <div className="grid grid-cols-2 gap-4 animate-in fade-in">
-                <button onClick={() => saveAs(converterFiles.txt, `perinvio${converterFiles.fileName}.txt`)} className="bottone-download text-[10px]">⬇️ TXT ⬇️</button>
-                <button onClick={() => saveAs(converterFiles.zip, `perinvio${converterFiles.fileName}.zip`)} className="bottone-download text-[10px]" style={{ background: 'var(--fenix-blue)', color: 'white' }}>📦 ZIP 📦</button>
+                <button onClick={() => saveAs(converterFiles.txt, `perinvio${converterFiles.fileName}.txt`)} className="bottone-download text-[10px] border-[#00d1ff]/30 text-[#00d1ff]">⬇️ TXT ⬇️</button>
+                <button onClick={() => saveAs(converterFiles.zip, `perinvio${converterFiles.fileName}.zip`)} className="bottone-download text-[10px]" style={{ background: '#00d1ff', color: 'black', fontWeight: 'bold' }}>📦 ZIP 📦</button>
               </div>
             )}
           </div>
         </section>
 
-        {/* 3. STEP 2: DIVIDER (CENTRO SU PC) */}
-        <section className="box-lavoro relative overflow-hidden group h-full">
-          <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.02] select-none group-hover:text-green-500/[0.04] transition-colors">
+        {/* 3. STEP 2: DIVIDER - AGGIORNATO: Stile azzurro */}
+        <section className="box-lavoro relative overflow-hidden group h-full border-white/5 bg-white/[0.01]">
+          <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.02] select-none group-hover:text-[#00d1ff]/[0.04] transition-colors">
             02
           </div>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-400 text-base shadow-inner">
+            <span className="w-10 h-10 rounded-xl bg-[#00d1ff]/10 border border-[#00d1ff]/20 flex items-center justify-center text-[#00d1ff] text-base shadow-inner">
               2
             </span>
             RPO Divider
@@ -134,20 +138,20 @@ export default function Home() {
               <label className="text-[9px] text-gray-500 uppercase block mb-3 font-bold tracking-widest">Esito RPO (.txt)</label>
               <input type="file" name="txtFile" required className="text-[11px] w-full" />
             </div>
-            <button type="submit" disabled={loading} className="bottone-blu w-full">
-              <span>{loading ? "Divisione..." : "Dividi Liste Numeri"}</span>
+            <button type="submit" disabled={loading} className="bottone-blu w-full" style={{ background: 'linear-gradient(135deg, #00d1ff 0%, #0077b6 100%)' }}>
+              <span className="font-bold tracking-widest">{loading ? "DIVISIONE..." : "DIVIDI LISTE"}</span>
             </button>
             {dividerFiles && (
               <div className="pt-6 border-t border-white/10 mt-4 grid grid-cols-2 gap-4 animate-in fade-in">
-                <button type="button" onClick={() => saveAs(dividerFiles.txtUno, `rpo_1_${dividerFiles.fileName}.txt`)} className="bottone-download text-[9px] py-3" style={{ background: '#ef4444', color: 'white' }}>📄 RPO (1)</button>
-                <button type="button" onClick={() => saveAs(dividerFiles.txtZero, `rpo_0_${dividerFiles.fileName}.txt`)} className="bottone-download text-[9px] py-3" style={{ background: '#22c55e', color: 'white' }}>📄 OK (0)</button>
+                <button type="button" onClick={() => saveAs(dividerFiles.txtUno, `rpo_1_${dividerFiles.fileName}.txt`)} className="bottone-download text-[9px] py-3" style={{ background: '#ef4444', color: 'white', border: 'none' }}>📄 RPO (1)</button>
+                <button type="button" onClick={() => saveAs(dividerFiles.txtZero, `rpo_0_${dividerFiles.fileName}.txt`)} className="bottone-download text-[9px] py-3" style={{ background: '#22c55e', color: 'white', border: 'none' }}>📄 OK (0)</button>
               </div>
             )}
           </form>
         </section>
 
-        {/* 4. STEP 3: SCANNER WIP (DESTRA SU PC) */}
-        <section className="box-lavoro relative overflow-hidden group h-full border-dashed border-white/10 opacity-60">
+        {/* 4. STEP 3: SCANNER WIP */}
+        <section className="box-lavoro relative overflow-hidden group h-full border-dashed border-white/10 opacity-50">
           <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.01] select-none">
             03
           </div>
@@ -164,9 +168,6 @@ export default function Home() {
              <div className="animate-pulse bg-white/5 px-4 py-2 rounded-full text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400">
                Work In Progress
              </div>
-             <p className="text-[9px] text-gray-600 mt-4 text-center px-6">
-               Questa funzione permetterà di caricare l'excel originale per pulirlo automaticamente.
-             </p>
           </div>
         </section>
 
