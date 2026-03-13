@@ -57,7 +57,7 @@ export default function Home() {
             alt="Logo GR Fenix"
             width="263"
             height="134"
-            className="h-[130px] w-auto object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+            className="h-[156px] w-auto object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
            />
         </div>
         <div className="flex items-center justify-center gap-3 mb-6">
