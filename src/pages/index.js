@@ -96,7 +96,7 @@ export default function Home() {
               <img 
                 src="/logo.png" 
                 alt="Logo GR Fenix" 
-                className="h-40 w-auto object-contain drop-shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+                className="h-28 w-auto object-contain drop-shadow-[0_0_50px_rgba(59,130,246,0.3)]"
                 onError={(e) => {
                     // Se ancora non lo trova, prova a caricare quello con nome image.png
                     if(!e.target.src.includes('image.png')) e.target.src = '/image.png';
