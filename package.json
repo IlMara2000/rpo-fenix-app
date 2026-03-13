@@ -1,98 +1,24 @@
-/* BODY E FONT */
-body {
-  background: linear-gradient(180deg, #111, #333);
-  color: #fff;
-  margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* BOX CON GLASS EFFECT */
-.box-lavoro {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 20px;
-  padding: 30px;
-}
-
-/* BOTTONI PRINCIPALI BLU */
-.bottone-blu {
-  background: #0081FB;
-  color: white;
-  font-weight: bold;
-  width: 100%;
-  padding: 15px;
-  border-radius: 12px;
-  text-transform: uppercase;
-  cursor: pointer;
-  border: none;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.4s ease;
-}
-
-.bottone-blu::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 0;
-  height: 100%;
-  background: white;
-  opacity: 0.2;
-  transition: width 0.4s ease;
-  z-index: 0;
-}
-
-.bottone-blu:hover::after {
-  width: 100%;
-}
-
-.bottone-blu:active {
-  color: #0081FB;
-  background: white;
-}
-
-.bottone-blu span {
-  position: relative;
-  z-index: 1;
-}
-
-/* BOTTONI DOWNLOAD / SCEGLI FILE */
-.bottone-download {
-  background: #fff;
-  color: #0081FB;
-  font-weight: bold;
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.bottone-download.file-loaded {
-  background: #0081FB;
-  color: #fff;
-}
-
-/* INPUT FILE */
-input[type="file"] {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  padding: 8px;
-  border-radius: 8px;
-  color: #fff;
-  cursor: pointer;
-  width: 100%;
-  transition: all 0.3s ease;
-}
-
-input[type="file"]:hover {
-  background: rgba(255,255,255,0.15);
-}
-
-::placeholder {
-  color: rgba(255,255,255,0.5);
+{
+  "name": "rpo-fenix-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
+    "jszip": "^3.10.1",
+    "next": "14.1.0",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.0.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.3.0"
+  }
 }
