@@ -79,7 +79,7 @@ export default function Home() {
               </button>
               
               {converterFiles && (
-                <div className="grid grid-cols-2 gap-4 animate-pulse">
+                <div className="grid grid-cols-2 gap-4">
                   <button onClick={() => saveAs(converterFiles.txt, `perinvio_${converterFiles.fileName}.txt`)} className="bottone-download text-[10px]">
                     ⬇️ Scarica .txt ⬇️
                   </button>
@@ -136,7 +136,7 @@ export default function Home() {
               </div>
 
               <button type="submit" disabled={loading} className="bottone-blu">
-                <span>{loading ? "Verifica Sicurezza in corso..." : "Avvia Bonifica Numeri"}</span>
+                <span>{loading ? "Verifica in corso..." : "Avvia Controllo Numeri"}</span>
               </button>
               
               {/* BOX RISULTATO FINALE */}
@@ -145,12 +145,12 @@ export default function Home() {
                   <button 
                     type="button" 
                     onClick={() => saveAs(scannerFiles.excelCensored, `LISTA_BONIFICATA_FENIX.xlsx`)} 
-                    className="bottone-download py-4 shadow-2xl animate-bounce" 
+                    className="bottone-download py-4 shadow-2xl" 
                     style={{background: '#22c55e', color: 'white', border: 'none'}}
                   >
                      📞 SCARICA LA LISTA AGGIORNATA 📲
                   </button>
-                  <p className="text-[9px] text-gray-500 mt-4 text-center font-medium italic uppercase tracking-tighter">
+                  <p className="text-[15px] text-white-500 mt-4 text-center font-medium italic uppercase tracking-tighter">
                     Analisi completata con successo. Il file è pronto.
                   </p>
                 </div>
