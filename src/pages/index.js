@@ -40,6 +40,17 @@ export default function Home() {
         <title>GR FENIX | RPO TOOL</title>
       </Head>
 
+    <header>
+      <h1 className="text-6xl font-black tracking-tighter italic">
+              <span style={{color:'var(--fenix-blue)'}}>GR</span> FENIX
+            </h1>
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <span className="h-[1px] w-8 bg-blue-500/50"></span>
+              <p className="text-gray-500 text-[10px] tracking-[0.5em] uppercase font-bold">RPO TOOL</p>
+              <span className="h-[1px] w-8 bg-blue-500/50"></span>
+            </div>
+    </header>
+    
       <div className="max-w-xl w-full">
         
         <div className="space-y-12">
@@ -98,14 +109,6 @@ export default function Home() {
                 <span className="dot"></span>
                 {loading ? 'SYNCING DATA...' : status.msg}
               </div>
-            </div>
-            <h1 className="text-6xl font-black tracking-tighter italic">
-              <span style={{color:'var(--fenix-blue)'}}>GR</span> FENIX
-            </h1>
-            <div className="mt-2 flex items-center justify-center gap-2">
-              <span className="h-[1px] w-8 bg-blue-500/50"></span>
-              <p className="text-gray-500 text-[10px] tracking-[0.5em] uppercase font-bold">RPO TOOL</p>
-              <span className="h-[1px] w-8 bg-blue-500/50"></span>
             </div>
           </header>
         
