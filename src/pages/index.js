@@ -39,9 +39,9 @@ export default function Home() {
   };
 
   return (
-    /* AGGIORNATO: Sfondo Azzurro Fenix che sfuma in nero verso il basso */
+    /* AGGIORNATO: Sfondo Corallo #ee5556 che sfuma in nero verso il basso */
     <div className="min-h-screen flex flex-col items-center py-12 px-6 text-white" 
-         style={{ background: 'linear-gradient(to bottom, #ee5556 0%, #05161a 30%, #000000 100%)' }}>
+         style={{ background: 'linear-gradient(to bottom, #ee5556 0%, #1a0a0a 40%, #000000 100%)' }}>
       
       <Head>
         <title>FENIX GROUP | RPO TOOL</title>
@@ -49,15 +49,15 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      {/* 1. HEADER CENTRATO - Logo +5% e ombre azzurre */}
+      {/* 1. HEADER CENTRATO - Logo XL (156px) */}
       <header className="w-full max-w-4xl mb-12 flex flex-col items-center">
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-6">
           <img
             src="/logo.png"
             alt="Logo GR Fenix"
-            width="263"
-            height="134"
-            className="h-[156px] w-auto object-contain drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+            width="315"
+            height="160"
+            className="h-[156px] w-auto object-contain drop-shadow-[0_15px_40px_rgba(0,0,0,0.6)]"
            />
         </div>
         <div className="flex items-center justify-center gap-3 mb-6">
@@ -67,7 +67,7 @@ export default function Home() {
           </p>
           <span className="h-[1px] w-8 bg-white/30"></span>
         </div>
-        <div className="status-badge shadow-2xl shadow-black/20 border-white/20 bg-black/40 backdrop-blur-md">
+        <div className="status-badge shadow-2xl shadow-black/30 border-white/20 bg-black/40 backdrop-blur-md">
           <span className="dot" style={{ backgroundColor: '#00d1ff' }}></span>
           <span className="text-white">{status.msg}</span>
         </div>
@@ -76,7 +76,7 @@ export default function Home() {
       {/* CONTENITORE GRID */}
       <main className="w-full max-w-[1400px] grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
-        {/* 2. STEP 1: CONVERTER - Tutto Azzurro Fenix */}
+        {/* STEP 1: CONVERTER */}
         <section className="box-lavoro relative overflow-hidden group h-full border-white/10 bg-black/20 backdrop-blur-sm">
           <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.03] select-none group-hover:text-[#00d1ff]/[0.05] transition-colors">
             01
@@ -92,7 +92,6 @@ export default function Home() {
           </p>
           <div className="space-y-6">
             
-            {/* Tasto Scegli File Azzurro */}
             <div className="bg-white/[0.05] p-4 rounded-2xl border border-white/[0.1] flex items-center gap-3">
               <label className="px-4 py-2 rounded-xl text-xs font-bold uppercase text-black shadow-md cursor-pointer transition-all hover:brightness-110 active:scale-95" 
                      style={{ background: '#00d1ff' }}>
@@ -109,7 +108,6 @@ export default function Home() {
               <span className="flex-1 text-gray-200 text-xs truncate">{fileNameExcel}</span>
             </div>
 
-            {/* Tasto principale Azzurro */}
             <button
               onClick={async () => {
                 if (!tempFile) return;
@@ -122,13 +120,12 @@ export default function Home() {
                 setLoading(false);
               }}
               disabled={loading || !tempFile}
-              className="bottone-blu w-full shadow-lg shadow-[#00d1ff]/20"
-              style={{ background: 'linear-gradient(135deg, #ee5556 0%, #00a8cc 100%)', color: '#001a1a' }}
+              className="bottone-blu w-full shadow-lg shadow-[#00d1ff]/10"
+              style={{ background: 'linear-gradient(135deg, #00d1ff 0%, #00a8cc 100%)', color: '#001a1a' }}
             >
               <span className="font-black tracking-widest">{loading ? "ELABORAZIONE..." : "CREA FILE"}</span>
             </button>
             
-            {/* Download Azzurri */}
             {converterFiles && (
               <div className="grid grid-cols-2 gap-4 animate-in fade-in">
                 <button onClick={() => saveAs(converterFiles.txt, `perinvio${converterFiles.fileName}.txt`)} className="bottone-download text-[10px] border-[#00d1ff]/50 text-[#00d1ff] bg-[#00d1ff]/5">⬇️ TXT ⬇️</button>
@@ -138,7 +135,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 3. STEP 2: DIVIDER - Tutto Azzurro Fenix */}
+        {/* STEP 2: DIVIDER */}
         <section className="box-lavoro relative overflow-hidden group h-full border-white/10 bg-black/20 backdrop-blur-sm">
           <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.03] select-none group-hover:text-[#00d1ff]/[0.05] transition-colors">
             02
@@ -154,7 +151,6 @@ export default function Home() {
           </p>
           <form onSubmit={handleDividerSubmit} className="space-y-6">
             
-            {/* Tasto Scegli File Azzurro */}
             <div className="bg-white/[0.05] p-4 rounded-2xl border border-white/[0.1] flex items-center gap-3">
               <label className="px-4 py-2 rounded-xl text-xs font-bold uppercase text-black shadow-md cursor-pointer transition-all hover:brightness-110 active:scale-95" 
                      style={{ background: '#00d1ff' }}>
@@ -172,13 +168,11 @@ export default function Home() {
               <span className="flex-1 text-gray-200 text-xs truncate">{fileNameTxt}</span>
             </div>
 
-            {/* Tasto principale Azzurro */}
-            <button type="submit" disabled={loading} className="bottone-blu w-full shadow-lg shadow-[#00d1ff]/20" 
-                    style={{ background: 'linear-gradient(135deg, #ee5556 0%, #00a8cc 100%)', color: '#001a1a' }}>
+            <button type="submit" disabled={loading} className="bottone-blu w-full shadow-lg shadow-[#00d1ff]/10" 
+                    style={{ background: 'linear-gradient(135deg, #00d1ff 0%, #00a8cc 100%)', color: '#001a1a' }}>
               <span className="font-black tracking-widest">{loading ? "DIVISIONE..." : "DIVIDI LISTE"}</span>
             </button>
             
-            {/* Bottoni download coordinati */}
             {dividerFiles && (
               <div className="pt-6 border-t border-white/10 mt-4 grid grid-cols-2 gap-4 animate-in fade-in">
                 <button type="button" onClick={() => saveAs(dividerFiles.txtUno, `rpo_1_${dividerFiles.fileName}.txt`)} className="bottone-download text-[10px] py-3 border-[#00d1ff]/50 text-[#00d1ff] bg-[#00d1ff]/5">📄 RPO (1)</button>
@@ -188,7 +182,7 @@ export default function Home() {
           </form>
         </section>
 
-        {/* 4. STEP 3: SCANNER WIP */}
+        {/* STEP 3: SCANNER WIP */}
         <section className="box-lavoro relative overflow-hidden group h-full border-dashed border-white/10 opacity-40">
           <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.01] select-none">
             03
@@ -212,7 +206,7 @@ export default function Home() {
       </main>
 
       <footer className="mt-24 text-center opacity-40">
-        <p className="text-[9px] text-[#ffffff] uppercase tracking-[0.5em] font-medium drop-shadow-[0_0_10px_rgba(0,209,255,0.3)]">
+        <p className="text-[9px] text-white uppercase tracking-[0.5em] font-medium drop-shadow-[0_0_10px_rgba(238,85,86,0.3)]">
           FENIX GROUP RPO TOOL SUITE | Private & Lock by Realindi®Den © 2026
         </p>
       </footer>
