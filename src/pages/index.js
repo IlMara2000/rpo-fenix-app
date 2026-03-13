@@ -22,7 +22,6 @@ export default function Home() {
     
     try {
       const result = await runRpoScanner(txt, excel);
-
       if (result && result.success) {
         setScannerFiles(result);
         setStatus({ msg: `COMPLETATO: ${result.foundCount} MATCH TROVATI`, type: 'yellow' });
@@ -37,9 +36,10 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-16 px-6">
+    <div className="min-h-screen flex flex-col items-center py-16 px-6 bg-[#0a0a0a] text-white">
       <Head>
         <title>GR FENIX | RPO TOOL</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
 
       <div className="max-w-xl w-full">
@@ -69,7 +69,7 @@ export default function Home() {
                   setLoading(false);
                 }} 
                 disabled={loading || !tempFile}
-                className="bottone-blu"
+                className="bottone-blu w-full"
               >
                 <span>{loading ? "Generazione in corso..." : "Crea File"}</span>
               </button>
@@ -82,7 +82,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* BADGE E HEADER CON LOGO */}
+          {/* BADGE E HEADER CON LOGO FIXATO */}
           <header className="text-center py-4">
             <div className="inline-block mb-8">
               <div className="status-badge shadow-xl shadow-blue-500/10">
@@ -91,17 +91,19 @@ export default function Home() {
               </div>
             </div>
 
-            {/* LOGO AREA - FIX DEFINITIVO PERCORSO */}
+            {/* LOGO AREA - FIX SAFARI */}
             <div className="flex justify-center mb-4">
-              <img 
-                src="/logo.png" 
-                alt="Logo GR Fenix" 
-                className="h-28 w-auto object-contain drop-shadow-[0_0_50px_rgba(59,130,246,0.3)]"
-                onError={(e) => {
-                    // Se ancora non lo trova, prova a caricare quello con nome image.png
-                    if(!e.target.src.includes('image.png')) e.target.src = '/image.png';
-                }}
-              />
+              <div className="relative w-[280px] h-[120px] flex items-center justify-center">
+                <img 
+                  src="/image.png" 
+                  alt="Logo GR Fenix" 
+                  className="max-h-full w-auto object-contain drop-shadow-[0_0_30px_rgba(59,130,246,0.2)]"
+                  style={{ display: 'block' }}
+                  onError={(e) => {
+                      if(!e.target.src.includes('logo.png')) e.target.src = '/logo.png';
+                  }}
+                />
+              </div>
             </div>
 
             <div className="mt-2 flex items-center justify-center gap-2">
@@ -133,7 +135,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <button type="submit" disabled={loading} className="bottone-blu">
+              <button type="submit" disabled={loading} className="bottone-blu w-full">
                 <span>{loading ? "Scansione in corso..." : "Avvio Controllo Numeri"}</span>
               </button>
               
@@ -142,7 +144,7 @@ export default function Home() {
                   <button 
                     type="button" 
                     onClick={() => saveAs(scannerFiles.excelBonificato, `LISTA_CONTROLLATA_${scannerFiles.fileName}.xlsx`)} 
-                    className="bottone-download py-4 shadow-2xl" 
+                    className="bottone-download py-4 shadow-2xl w-full" 
                     style={{background: '#22c55e', color: 'white', border: 'none'}}
                   >
                      📦 SCARICA QUI IL FILE 📲
