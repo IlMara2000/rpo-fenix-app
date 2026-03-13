@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 export const runRpoScanner = async (txtFile, excelFile) => {
   try {
@@ -39,7 +40,6 @@ export const runRpoScanner = async (txtFile, excelFile) => {
       sheet.eachRow({ includeEmpty: true }, (row) => {
         let isMatch = false;
 
-        // Scansione celle della riga alla ricerca del numero
         row.eachCell({ includeEmpty: true }, (cell) => {
           if (isMatch) return;
           try {
@@ -65,21 +65,17 @@ export const runRpoScanner = async (txtFile, excelFile) => {
           } catch (e) { console.warn("Errore cella:", cell?.address); }
         });
 
-        // 2. SE TROVA IL MATCH: RIGA NERA, TESTO BIANCO
         if (isMatch) {
           row.eachCell({ includeEmpty: true }, (cell) => {
-            // Applica lo sfondo nero
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: 'FF000000' } // Nero
+              fgColor: { argb: 'FF000000' }
             };
-            // Applica il testo bianco e grassetto
             cell.font = {
-              color: { argb: 'FFFFFFFF' }, // Bianco
+              color: { argb: 'FFFFFFFF' },
               bold: true
             };
-            // Mantieni i bordi se presenti o aggiungi un bordo sottile per separare le celle nere
             cell.border = {
               top: {style:'thin', color: {argb:'FF333333'}},
               left: {style:'thin', color: {argb:'FF333333'}},
@@ -92,17 +88,24 @@ export const runRpoScanner = async (txtFile, excelFile) => {
     });
 
     const bufferExcel = await workbook.xlsx.writeBuffer();
+    const nomeSenzaExt = excelFile.name.replace(/\.[^/.]+$/, "");
+    const blobExcel = new Blob([bufferExcel], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+    // --- DOWNLOAD IMMEDIATO APPENA PRONTO ---
+    console.log("Salvataggio file in corso...");
+    saveAs(blobExcel, `LISTA_MODIFICATA_${nomeSenzaExt}.xlsx`);
     
     return {
       success: true,
-      excelBonificato: new Blob([bufferExcel], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      excelBonificato: blobExcel,
       numbersTxt: new Blob([outputTxtLines.join('\r\n')], { type: 'text/plain;charset=utf-8' }),
       foundCount: matchCount,
-      fileName: excelFile.name.replace(/\.[^/.]+$/, "") // Nome senza estensione
+      fileName: nomeSenzaExt
     };
 
   } catch (error) {
     console.error("Errore Scanner:", error);
+    alert("Errore durante la scansione: " + error.message);
     throw error;
   }
 };
