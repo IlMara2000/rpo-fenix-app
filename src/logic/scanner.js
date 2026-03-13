@@ -4,52 +4,43 @@ import { saveAs } from 'file-saver';
 export const runRpoScanner = async (txtFile, excelFile) => {
   try {
     const txtText = await txtFile.text();
-    const lines = txtText.split(/\r?\n/);
     const targetNumbers = new Set();
     const outputTxtLines = [];
 
-    // 1. Lettura TXT
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      if (!trimmedLine) continue;
-      const parts = trimmedLine.split(',');
-      if (parts.length >= 2) {
-        const number = parts[0].replace(/\D/g, '').trim();
-        const status = parts[1].trim();
-        if (status.startsWith('1') && number.length >= 9) {
-          targetNumbers.add(number);
-          outputTxtLines.push(trimmedLine);
+    // 1. Lettura TXT (Match più preciso)
+    txtText.split(/\r?\n/).forEach(line => {
+      const parts = line.trim().split(',');
+      if (parts.length >= 2 && parts[1].trim().startsWith('1')) {
+        const num = parts[0].replace(/\D/g, '').trim();
+        if (num.length >= 8) {
+          targetNumbers.add(num);
+          outputTxtLines.push(line.trim());
         }
       }
-    }
-
-    if (targetNumbers.size === 0) throw new Error("Nessun numero bloccato trovato.");
+    });
 
     const targetNumbersArray = Array.from(targetNumbers);
-    const arrayBuffer = await excelFile.arrayBuffer();
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(arrayBuffer);
+    await workbook.xlsx.load(await excelFile.arrayBuffer());
     
     let matchCount = 0;
 
     workbook.worksheets.forEach((sheet) => {
       if (!sheet) return;
 
-      // Prendiamo il numero reale di colonne usate, o almeno 25 per sicurezza
-      const maxColumn = Math.max(sheet.actualColumnCount, 25);
+      // Determiniamo la larghezza reale: usiamo il massimo tra le colonne dichiarate e quelle usate
+      const colCount = Math.max(sheet.columnCount, 30); 
 
       sheet.eachRow({ includeEmpty: true }, (row) => {
         let isMatch = false;
 
-        // RICERCA
+        // RICERCA: Verifichiamo se il numero è presente in qualche cella
         row.eachCell({ includeEmpty: true }, (cell) => {
           if (isMatch) return;
-          const cellText = cell.text ? String(cell.text) : (cell.value ? String(cell.value) : "");
-          
-          if (cellText.length >= 9) {
-            const cleanCellValue = cellText.replace(/\D/g, '');
+          const cellValue = cell.text ? String(cell.text).replace(/\D/g, '') : "";
+          if (cellValue.length >= 8) {
             for (const num of targetNumbersArray) {
-              if (cleanCellValue.includes(num)) {
+              if (cellValue.includes(num)) {
                 isMatch = true;
                 matchCount++;
                 break;
@@ -58,13 +49,14 @@ export const runRpoScanner = async (txtFile, excelFile) => {
           }
         });
 
-        // COLORAZIONE TOTALE
+        // AZIONE: Se è un match, coloriamo la riga "A TAPPETO"
         if (isMatch) {
-          // Ciclo forzato su TUTTE le colonne possibili
-          for (let i = 1; i <= maxColumn; i++) {
-            const cell = row.getCell(i); // getCell la crea se non esiste!
+          // Cicliamo su ogni colonna fino alla fine del foglio
+          for (let i = 1; i <= colCount; i++) {
+            const cell = row.getCell(i);
 
-            // Applichiamo lo stile direttamente all'oggetto cella
+            // Applichiamo lo stile FORZATO
+            cell.value = cell.value; // Ri-assegniamo il valore per "svegliare" la cella
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
@@ -72,7 +64,9 @@ export const runRpoScanner = async (txtFile, excelFile) => {
             };
             cell.font = {
               color: { argb: 'FFFFFFFF' },
-              bold: true
+              bold: true,
+              name: 'Arial',
+              size: 10
             };
             cell.border = {
               top: { style: 'thin', color: { argb: 'FF000000' } },
@@ -80,28 +74,28 @@ export const runRpoScanner = async (txtFile, excelFile) => {
               bottom: { style: 'thin', color: { argb: 'FF000000' } },
               right: { style: 'thin', color: { argb: 'FF000000' } }
             };
+            cell.alignment = { vertical: 'middle', horizontal: 'left' };
           }
         }
       });
     });
 
-    const bufferExcel = await workbook.xlsx.writeBuffer();
-    const nomeSenzaExt = excelFile.name.replace(/\.[^/.]+$/, "");
-    const blobExcel = new Blob([bufferExcel], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const buffer = await workbook.xlsx.writeBuffer();
+    const nomeFile = excelFile.name.replace(/\.[^/.]+$/, "");
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
-    saveAs(blobExcel, `LISTA_BONIFICATA_${nomeSenzaExt}.xlsx`);
+    saveAs(blob, `LISTA_BONIFICATA_${nomeFile}.xlsx`);
     
     return {
       success: true,
-      excelBonificato: blobExcel,
-      numbersTxt: new Blob([outputTxtLines.join('\r\n')], { type: 'text/plain;charset=utf-8' }),
+      excelBonificato: blob,
       foundCount: matchCount,
-      fileName: nomeSenzaExt
+      fileName: nomeFile
     };
 
   } catch (error) {
-    console.error("Errore Scanner:", error);
-    alert(error.message);
+    console.error("Scanner Error:", error);
+    alert("Errore: " + error.message);
     throw error;
   }
 };

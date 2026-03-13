@@ -130,7 +130,7 @@ export default function Home() {
                 <div className="pt-6 border-t border-white/10 mt-4 transition-all duration-500">
                   <button 
                     type="button" 
-                    onClick={() => saveAs(scannerFiles.excelBonificato, `LISTA_BONIFICATA_${scannerFiles.fileName}.xlsx`)} 
+                    onClick={() => saveAs(scannerFiles.excelBonificato, `LISTA_CONTROLLATA_${scannerFiles.fileName}.xlsx`)} 
                     className="bottone-download py-4 shadow-2xl" 
                     style={{background: '#22c55e', color: 'white', border: 'none'}}
                   >
