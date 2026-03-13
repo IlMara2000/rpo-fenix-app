@@ -43,7 +43,6 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center py-12 px-6 text-white" 
          style={{ background: 'linear-gradient(180deg, #ee5556 0%, #000000 75%)', backgroundAttachment: 'fixed' }}>
       
-// ... dentro return (
 <Head>
   <title>FENIX GROUP | RPO TOOL SUITE</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
