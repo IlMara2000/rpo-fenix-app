@@ -2,101 +2,173 @@
 @tailwind components;
 @tailwind utilities;
 
-/* BODY E FONT */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+
+:root {
+  --fenix-blue: #0081FB;
+  --fenix-blue-glow: rgba(0, 129, 251, 0.4);
+  --bg-dark: #050505;
+}
+
+/* BODY: SFONDO PROFONDO E MODERNO */
 body {
-  background: linear-gradient(180deg, #111, #333);
-  color: #fff;
+  background: radial-gradient(circle at 50% -20%, #1e3a8a 0%, var(--bg-dark) 70%) no-repeat fixed;
+  color: #ffffff;
   margin: 0;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
-/* BOX CON GLASS EFFECT */
+/* BOX LAVORO: GLASSMORPHISM AVANZATO */
 .box-lavoro {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 20px;
-  padding: 30px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  padding: 35px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* BOTTONI PRINCIPALI BLU */
+.box-lavoro:hover {
+  border-color: rgba(0, 129, 251, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 129, 251, 0.1);
+}
+
+/* BOTTONI PRINCIPALI: EFFETTO NEON E FLUIDO */
 .bottone-blu {
-  background: #0081FB;
+  background: linear-gradient(135deg, var(--fenix-blue) 0%, #0056b3 100%);
   color: white;
-  font-weight: bold;
+  font-weight: 800;
   width: 100%;
-  padding: 15px;
-  border-radius: 12px;
+  padding: 18px;
+  border-radius: 16px;
   text-transform: uppercase;
+  letter-spacing: 1px;
   cursor: pointer;
   border: none;
   position: relative;
   overflow: hidden;
-  transition: all 0.4s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 15px rgba(0, 129, 251, 0.2);
 }
 
-.bottone-blu::after {
+.bottone-blu:hover {
+  transform: scale(1.02);
+  box-shadow: 0 12px 25px var(--fenix-blue-glow);
+  filter: brightness(1.1);
+}
+
+.bottone-blu::before {
   content: '';
   position: absolute;
-  left: 0;
   top: 0;
-  width: 0;
+  left: -100%;
+  width: 100%;
   height: 100%;
-  background: white;
-  opacity: 0.2;
-  transition: width 0.4s ease;
-  z-index: 0;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: all 0.6s ease;
 }
 
-.bottone-blu:hover::after {
-  width: 100%;
+.bottone-blu:hover::before {
+  left: 100%;
 }
 
-.bottone-blu:active {
-  color: #0081FB;
-  background: white;
-}
-
-.bottone-blu span {
-  position: relative;
-  z-index: 1;
-}
-
-/* BOTTONI DOWNLOAD / SCEGLI FILE */
+/* BOTTONI DOWNLOAD: PULITI ED ELEGANTI */
 .bottone-download {
-  background: #fff;
-  color: #0081FB;
-  font-weight: bold;
+  background: rgba(255, 255, 255, 0.95);
+  color: #000;
+  font-weight: 800;
   width: 100%;
-  padding: 12px;
-  border-radius: 10px;
+  padding: 14px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
-.bottone-download.file-loaded {
-  background: #0081FB;
-  color: #fff;
+.bottone-download:hover {
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(255,255,255,0.3);
 }
 
-/* INPUT FILE */
+/* INPUT FILE: STILE TECH AGENCY */
 input[type="file"] {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  padding: 8px;
-  border-radius: 8px;
-  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 12px;
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   width: 100%;
+  font-size: 0.8rem;
   transition: all 0.3s ease;
+}
+
+input[type="file"]::file-selector-button {
+  background: var(--fenix-blue);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 10px;
+  margin-right: 15px;
+  transition: 0.3s;
 }
 
 input[type="file"]:hover {
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--fenix-blue);
 }
 
-::placeholder {
-  color: rgba(255,255,255,0.5);
+/* STATUS BADGE ANIMATA */
+.status-badge {
+  background: rgba(0, 129, 251, 0.1);
+  border: 1px solid rgba(0, 129, 251, 0.3);
+  color: #60a5fa;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  background: var(--fenix-blue);
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 10px var(--fenix-blue); }
+  100% { transform: scale(0.95); opacity: 0.5; }
+}
+
+/* SCROLLBAR CUSTOM PER UN LOOK TOTAL DARK */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: #222;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fenix-blue);
 }
