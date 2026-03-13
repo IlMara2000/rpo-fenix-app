@@ -98,7 +98,7 @@ export default function Home() {
                 alt="Logo GR Fenix" 
                 className="h-32 w-auto object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]"
                 /* Se il logo è scuro e non si vede, togli il commento qui sotto */
-                /* style={{ filter: 'brightness(0) invert(1)' }} */
+                style={{ filter: 'brightness(0) invert(1)' }}
               />
             </div>
 
@@ -156,7 +156,9 @@ export default function Home() {
 
         <footer className="mt-24 text-center opacity-50">
           <p className="text-[10px] text-white uppercase tracking-[0.5em] font-medium">
-           FENIX GROUP RPO TOOL SUITE — Private & Lock by Realindi®Den © 2026 
+           FENIX GROUP RPO TOOL SUITE   
+           Private & Lock by  
+           Realindi®Den © 2026 
           </p>
         </footer>
       </div>
