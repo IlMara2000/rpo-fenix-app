@@ -41,10 +41,8 @@ export default function Home() {
       <Head>
         <title>FENIX GROUP | RPO TOOL</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  
-        {/* AGGIUNGI QUESTE RIGHE QUI SOTTO */}
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/logo.png" /> {/* Questo serve per quando salvi il sito sulla home dell'iPhone */}
+        <link rel="icon" href="/image.png" />
+        <link rel="apple-touch-icon" href="/image.png" />
       </Head>
 
       <div className="max-w-xl w-full">
@@ -87,15 +85,16 @@ export default function Home() {
             </div>
           </section>
 
-      <header>        
-            {/* LOGO AREA */}
+          <header>        
+            {/* LOGO AREA - FIX CARICAMENTO */}
             <div className="flex justify-center mb-4">
               <img 
                 src="/image.png" 
                 alt="Logo GR Fenix" 
+                width="250"
+                height="128"
                 className="h-32 w-auto object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                /* Se il logo è scuro e non si vede, togli il commento qui sotto */
-                style={{ filter: 'brightness(0) invert(1)' }}
+                /* Filtro rimosso per evitare che diventi nero su nero */
               />
             </div>
 
@@ -105,16 +104,16 @@ export default function Home() {
               <span className="h-[1px] w-8 bg-blue-500/50"></span>
             </div>
           
-        {/* BADGE E HEADER CON LOGO IMMAGINE */}
-        <div className="text-center py-4">
-            <div className="inline-block mb-8">
-              <div className="status-badge shadow-xl shadow-blue-500/10">
-                <span className="dot"></span>
-                {status.msg}
-              </div>
+            {/* BADGE E HEADER CON LOGO IMMAGINE */}
+            <div className="text-center py-4">
+                <div className="inline-block mb-8">
+                  <div className="status-badge shadow-xl shadow-blue-500/10">
+                    <span className="dot"></span>
+                    {status.msg}
+                  </div>
+                </div>
             </div>
-        </div>
-      </header>
+          </header>
 
           {/* STEP 2: RPO SCANNER */}
           <section className="box-lavoro relative overflow-hidden group">
