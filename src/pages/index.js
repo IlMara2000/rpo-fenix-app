@@ -41,7 +41,7 @@ export default function Home() {
   return (
     /* AGGIORNATO: Sfondo Azzurro Fenix che sfuma in nero verso il basso */
     <div className="min-h-screen flex flex-col items-center py-12 px-6 text-white" 
-         style={{ background: 'linear-gradient(to bottom, #00d1ff 0%, #05161a 30%, #000000 100%)' }}>
+         style={{ background: 'linear-gradient(to bottom, #ee5556 0%, #05161a 30%, #000000 100%)' }}>
       
       <Head>
         <title>FENIX GROUP | RPO TOOL</title>
@@ -123,7 +123,7 @@ export default function Home() {
               }}
               disabled={loading || !tempFile}
               className="bottone-blu w-full shadow-lg shadow-[#00d1ff]/20"
-              style={{ background: 'linear-gradient(135deg, #00d1ff 0%, #00a8cc 100%)', color: '#001a1a' }}
+              style={{ background: 'linear-gradient(135deg, #ee5556 0%, #00a8cc 100%)', color: '#001a1a' }}
             >
               <span className="font-black tracking-widest">{loading ? "ELABORAZIONE..." : "CREA FILE"}</span>
             </button>
@@ -174,7 +174,7 @@ export default function Home() {
 
             {/* Tasto principale Azzurro */}
             <button type="submit" disabled={loading} className="bottone-blu w-full shadow-lg shadow-[#00d1ff]/20" 
-                    style={{ background: 'linear-gradient(135deg, #00d1ff 0%, #00a8cc 100%)', color: '#001a1a' }}>
+                    style={{ background: 'linear-gradient(135deg, #ee5556 0%, #00a8cc 100%)', color: '#001a1a' }}>
               <span className="font-black tracking-widest">{loading ? "DIVISIONE..." : "DIVIDI LISTE"}</span>
             </button>
             
@@ -212,7 +212,7 @@ export default function Home() {
       </main>
 
       <footer className="mt-24 text-center opacity-40">
-        <p className="text-[9px] text-[#00d1ff] uppercase tracking-[0.5em] font-medium drop-shadow-[0_0_10px_rgba(0,209,255,0.3)]">
+        <p className="text-[9px] text-[#ffffff] uppercase tracking-[0.5em] font-medium drop-shadow-[0_0_10px_rgba(0,209,255,0.3)]">
           FENIX GROUP RPO TOOL SUITE | Private & Lock by Realindi®Den © 2026
         </p>
       </footer>
