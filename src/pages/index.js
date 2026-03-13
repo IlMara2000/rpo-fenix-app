@@ -152,12 +152,12 @@ export default function Home() {
                     type="button" 
                     onClick={() => {
                       console.log("Tentativo download file:", scannerFiles.excelCensored);
-                      saveAs(scannerFiles.excelCensored, `LISTA_MODIFICATA_${fileaname}.xlsx`);
+                      saveAs(scannerFiles.excelBonificato, `LISTA_MODIFICATA_${fileaname}.xlsx`);
                     }} 
                     className="bottone-download py-4 shadow-2xl" 
                     style={{background: '#22c55e', color: 'white', border: 'none'}}
                   >
-                     📞 SCARICA LA LISTA AGGIORNATA 📲
+                     📞 SCARICA LA LISTA 📲
                   </button>
                   <p className="text-[10px] text-white mt-4 text-center font-medium italic uppercase tracking-tighter">
                     Analisi completata con successo. Il file è pronto.
@@ -171,7 +171,7 @@ export default function Home() {
         {/* FOOTER */}
         <footer className="mt-24 text-center opacity-50">
           <p className="text-[10px] text-white uppercase tracking-[0.5em] font-medium">
-           GR FENIX RPO Tool Suite — Private & Lock by Realindi ® Den — © 2026 
+           GR FENIX RPO Tool Suite — Private & Lock by Realindi®Den © 2026 
           </p>
         </footer>
       </div>
