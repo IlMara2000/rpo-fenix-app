@@ -149,12 +149,12 @@ input[type="file"]:hover {
   height: 6px;
   background: var(--fenix-blue);
   border-radius: 50%;
-  animation: pulse 0.5s;
+  animation: pulse 0.5s ;
 }
 
 @keyframes pulse {
   0% { transform: scale(0.95); opacity: 0.5; }
-  50% { transform: scale(1); opacity: 1; box-shadow: 0 0 8px var(--fenix-blue); }
+  50% { transform: scale(1); opacity: 1; box-shadow: 0 0 10px var(--fenix-blue); }
   100% { transform: scale(0.95); opacity: 0.5; }
 }
 
@@ -171,4 +171,38 @@ input[type="file"]:hover {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--fenix-blue);
+}
+
+/* --- CONFIGURAZIONE MOBILE SAFARI / IOS --- */
+@supports (-webkit-touch-callout: none) {
+  body {
+    /* Fix altezza viewport dinamica su iOS */
+    min-height: -webkit-fill-available;
+  }
+  
+  .bottone-blu, .bottone-download, input[type="file"] {
+    /* Rimuove lo stile di default dei bottoni iOS e i riflessi blu al touch */
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input[type="file"] {
+    /* Evita lo zoom forzato di Safari su iPhone */
+    font-size: 16px !important;
+  }
+
+  .box-lavoro {
+    /* Forza l'accelerazione hardware per il blur su Safari */
+    -webkit-backdrop-filter: blur(25px);
+    transform: translateZ(0);
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll; /* Migliora le performance dello scroll su iPhone */
+  }
+  .box-lavoro {
+    padding: 25px;
+  }
 }
