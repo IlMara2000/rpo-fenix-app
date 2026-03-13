@@ -51,7 +51,6 @@ export default function Home() {
   <link rel="shortcut icon" href="/favicon.ico?v=2" />
   <link rel="apple-touch-icon" href="/favicon.ico?v=2" />
 </Head>
-// ...
 
       {/* HEADER - Logo XL 156px */}
       <header className="w-full max-w-4xl mb-12 flex flex-col items-center">
