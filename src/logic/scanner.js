@@ -1,8 +1,7 @@
-import ExcelJS from 'exceljs';
+// Rimosso import ExcelJS
 
-export const runRpoScanner = async (txtFile, excelFile) => {
+export const runRpoScanner = async (txtFile) => {
   try {
-
     // leggiamo il file txt
     const text = await txtFile.text();
     const lines = text.split(/\r?\n/);
@@ -11,7 +10,6 @@ export const runRpoScanner = async (txtFile, excelFile) => {
     const listZero = []; // numeri con ,0,
 
     lines.forEach(line => {
-
       if (!line.trim()) return;
 
       const parts = line.split(',');
@@ -28,7 +26,6 @@ export const runRpoScanner = async (txtFile, excelFile) => {
       if (status === '0') {
         listZero.push(phone);
       }
-
     });
 
     // creiamo i due txt
@@ -54,9 +51,7 @@ export const runRpoScanner = async (txtFile, excelFile) => {
     };
 
   } catch (err) {
-
     console.error("Errore Scanner:", err);
     throw err;
-
   }
 };
