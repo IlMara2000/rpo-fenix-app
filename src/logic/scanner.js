@@ -8,23 +8,22 @@ export const runRpoScanner = async (txtFile, excelFile) => {
     const targetNumbers = new Set();
     const outputTxtLines = [];
 
-    // 1. Lettura TXT: Solo i numeri con ",1"
+    // 1. Lettura TXT
     for (const line of lines) {
       const trimmedLine = line.trim();
       if (!trimmedLine) continue;
       const parts = trimmedLine.split(',');
       if (parts.length >= 2) {
-        // Puliamo il numero da cercare: solo cifre
         const number = parts[0].replace(/\D/g, '').trim();
         const status = parts[1].trim();
-        if (status.startsWith('1') && number.length >= 8) {
+        if (status.startsWith('1') && number.length >= 9) {
           targetNumbers.add(number);
           outputTxtLines.push(trimmedLine);
         }
       }
     }
 
-    if (targetNumbers.size === 0) throw new Error("Nessun numero ',1' trovato.");
+    if (targetNumbers.size === 0) throw new Error("Nessun numero bloccato trovato.");
 
     const targetNumbersArray = Array.from(targetNumbers);
     const arrayBuffer = await excelFile.arrayBuffer();
@@ -36,28 +35,20 @@ export const runRpoScanner = async (txtFile, excelFile) => {
     workbook.worksheets.forEach((sheet) => {
       if (!sheet) return;
 
-      // Calcoliamo la larghezza massima del foglio per colorare TUTTA la riga
-      let maxColumn = sheet.columnCount;
-      if (maxColumn < 20) maxColumn = 20; // Sicurezza per fogli piccoli
+      // Prendiamo il numero reale di colonne usate, o almeno 25 per sicurezza
+      const maxColumn = Math.max(sheet.actualColumnCount, 25);
 
       sheet.eachRow({ includeEmpty: true }, (row) => {
         let isMatch = false;
 
-        // 2. RICERCA: Cerchiamo il numero pulito dentro la cella
+        // RICERCA
         row.eachCell({ includeEmpty: true }, (cell) => {
           if (isMatch) return;
+          const cellText = cell.text ? String(cell.text) : (cell.value ? String(cell.value) : "");
           
-          let cellText = "";
-          if (cell && cell.value !== null && cell.value !== undefined) {
-            cellText = cell.text ? cell.text.toString() : cell.value.toString();
-          }
-
-          if (cellText.length >= 8) {
-            // Puliamo il valore della cella per il confronto (solo numeri)
+          if (cellText.length >= 9) {
             const cleanCellValue = cellText.replace(/\D/g, '');
-            
             for (const num of targetNumbersArray) {
-              // Verifichiamo se il numero pulito è contenuto nel valore pulito della cella
               if (cleanCellValue.includes(num)) {
                 isMatch = true;
                 matchCount++;
@@ -67,26 +58,27 @@ export const runRpoScanner = async (txtFile, excelFile) => {
           }
         });
 
-        // 3. COLORAZIONE: Se match, riga NERA totale e testo BIANCO
+        // COLORAZIONE TOTALE
         if (isMatch) {
-          // Usiamo un ciclo for sulla riga per non lasciare "buchi" bianchi
+          // Ciclo forzato su TUTTE le colonne possibili
           for (let i = 1; i <= maxColumn; i++) {
-            const cell = row.getCell(i);
+            const cell = row.getCell(i); // getCell la crea se non esiste!
+
+            // Applichiamo lo stile direttamente all'oggetto cella
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: 'FF000000' } // Nero
+              fgColor: { argb: 'FF000000' }
             };
             cell.font = {
-              color: { argb: 'FFFFFFFF' }, // Bianco
-              bold: true,
-              size: 10
+              color: { argb: 'FFFFFFFF' },
+              bold: true
             };
             cell.border = {
-              top: {style:'thin', color: {argb:'FF000000'}},
-              left: {style:'thin', color: {argb:'FF000000'}},
-              bottom: {style:'thin', color: {argb:'FF000000'}},
-              right: {style:'thin', color: {argb:'FF000000'}}
+              top: { style: 'thin', color: { argb: 'FF000000' } },
+              left: { style: 'thin', color: { argb: 'FF000000' } },
+              bottom: { style: 'thin', color: { argb: 'FF000000' } },
+              right: { style: 'thin', color: { argb: 'FF000000' } }
             };
           }
         }
