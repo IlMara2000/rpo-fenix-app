@@ -156,7 +156,7 @@ export default function Home() {
             <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
           </div>
           <p className="text-[10px] text-gray-600 uppercase tracking-[0.5em] font-medium">
-            GR FENIX RPO Tool Suite — Private & Secure by Realindi.Den
+          — GR FENIX RPO Tool Suite — Private & Secure by Realindi.Den — 2026 —
           </p>
         </footer>
       </div>
