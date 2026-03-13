@@ -6,7 +6,7 @@ import { runRpoDivider } from '../logic/divider';
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState({ msg: 'FENIX GROUP REAL ESTATE ®', type: 'info' });
+  const [status, setStatus] = useState({ msg: 'FENIX GROUP REAL ESTATE', type: 'info' });
   const [converterFiles, setConverterFiles] = useState(null);
   const [dividerFiles, setDividerFiles] = useState(null);
   const [tempFile, setTempFile] = useState(null);
