@@ -1,101 +1,164 @@
-import ExcelJS from 'exceljs';
+import React, { useState } from 'react';
+import Head from 'next/head';
 import { saveAs } from 'file-saver';
+import { runRpoConverter } from '../logic/converter';
+import { runRpoScanner } from '../logic/scanner';
 
-export const runRpoScanner = async (txtFile, excelFile) => {
-  try {
-    const txtText = await txtFile.text();
-    const targetNumbers = new Set();
-    const outputTxtLines = [];
+export default function Home() {
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState({ msg: 'OFFICIAL FENIX RPO TOOL SUITE', type: 'info' });
+  const [converterFiles, setConverterFiles] = useState(null);
+  const [scannerFiles, setScannerFiles] = useState(null);
+  const [tempFile, setTempFile] = useState(null); 
 
-    // 1. Lettura TXT (Match più preciso)
-    txtText.split(/\r?\n/).forEach(line => {
-      const parts = line.trim().split(',');
-      if (parts.length >= 2 && parts[1].trim().startsWith('1')) {
-        const num = parts[0].replace(/\D/g, '').trim();
-        if (num.length >= 8) {
-          targetNumbers.add(num);
-          outputTxtLines.push(line.trim());
-        }
+  const handleScannerSubmit = async (e) => {
+    e.preventDefault();
+    const txt = e.target.txtFile.files[0];
+    const excel = e.target.excelFile.files[0];
+    if (!txt || !excel) return alert("Seleziona entrambi i file per procedere!");
+
+    setLoading(true);
+    setStatus({ msg: 'ANALISI INCROCIATA DEI DATI...', type: 'blue' });
+    
+    try {
+      const result = await runRpoScanner(txt, excel);
+
+      if (result && result.success) {
+        setScannerFiles(result);
+        setStatus({ msg: `COMPLETATO: ${result.foundCount} MATCH TROVATI`, type: 'yellow' });
       }
-    });
+    } catch (err) {
+      console.error("ERRORE SCANNER:", err);
+      setStatus({ msg: 'ERRORE DI ELABORAZIONE', type: 'red' });
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const targetNumbersArray = Array.from(targetNumbers);
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(await excelFile.arrayBuffer());
-    
-    let matchCount = 0;
+  return (
+    <div className="min-h-screen flex flex-col items-center py-16 px-6">
+      <Head>
+        <title>GR FENIX | RPO TOOL</title>
+      </Head>
 
-    workbook.worksheets.forEach((sheet) => {
-      if (!sheet) return;
+      <div className="max-w-xl w-full">
+        <div className="space-y-12">
+          
+          {/* STEP 1: RPO CONVERTER */}
+          <section className="box-lavoro relative overflow-hidden group">
+            <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.02] select-none group-hover:text-blue-500/[0.04] transition-colors">01</div>
+            <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
+              <span className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-base shadow-inner">1</span>
+              RPO Converter
+            </h2>
+            <p className="text-gray-400 text-xs leading-relaxed mb-8 pr-10">
+              Carica il tuo file Excel duplicato. Estrarrò automaticamente la lista dei numeri incolonnati per l'invio diretto sul portale.
+            </p>
+            <div className="space-y-6">
+              <input type="file" onChange={e => setTempFile(e.target.files[0])} className="text-[11px] block w-full text-gray-400" />
+              <button 
+                onClick={async () => {
+                  if(!tempFile) return;
+                  setLoading(true);
+                  try {
+                    const res = await runRpoConverter(tempFile);
+                    setConverterFiles(res);
+                    setStatus({ msg: "FILE PRONTO PER L'RPO!", type: 'yellow' });
+                  } catch (e) { alert("Errore nel file Excel"); }
+                  setLoading(false);
+                }} 
+                disabled={loading || !tempFile}
+                className="bottone-blu"
+              >
+                <span>{loading ? "Generazione in corso..." : "Crea File"}</span>
+              </button>
+              {converterFiles && (
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2">
+                  <button onClick={() => saveAs(converterFiles.txt, `perinvio${converterFiles.fileName}.txt`)} className="bottone-download text-[10px]">⬇️ TXT ⬇️</button>
+                  <button onClick={() => saveAs(converterFiles.zip, `perinvio${converterFiles.fileName}.zip`)} className="bottone-download text-[10px]" style={{background: 'var(--fenix-blue)', color: 'white'}}>📦 ZIP 📦</button>
+                </div>
+              )}
+            </div>
+          </section>
 
-      // Determiniamo la larghezza reale: usiamo il massimo tra le colonne dichiarate e quelle usate
-      const colCount = Math.max(sheet.columnCount, 30); 
+          {/* BADGE E HEADER CON LOGO */}
+          <header className="text-center py-4">
+            <div className="inline-block mb-6">
+              <div className="status-badge shadow-xl shadow-blue-500/10">
+                <span className="dot"></span>
+                {status.msg}
+              </div>
+            </div>
+            
+            {/* LOGO IMAGE REPLACING H1 */}
+            <div className="flex justify-center mb-2">
+              <img 
+                src="/logo.png" 
+                alt="GR FENIX LOGO" 
+                className="h-24 w-auto object-contain"
+                style={{ filter: 'brightness(0) invert(1)' }} 
+              />
+            </div>
 
-      sheet.eachRow({ includeEmpty: true }, (row) => {
-        let isMatch = false;
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <span className="h-[1px] w-8 bg-blue-500/50"></span>
+              <p className="text-gray-500 text-[10px] tracking-[0.5em] uppercase font-bold">RPO TOOL</p>
+              <span className="h-[1px] w-8 bg-blue-500/50"></span>
+            </div>
+          </header>
+        
+          {/* STEP 2: RPO SCANNER */}
+          <section className="box-lavoro relative overflow-hidden group">
+            <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.02] select-none group-hover:text-green-500/[0.04] transition-colors">02</div>
+            <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
+              <span className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-400 text-base shadow-inner">2</span>
+              RPO Scanner
+            </h2>
+            <p className="text-gray-400 text-xs leading-relaxed mb-8 pr-10">
+              Confronta l'esito ricevuto dal Registro con il tuo file Excel duplicato per scaricare la lista aggiornata.
+            </p>
+            <form onSubmit={handleScannerSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 gap-4">
+                <div className="bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
+                   <label className="text-[9px] text-gray-500 uppercase block mb-3 font-bold tracking-widest">Esito RPO(.txt)</label>
+                   <input type="file" name="txtFile" required className="text-[11px] w-full" />
+                </div>
+                <div className="bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
+                   <label className="text-[9px] text-gray-500 uppercase block mb-3 font-bold tracking-widest">Lista Excel duplicata(.xlsx)</label>
+                   <input type="file" name="excelFile" required className="text-[11px] w-full" />
+                </div>
+              </div>
 
-        // RICERCA: Verifichiamo se il numero è presente in qualche cella
-        row.eachCell({ includeEmpty: true }, (cell) => {
-          if (isMatch) return;
-          const cellValue = cell.text ? String(cell.text).replace(/\D/g, '') : "";
-          if (cellValue.length >= 8) {
-            for (const num of targetNumbersArray) {
-              if (cellValue.includes(num)) {
-                isMatch = true;
-                matchCount++;
-                break;
-              }
-            }
-          }
-        });
+              <button type="submit" disabled={loading} className="bottone-blu">
+                <span>{loading ? "Scansione in corso..." : "Avvio Controllo Numeri"}</span>
+              </button>
+              
+              {scannerFiles && (
+                <div className="pt-6 border-t border-white/10 mt-4 transition-all duration-500">
+                  <button 
+                    type="button" 
+                    onClick={() => saveAs(scannerFiles.excelBonificato, `LISTA_CONTROLLATA_${scannerFiles.fileName}.xlsx`)} 
+                    className="bottone-download py-4 shadow-2xl" 
+                    style={{background: '#22c55e', color: 'white', border: 'none'}}
+                  >
+                     📦 SCARICA QUI IL FILE 📲
+                  </button>
+                  <p className="text-[10px] text-white mt-4 text-center font-medium italic">
+                    Match riscontrati e aggiornati nel file Excel: {scannerFiles.foundCount} contatti.
+                  </p>
+                </div>
+              )}
+            </form>
+          </section>
+        </div>
 
-        // AZIONE: Se è un match, coloriamo la riga "A TAPPETO"
-        if (isMatch) {
-          // Cicliamo su ogni colonna fino alla fine del foglio
-          for (let i = 1; i <= colCount; i++) {
-            const cell = row.getCell(i);
-
-            // Applichiamo lo stile FORZATO
-            cell.value = cell.value; // Ri-assegniamo il valore per "svegliare" la cella
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FF000000' }
-            };
-            cell.font = {
-              color: { argb: 'FFFFFFFF' },
-              bold: true,
-              name: 'Arial',
-              size: 10
-            };
-            cell.border = {
-              top: { style: 'thin', color: { argb: 'FF000000' } },
-              left: { style: 'thin', color: { argb: 'FF000000' } },
-              bottom: { style: 'thin', color: { argb: 'FF000000' } },
-              right: { style: 'thin', color: { argb: 'FF000000' } }
-            };
-            cell.alignment = { vertical: 'middle', horizontal: 'left' };
-          }
-        }
-      });
-    });
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const nomeFile = excelFile.name.replace(/\.[^/.]+$/, "");
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
-    saveAs(blob, `LISTA_BONIFICATA_${nomeFile}.xlsx`);
-    
-    return {
-      success: true,
-      excelBonificato: blob,
-      foundCount: matchCount,
-      fileName: nomeFile
-    };
-
-  } catch (error) {
-    console.error("Scanner Error:", error);
-    alert("Errore: " + error.message);
-    throw error;
-  }
-};
+        <footer className="mt-24 text-center opacity-50">
+          <p className="text-[10px] text-white uppercase tracking-[0.5em] font-medium">
+           GR FENIX RPO Tool Suite — Private & Lock by Realindi®Den © 2026 
+          </p>
+        </footer>
+      </div>
+    </div>
+  );
+}
