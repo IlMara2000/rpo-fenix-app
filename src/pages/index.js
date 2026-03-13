@@ -15,10 +15,10 @@ export default function Home() {
     e.preventDefault();
 
     const txt = e.target.txtFile.files[0];
-    const excel = e.target.excelFile.files[0];
 
-    if (!txt || !excel) {
-      alert("Seleziona entrambi i file per procedere!");
+    // Rimosso il controllo sull'excel, ci serve solo il txt
+    if (!txt) {
+      alert("Seleziona il file TXT per procedere!");
       return;
     }
 
@@ -26,8 +26,8 @@ export default function Home() {
     setStatus({ msg: 'ANALISI FILE RPO...', type: 'blue' });
 
     try {
-
-      const result = await runRpoScanner(txt, excel);
+      // Passiamo solo il file txt alla funzione
+      const result = await runRpoScanner(txt);
 
       if (result && result.success) {
         setScannerFiles(result);
@@ -35,15 +35,12 @@ export default function Home() {
       }
 
     } catch (err) {
-
       console.error("ERRORE SCANNER:", err);
       setStatus({ msg: 'ERRORE DI ELABORAZIONE', type: 'red' });
       alert(err.message);
 
     } finally {
-
       setLoading(false);
-
     }
   };
 
@@ -89,30 +86,21 @@ export default function Home() {
 
               <button
                 onClick={async () => {
-
                   if (!tempFile) return;
-
                   setLoading(true);
 
                   try {
-
                     const res = await runRpoConverter(tempFile);
-
                     setConverterFiles(res);
-
                     setStatus({
                       msg: "FILE PRONTO PER L'RPO!",
                       type: 'yellow'
                     });
-
                   } catch (e) {
-
                     alert("Errore nel file Excel");
-
                   }
 
                   setLoading(false);
-
                 }}
                 disabled={loading || !tempFile}
                 className="bottone-blu"
@@ -123,9 +111,7 @@ export default function Home() {
               </button>
 
               {converterFiles && (
-
                 <div className="grid grid-cols-2 gap-4">
-
                   <button
                     onClick={() => saveAs(converterFiles.txt, `perinvio${converterFiles.fileName}.txt`)}
                     className="bottone-download text-[10px]"
@@ -140,9 +126,7 @@ export default function Home() {
                   >
                     📦 ZIP 📦
                   </button>
-
                 </div>
-
               )}
 
             </div>
@@ -154,7 +138,6 @@ export default function Home() {
           <header>
 
             <div className="flex justify-center mb-4">
-
               <img
                 src="/logo.png"
                 alt="Logo GR Fenix"
@@ -162,35 +145,23 @@ export default function Home() {
                 height="128"
                 className="h-32 w-auto object-contain"
               />
-
             </div>
 
             <div className="mt-2 flex items-center justify-center gap-2">
-
               <span className="h-[1px] w-8 bg-blue-500/50"></span>
-
               <p className="text-gray-500 text-[10px] tracking-[0.5em] uppercase font-bold">
                 OFFICIAL FENIX TOOL SUITE
               </p>
-
               <span className="h-[1px] w-8 bg-blue-500/50"></span>
-
             </div>
 
             <div className="text-center py-4">
-
               <div className="inline-block mb-8">
-
                 <div className="status-badge">
-
                   <span className="dot"></span>
-
                   {status.msg}
-
                 </div>
-
               </div>
-
             </div>
 
           </header>
@@ -204,13 +175,10 @@ export default function Home() {
             </div>
 
             <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
-
               <span className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-400 text-base shadow-inner">
                 2
               </span>
-
               RPO Scanner
-
             </h2>
 
             <p className="text-gray-400 text-xs leading-relaxed mb-8 pr-10">
@@ -222,41 +190,25 @@ export default function Home() {
               <div className="grid grid-cols-1 gap-4">
 
                 <div className="bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
-
                   <label className="text-[9px] text-gray-500 uppercase block mb-3 font-bold tracking-widest">
                     Esito RPO (.txt)
                   </label>
-
                   <input type="file" name="txtFile" required className="text-[11px] w-full" />
-
                 </div>
 
-                <div className="bg-white/[0.02] p-4 rounded-2xl border border-white/[0.05]">
-
-                  <label className="text-[9px] text-gray-500 uppercase block mb-3 font-bold tracking-widest">
-                    Lista Excel duplicata (.xlsx)
-                  </label>
-
-                  <input type="file" name="excelFile" required className="text-[11px] w-full" />
-
-                </div>
+                {/* Rimosso l'input dell'Excel */}
 
               </div>
 
               <button type="submit" disabled={loading} className="bottone-blu">
-
                 <span>
                   {loading ? "Scansione in corso..." : "Avvio Controllo Numeri"}
                 </span>
-
               </button>
 
               {scannerFiles && (
-
                 <div className="pt-6 border-t border-white/10 mt-4">
-
                   <div className="grid grid-cols-2 gap-4">
-
                     <button
                       type="button"
                       onClick={() => saveAs(scannerFiles.txtUno, `numeri_rpo_1_${scannerFiles.fileName}.txt`)}
@@ -274,11 +226,8 @@ export default function Home() {
                     >
                       📄 NUMERI CONTATTABILI (0)
                     </button>
-
                   </div>
-
                 </div>
-
               )}
 
             </form>
@@ -288,13 +237,11 @@ export default function Home() {
         </div>
 
         <footer className="mt-24 text-center opacity-50">
-
           <p className="text-[10px] text-white uppercase tracking-[0.5em] font-medium">
             FENIX GROUP RPO TOOL SUITE
             Private & Lock by
             Realindi®Den © 2026
           </p>
-
         </footer>
 
       </div>
