@@ -202,7 +202,7 @@ export default function Home() {
 
       <footer className="mt-24 text-center opacity-40">
         <p className="text-[9px] text-white uppercase tracking-[0.5em] font-medium">
-          FENIX GROUP RPO TOOL SUITE - Private & Locked by Realindi®Den © 2026
+          FENIX GROUP RPO TOOL SUITE - Locked & Private by Realindi®Den © 2026
         </p>
       </footer>
     </div>
