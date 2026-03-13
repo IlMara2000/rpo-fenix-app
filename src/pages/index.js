@@ -43,11 +43,16 @@ export default function Home() {
     <div className="min-h-screen flex flex-col items-center py-12 px-6 text-white" 
          style={{ background: 'linear-gradient(180deg, #ee5556 0%, #000000 75%)', backgroundAttachment: 'fixed' }}>
       
-      <Head>
-        <title>FENIX GROUP | RPO TOOL</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+// ... dentro return (
+<Head>
+  <title>FENIX GROUP | RPO TOOL SUITE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  {/* Aggiungiamo un timestamp per forzare il refresh della cache */}
+  <link rel="icon" href="/favicon.ico?v=2" />
+  <link rel="shortcut icon" href="/favicon.ico?v=2" />
+  <link rel="apple-touch-icon" href="/favicon.ico?v=2" />
+</Head>
+// ...
 
       {/* HEADER - Logo XL 156px */}
       <header className="w-full max-w-4xl mb-12 flex flex-col items-center">
