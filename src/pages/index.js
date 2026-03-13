@@ -22,6 +22,7 @@ export default function Home() {
     
     try {
       const result = await runRpoScanner(txt, excel);
+
       if (result && result.success) {
         setScannerFiles(result);
         setStatus({ msg: `COMPLETATO: ${result.foundCount} MATCH TROVATI`, type: 'yellow' });
@@ -36,10 +37,9 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-16 px-6 bg-[#0a0a0a] text-white">
+    <div className="min-h-screen flex flex-col items-center py-16 px-6">
       <Head>
         <title>GR FENIX | RPO TOOL</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
 
       <div className="max-w-xl w-full">
@@ -69,7 +69,7 @@ export default function Home() {
                   setLoading(false);
                 }} 
                 disabled={loading || !tempFile}
-                className="bottone-blu w-full"
+                className="bottone-blu"
               >
                 <span>{loading ? "Generazione in corso..." : "Crea File"}</span>
               </button>
@@ -82,7 +82,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* BADGE E HEADER CON LOGO FIXATO */}
+          {/* BADGE E HEADER CON LOGO IMMAGINE */}
           <header className="text-center py-4">
             <div className="inline-block mb-8">
               <div className="status-badge shadow-xl shadow-blue-500/10">
@@ -91,24 +91,20 @@ export default function Home() {
               </div>
             </div>
 
-            {/* LOGO AREA - FIX SAFARI */}
+            {/* LOGO AREA */}
             <div className="flex justify-center mb-4">
-              <div className="relative w-[280px] h-[120px] flex items-center justify-center">
-                <img 
-                  src="/image.png" 
-                  alt="Logo GR Fenix" 
-                  className="max-h-full w-auto object-contain drop-shadow-[0_0_30px_rgba(59,130,246,0.2)]"
-                  style={{ display: 'block' }}
-                  onError={(e) => {
-                      if(!e.target.src.includes('logo.png')) e.target.src = '/logo.png';
-                  }}
-                />
-              </div>
+              <img 
+                src="/image.png" 
+                alt="Logo GR Fenix" 
+                className="h-32 w-auto object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                /* Se il logo è scuro e non si vede, togli il commento qui sotto */
+                /* style={{ filter: 'brightness(0) invert(1)' }} */
+              />
             </div>
 
             <div className="mt-2 flex items-center justify-center gap-2">
               <span className="h-[1px] w-8 bg-blue-500/50"></span>
-              <p className="text-gray-500 text-[10px] tracking-[0.5em] uppercase font-bold">RPO TOOL</p>
+              <p className="text-gray-500 text-[10px] tracking-[0.5em] uppercase font-bold">FENIX GROUP RPO TOOL SUITE</p>
               <span className="h-[1px] w-8 bg-blue-500/50"></span>
             </div>
           </header>
@@ -135,7 +131,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <button type="submit" disabled={loading} className="bottone-blu w-full">
+              <button type="submit" disabled={loading} className="bottone-blu">
                 <span>{loading ? "Scansione in corso..." : "Avvio Controllo Numeri"}</span>
               </button>
               
@@ -144,7 +140,7 @@ export default function Home() {
                   <button 
                     type="button" 
                     onClick={() => saveAs(scannerFiles.excelBonificato, `LISTA_CONTROLLATA_${scannerFiles.fileName}.xlsx`)} 
-                    className="bottone-download py-4 shadow-2xl w-full" 
+                    className="bottone-download py-4 shadow-2xl" 
                     style={{background: '#22c55e', color: 'white', border: 'none'}}
                   >
                      📦 SCARICA QUI IL FILE 📲
@@ -160,7 +156,7 @@ export default function Home() {
 
         <footer className="mt-24 text-center opacity-50">
           <p className="text-[10px] text-white uppercase tracking-[0.5em] font-medium">
-           GR FENIX RPO Tool Suite — Private & Lock by Realindi®Den © 2026 
+           FENIX GROUP RPO TOOL SUITE — Private & Lock by Realindi®Den © 2026 
           </p>
         </footer>
       </div>
