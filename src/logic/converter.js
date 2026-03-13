@@ -1,33 +1,68 @@
-import ExcelJS from 'exceljs';
-import JSZip from 'jszip';
+import * as XLSX from 'xlsx';
 
+/**
+ * Funzione per trasformare l'Excel degli agenti in un file TXT per il Registro.
+ * Pulisce i numeri da note, parentesi e corregge lo zero iniziale.
+ */
 export const runRpoConverter = async (file) => {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(await file.arrayBuffer());
-  const numbers = new Set();
-  const phoneRegex = /(?:\+39|0039)?(\d{8,11})/g;
+  try {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    
+    // Prendiamo il primo foglio dell'Excel
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    
+    // Trasformiamo il foglio in una tabella di righe e colonne
+    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    
+    const validNumbers = [];
 
-  workbook.eachSheet((sheet) => {
-    sheet.eachRow((row) => {
-      row.eachCell((cell) => {
-        const value = String(cell.value || "");
-        let match;
-        while ((match = phoneRegex.exec(value)) !== null) {
-          numbers.add(match[1]);
+    rows.forEach(row => {
+      row.forEach(cell => {
+        if (cell) {
+          // 1. Trasformiamo la cella in testo pulito
+          let text = cell.toString().trim();
+          
+          // 2. Gestione casi sporchi (es: "02123456 (lavoro Claudia)" o "333 123 4567")
+          // Prendiamo solo la prima parte prima di spazi o parentesi
+          let firstPart = text.split(' ')[0].split('(')[0].trim();
+
+          // 3. Teniamo SOLO i numeri (togliamo trattini, punti, slash)
+          const onlyNumbers = firstPart.replace(/\D/g, '');
+
+          // 4. Controllo validità: un numero deve avere almeno 6 cifre 
+          // (per evitare di prendere anni, civici o codici interni)
+          if (onlyNumbers.length >= 6) {
+            let finalNum = onlyNumbers;
+            
+            // 5. Correzione Zero: Se non inizia con 0 e non è un cellulare (inizia con 3), aggiungiamo lo 0
+            if (!finalNum.startsWith('0') && !finalNum.startsWith('3')) {
+              finalNum = '0' + finalNum;
+            }
+            
+            validNumbers.push(finalNum);
+          }
         }
       });
     });
-  });
 
-  const finalContent = Array.from(numbers).join('\r\n') + '\r\n';
-  const zip = new JSZip();
-  const fileName = file.name.split('.')[0].toLowerCase().replace(/\s/g, '_');
-  zip.file(`${fileName}.txt`, finalContent);
-  const zipBlob = await zip.generateAsync({ type: 'blob' });
+    // 6. Togliamo i numeri duplicati per non mandare file giganti al Registro
+    const uniqueNumbers = [...new Set(validNumbers)];
 
-  return {
-    txt: new Blob([finalContent], { type: 'text/plain;charset=utf-8' }),
-    zip: zipBlob,
-    fileName: fileName
-  };
+    // 7. Creiamo il contenuto del file TXT con un numero per riga
+    const txtContent = uniqueNumbers.join('\r\n');
+    
+    // Creiamo il file (Blob) pronto per il download
+    const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
+    
+    return { 
+      txt: blob,
+      fileName: file.name.replace(/\.[^/.]+$/, "") // Restituiamo il nome originale senza estensione
+    };
+
+  } catch (error) {
+    console.error("Errore nel Converter:", error);
+    throw new Error("Impossibile leggere il file Excel. Assicurati che non sia protetto da password.");
+  }
 };

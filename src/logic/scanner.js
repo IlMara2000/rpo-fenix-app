@@ -1,83 +1,130 @@
 import ExcelJS from 'exceljs';
 
 export const runRpoScanner = async (txtFile, excelFile) => {
-  const txtText = await txtFile.text();
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(await excelFile.arrayBuffer());
+  try {
+    const txtText = await txtFile.text();
+    const lines = txtText.split(/\r?\n/);
+    const targetNumbers = new Set();
+    const outputTxtLines = [];
 
-  // 1. Estraiamo e puliamo i numeri dalla blacklist (quelli con ",1")
-  const blacklistedNumbers = txtText
-    .split(/\r?\n/)
-    .filter(line => line.includes(',1'))
-    .map(line => {
-      // Prende la parte prima della virgola, toglie spazi e prefissi comuni
-      const rawNum = line.split(',')[0].trim();
-      return rawNum.replace(/^(\+39|0039)/, '');
-    })
-    .filter(num => num.length >= 6); // Sicurezza: ignora frammenti troppo corti
+    // 1. Lettura TXT
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+      const parts = trimmedLine.split(',');
+      if (parts.length >= 2) {
+        const number = parts[0].trim();
+        const status = parts[1].trim();
+        if (status.startsWith('1')) {
+          targetNumbers.add(number);
+          outputTxtLines.push(trimmedLine);
+        }
+      }
+    }
 
-  const foundNumbers = [];
+    if (targetNumbers.size === 0) {
+      throw new Error("Nessun numero ',1' trovato nel file TXT.");
+    }
 
-  workbook.eachSheet((sheet) => {
-    sheet.eachRow((row, rowNumber) => {
-      // Saltiamo le intestazioni (solitamente riga 1 o le prime 2)
-      if (rowNumber < 2) return;
+    const targetNumbersArray = Array.from(targetNumbers);
+    const arrayBuffer = await excelFile.arrayBuffer();
+    
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(arrayBuffer);
+    
+    const censoredWorkbook = new ExcelJS.Workbook();
+    await censoredWorkbook.xlsx.load(arrayBuffer);
 
-      let rowShouldBeColored = false;
+    let matchCount = 0;
 
-      // Cerchiamo il match esatto del numero in qualunque cella della riga
-      row.eachCell({ includeEmpty: false }, (cell) => {
-        if (rowShouldBeColored) return; // Se abbiamo già deciso di colorare, passa oltre
+    workbook.worksheets.forEach((sheet, sheetIndex) => {
+      const censoredSheet = censoredWorkbook.worksheets[sheetIndex];
+      if (!sheet || !censoredSheet) return;
 
-        const cellValue = String(cell.value || "").trim();
-        if (!cellValue || cellValue.length < 6) return;
+      // Crea colonna per i risultati
+      sheet.spliceColumns(1, 0, []);
+      sheet.getColumn(1).width = 25;
+      censoredSheet.spliceColumns(1, 0, []);
+      censoredSheet.getColumn(1).width = 25;
 
-        for (const rpoNum of blacklistedNumbers) {
-          // Se il numero pulito dell'RPO è contenuto nel valore della cella
-          if (cellValue.includes(rpoNum)) {
-            rowShouldBeColored = true;
-            if (!foundNumbers.includes(rpoNum)) {
-              foundNumbers.push(rpoNum);
+      sheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+        let foundCellAddress = null;
+
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          // Salta la prima colonna (quella nuova) e celle già trovate
+          if (colNumber === 1 || foundCellAddress) return;
+
+          try {
+            let cellValue = "";
+
+            // --- PROTEZIONE MASSIMA CONTRO IL NULL ---
+            if (cell && cell.value !== null && cell.value !== undefined) {
+              
+              if (typeof cell.value === 'object') {
+                // Se è un oggetto (RichText, Formula, Hyperlink)
+                // Usiamo .text che è la rappresentazione visiva più sicura
+                cellValue = cell.text ? cell.text.toString() : 
+                            (cell.value.result ? cell.value.result.toString() : "");
+              } else {
+                // Se è un valore semplice (stringa, numero)
+                cellValue = cell.value.toString();
+              }
             }
-            break; 
+
+            const cleanVal = cellValue.trim();
+            if (cleanVal.length >= 6) {
+              for (const num of targetNumbersArray) {
+                if (cleanVal.includes(num)) {
+                  foundCellAddress = cell.address;
+                  matchCount++;
+                  break;
+                }
+              }
+            }
+          } catch (e) {
+            // Se una cella è proprio illeggibile, la ignoriamo invece di crashare
+            console.warn("Cella saltata:", cell?.address);
           }
+        });
+
+        if (foundCellAddress) {
+          // File Elaborato (Evidenziazione)
+          const infoCell = row.getCell(1);
+          infoCell.value = `MATCH: ${foundCellAddress}`;
+          infoCell.font = { color: { argb: 'FF000000' }, bold: true };
+          
+          row.eachCell({ includeEmpty: false }, (cell, col) => {
+            if (col === 1) return;
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF000000' } };
+            cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+          });
+
+          // File Censurato (Copertura totale)
+          const censoredRow = censoredSheet.getRow(rowNumber);
+          censoredRow.getCell(1).value = "RPO NEGATIVO";
+          censoredRow.eachCell({ includeEmpty: true }, (c) => {
+            c.value = "CENSURATO";
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF000000' } };
+            c.font = { color: { argb: 'FF000000' } };
+          });
         }
       });
-
-      // 2. Se c'è un match, applichiamo lo stile "Fenix Red" a tutta la riga
-      if (rowShouldBeColored) {
-        row.eachCell({ includeEmpty: true }, (cell) => {
-          // Sfondo Rosso Scuro
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FF8B0000' }
-          };
-          // Testo Bianco Bold
-          cell.font = {
-            color: { argb: 'FFFFFFFF' },
-            bold: true,
-            size: 10,
-            name: 'Arial'
-          };
-          // Bordi neri sottili per definire la riga
-          cell.border = {
-            top: { style: 'thin', color: { argb: 'FF000000' } },
-            left: { style: 'thin', color: { argb: 'FF000000' } },
-            bottom: { style: 'thin', color: { argb: 'FF000000' } },
-            right: { style: 'thin', color: { argb: 'FF000000' } }
-          };
-        });
-      }
     });
-  });
 
-  // Generazione del buffer finale
-  const buffer = await workbook.xlsx.writeBuffer();
-  
-  return {
-    excel: new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-    numbersTxt: new Blob([foundNumbers.join('\r\n')], { type: 'text/plain;charset=utf-8' }),
-    foundCount: foundNumbers.length
-  };
+    const bufferExcel = await workbook.xlsx.writeBuffer();
+    const bufferCensored = await censoredWorkbook.xlsx.writeBuffer();
+    
+    return {
+      success: true,
+      excel: new Blob([bufferExcel], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      excelCensored: new Blob([bufferCensored], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      numbersTxt: new Blob([outputTxtLines.join('\r\n')], { type: 'text/plain;charset=utf-8' }),
+      foundCount: matchCount,
+      originalName: excelFile.name
+    };
+
+  } catch (error) {
+    console.error("Errore Scanner:", error);
+    throw error;
+  }
 };
