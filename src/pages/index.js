@@ -82,7 +82,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* BADGE E HEADER CON LOGO IMMAGINE */}
+          {/* BADGE E HEADER CON LOGO */}
           <header className="text-center py-4">
             <div className="inline-block mb-8">
               <div className="status-badge shadow-xl shadow-blue-500/10">
@@ -91,14 +91,16 @@ export default function Home() {
               </div>
             </div>
 
-            {/* LOGO AREA */}
+            {/* LOGO AREA - FIX DEFINITIVO PERCORSO */}
             <div className="flex justify-center mb-4">
               <img 
-                src="/image.png" 
+                src="/logo.png" 
                 alt="Logo GR Fenix" 
-                className="h-32 w-auto object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                /* Se il logo è scuro e non si vede, togli il commento qui sotto */
-                /* style={{ filter: 'brightness(0) invert(1)' }} */
+                className="h-28 w-auto object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                onError={(e) => {
+                    // Se ancora non lo trova, prova a caricare quello con nome image.png
+                    if(!e.target.src.includes('image.png')) e.target.src = '/image.png';
+                }}
               />
             </div>
 
