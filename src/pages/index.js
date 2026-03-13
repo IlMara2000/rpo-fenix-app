@@ -6,7 +6,7 @@ import { runRpoScanner } from '../logic/scanner';
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState({ msg: 'OFFICIAL FENIX RPO TOOL SUITE', type: 'info' });
+  const [status, setStatus] = useState({ msg: 'FENIX GROUP ® REAL ESTATE', type: 'info' });
   const [converterFiles, setConverterFiles] = useState(null);
   const [scannerFiles, setScannerFiles] = useState(null);
   const [tempFile, setTempFile] = useState(null); 
@@ -100,7 +100,7 @@ export default function Home() {
 
             <div className="mt-2 flex items-center justify-center gap-2">
               <span className="h-[1px] w-8 bg-blue-500/50"></span>
-              <p className="text-gray-500 text-[10px] tracking-[0.5em] uppercase font-bold">FENIX GROUP RPO TOOL SUITE</p>
+              <p className="text-gray-500 text-[10px] tracking-[0.5em] uppercase font-bold">OFFICIAL FENIX TOOL SUITE </p>
               <span className="h-[1px] w-8 bg-blue-500/50"></span>
             </div>
           
