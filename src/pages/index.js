@@ -164,7 +164,7 @@ export default function Home() {
           <p className="text-[10px] text-white uppercase tracking-[0.5em] font-medium">
            FENIX GROUP RPO TOOL SUITE   
            Private & Lock by  
-           Realindi®Den © 2026 
+           Realindi®Den  © 2026 
           </p>
         </footer>
       </div>
