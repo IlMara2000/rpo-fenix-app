@@ -1,3 +1,4 @@
+import '../styles/globals.css'; // Carica il tuo CSS bellissimo
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { saveAs } from 'file-saver';
