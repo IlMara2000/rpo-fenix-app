@@ -123,7 +123,7 @@ export default function Home() {
               </div>
 
               <button type="submit" disabled={loading} className="bottone-blu">
-                <span>{loading ? "Bonifica in corso..." : "Avvia Controllo Numeri"}</span>
+                <span>{loading ? "Scansione in corso..." : "Avvio Controllo Numeri"}</span>
               </button>
               
               {scannerFiles && (
@@ -134,10 +134,10 @@ export default function Home() {
                     className="bottone-download py-4 shadow-2xl" 
                     style={{background: '#22c55e', color: 'white', border: 'none'}}
                   >
-                     📦 SCARICA 📲
+                     📦 SCARICA QUI IL FILE 📲
                   </button>
                   <p className="text-[10px] text-white mt-4 text-center font-medium italic">
-                    Trovati {scannerFiles.foundCount} numeri.
+                    Match riscontrati e aggiornati nel file Excel: {scannerFiles.foundCount} contatti.
                   </p>
                 </div>
               )}
