@@ -82,15 +82,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* BADGE E HEADER CON LOGO IMMAGINE */}
-          <header className="text-center py-4">
-            <div className="inline-block mb-8">
-              <div className="status-badge shadow-xl shadow-blue-500/10">
-                <span className="dot"></span>
-                {status.msg}
-              </div>
-            </div>
-
+      <header>        
             {/* LOGO AREA */}
             <div className="flex justify-center mb-4">
               <img 
@@ -107,8 +99,17 @@ export default function Home() {
               <p className="text-gray-500 text-[10px] tracking-[0.5em] uppercase font-bold">FENIX GROUP RPO TOOL SUITE</p>
               <span className="h-[1px] w-8 bg-blue-500/50"></span>
             </div>
-          </header>
-        
+          
+        {/* BADGE E HEADER CON LOGO IMMAGINE */}
+        <div className="text-center py-4">
+            <div className="inline-block mb-8">
+              <div className="status-badge shadow-xl shadow-blue-500/10">
+                <span className="dot"></span>
+                {status.msg}
+              </div>
+            </div>
+      </header>
+
           {/* STEP 2: RPO SCANNER */}
           <section className="box-lavoro relative overflow-hidden group">
             <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.02] select-none group-hover:text-green-500/[0.04] transition-colors">02</div>
