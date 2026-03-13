@@ -1,4 +1,4 @@
-import '../styles/global.css';
+import '../styles/globals.css';
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { saveAs } from 'file-saver';
