@@ -108,6 +108,7 @@ export default function Home() {
                 {status.msg}
               </div>
             </div>
+        </div>
       </header>
 
           {/* STEP 2: RPO SCANNER */}
