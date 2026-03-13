@@ -12,13 +12,14 @@ export const runRpoScanner = async (txtFile, excelFile) => {
         const blacklistArray = []; 
         const blacklistSet = new Set(); 
         
+        // 1. Leggiamo il file TXT del Registro
         lines.forEach(line => {
           if (line.trim()) {
             const parts = line.split(',');
             const phone = parts[0]?.trim();
             const status = parts[1]?.trim();
             
-            // Prendiamo SOLO i numeri con stato "1"
+            // Prendiamo solo i numeri con stato "1" (iscritti)
             if (status === '1' && phone) {
               blacklistArray.push(phone);
               blacklistSet.add(phone);
@@ -26,13 +27,12 @@ export const runRpoScanner = async (txtFile, excelFile) => {
           }
         });
 
+        // 2. Leggiamo l'Excel solo per contare i match nell'anagrafica
         const workbook = new ExcelJS.Workbook();
         const arrayBuffer = await excelFile.arrayBuffer();
         await workbook.xlsx.load(arrayBuffer);
 
         let matchCount = 0;
-
-        // Controlliamo l'excel solo per darti il numero di match trovati
         workbook.worksheets.forEach((sheet) => {
           sheet.eachRow({ includeEmpty: false }, (row) => {
             let foundInRow = false;
@@ -47,17 +47,19 @@ export const runRpoScanner = async (txtFile, excelFile) => {
           });
         });
 
-        // Generiamo il contenuto del TXT: solo numeri ,1,
-        const txtContent = blacklistArray.join('\n');
+        // 3. Creiamo il file TXT finale (solo numeri ,1,)
+        const txtContent = blacklistArray.join('\r\n');
+        const blob = new Blob([txtContent], { type: 'text/plain' });
 
         resolve({
           success: true,
-          txtBlacklist: new Blob([txtContent], { type: 'text/plain' }),
+          txtBlacklist: blob,
           foundCount: matchCount, 
           fileName: excelFile.name.replace('.xlsx', '')
         });
 
       } catch (err) {
+        console.error("Errore Scanner:", err);
         reject(err);
       }
     };
