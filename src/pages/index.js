@@ -11,6 +11,7 @@ export default function Home() {
   const [scannerFiles, setScannerFiles] = useState(null);
   const [tempFile, setTempFile] = useState(null); 
 
+  // LOGICA SCANNER UNIFICATA (CON DEBUG LOG)
   const handleScannerSubmit = async (e) => {
     e.preventDefault();
     const txt = e.target.txtFile.files[0];
@@ -19,15 +20,20 @@ export default function Home() {
 
     setLoading(true);
     setStatus({ msg: 'ANALISI INCROCIATA DEI DATI...', type: 'blue' });
+    
     try {
+      console.log("Inizio scansione..."); 
       const result = await runRpoScanner(txt, excel);
-      // Forza l'aggiornamento dello stato per mostrare la box
+      console.log("Risultato ricevuto dallo scanner:", result); 
+
       if (result && result.success) {
         setScannerFiles(result);
         setStatus({ msg: `COMPLETATO: ${result.foundCount} NUMERI IN LISTA`, type: 'yellow' });
+      } else {
+        alert("Lo scanner ha risposto ma senza successo. Controlla che i file siano corretti.");
       }
     } catch (err) {
-      console.error("Errore scanner:", err);
+      console.error("ERRORE FATALE SCANNER:", err);
       setStatus({ msg: 'ERRORE DI ELABORAZIONE', type: 'red' });
     } finally {
       setLoading(false);
@@ -91,7 +97,7 @@ export default function Home() {
             </div>
           </section>
 
-          {/* BADGE E HEADER CENTRALE (IN MEZZO AI DUE PROGRAMMI) */}
+          {/* BADGE E HEADER CENTRALE */}
           <header className="text-center py-4">
             <div className="inline-block mb-6">
               <div className="status-badge shadow-xl shadow-blue-500/10">
@@ -144,13 +150,16 @@ export default function Home() {
                 <div className="pt-6 border-t border-white/10 mt-4">
                   <button 
                     type="button" 
-                    onClick={() => saveAs(scannerFiles.excelCensored, `LISTA_BONIFICATA_FENIX.xlsx`)} 
+                    onClick={() => {
+                      console.log("Tentativo download file:", scannerFiles.excelCensored);
+                      saveAs(scannerFiles.excelCensored, `LISTA_MODIFICATA_${fileaname}.xlsx`);
+                    }} 
                     className="bottone-download py-4 shadow-2xl" 
                     style={{background: '#22c55e', color: 'white', border: 'none'}}
                   >
                      📞 SCARICA LA LISTA AGGIORNATA 📲
                   </button>
-                  <p className="text-[15px] text-white-500 mt-4 text-center font-medium italic uppercase tracking-tighter">
+                  <p className="text-[10px] text-white mt-4 text-center font-medium italic uppercase tracking-tighter">
                     Analisi completata con successo. Il file è pronto.
                   </p>
                 </div>
@@ -161,8 +170,8 @@ export default function Home() {
 
         {/* FOOTER */}
         <footer className="mt-24 text-center opacity-50">
-          <p className="text-[10px] text-gray-600 uppercase tracking-[0.5em] font-medium">
-           GR FENIX RPO Tool Suite — Private & Secure by Realindi.Den — 2026 
+          <p className="text-[10px] text-white uppercase tracking-[0.5em] font-medium">
+           GR FENIX RPO Tool Suite — Private & Lock by Realindi ® Den — © 2026 
           </p>
         </footer>
       </div>
