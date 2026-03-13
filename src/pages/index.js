@@ -11,7 +11,6 @@ export default function Home() {
   const [scannerFiles, setScannerFiles] = useState(null);
   const [tempFile, setTempFile] = useState(null); 
 
-  // LOGICA STEP 2: SCANNER (BONIFICA)
   const handleScannerSubmit = async (e) => {
     e.preventDefault();
     const txt = e.target.txtFile.files[0];
@@ -22,14 +21,14 @@ export default function Home() {
     setStatus({ msg: 'ANALISI INCROCIATA DEI DATI...', type: 'blue' });
     try {
       const result = await runRpoScanner(txt, excel);
+      // Forza l'aggiornamento dello stato per mostrare la box
       if (result && result.success) {
         setScannerFiles(result);
         setStatus({ msg: `COMPLETATO: ${result.foundCount} NUMERI IN LISTA`, type: 'yellow' });
       }
     } catch (err) {
-      console.error(err);
+      console.error("Errore scanner:", err);
       setStatus({ msg: 'ERRORE DI ELABORAZIONE', type: 'red' });
-      alert("C'è stato un problema durante il controllo.");
     } finally {
       setLoading(false);
     }
@@ -42,27 +41,10 @@ export default function Home() {
       </Head>
 
       <div className="max-w-xl w-full">
-        {/* HEADER */}
-        <header className="text-center mb-16">
-          <div className="inline-block mb-6">
-            <div className="status-badge">
-              <span className="dot"></span>
-              {loading ? 'SYNCING DATA...' : status.msg}
-            </div>
-          </div>
-          <h1 className="text-6xl font-black tracking-tighter italic">
-            <span style={{color:'var(--fenix-blue)'}}>GR</span> FENIX
-          </h1>
-          <div className="mt-2 flex items-center justify-center gap-2">
-            <span className="h-[1px] w-8 bg-blue-500/50"></span>
-            <p className="text-gray-500 text-[10px] tracking-[0.5em] uppercase font-bold">RPO TOOL</p>
-            <span className="h-[1px] w-8 bg-blue-500/50"></span>
-          </div>
-        </header>
-
+        
         <div className="space-y-12">
           
-          {/* STEP 1: RPO SCANNER (CONVERTER) */}
+          {/* STEP 1: RPO CONVERTER */}
           <section className="box-lavoro relative overflow-hidden group">
             <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.02] select-none group-hover:text-blue-500/[0.04] transition-colors">
               01
@@ -70,7 +52,7 @@ export default function Home() {
             
             <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
               <span className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-base shadow-inner">1</span>
-              RPO Scanner
+              RPO Converter
             </h2>
             <p className="text-gray-400 text-xs leading-relaxed mb-8 pr-10">
               Carica il tuo file Excel originale. Estrarrò automaticamente solo la lista dei numeri necessari per l'invio diretto sul portale del Registro delle Opposizioni.
@@ -98,10 +80,10 @@ export default function Home() {
               
               {converterFiles && (
                 <div className="grid grid-cols-2 gap-4 animate-pulse">
-                  <button onClick={() => saveAs(converterFiles.txt, `PER_INVIO_${converterFiles.fileName}.txt`)} className="bottone-download text-[10px]">
+                  <button onClick={() => saveAs(converterFiles.txt, `perinvio_${converterFiles.fileName}.txt`)} className="bottone-download text-[10px]">
                     ⬇️ Scarica .txt ⬇️
                   </button>
-                  <button onClick={() => saveAs(converterFiles.zip, `ARCHIVIO_${converterFiles.fileName}.zip`)} className="bottone-download text-[10px]" style={{background: 'var(--fenix-blue)', color: 'white'}}>
+                  <button onClick={() => saveAs(converterFiles.zip, `perinvio_${converterFiles.fileName}.zip`)} className="bottone-download text-[10px]" style={{background: 'var(--fenix-blue)', color: 'white'}}>
                     📦 Scarica ZIP 📦
                   </button>
                 </div>
@@ -109,7 +91,25 @@ export default function Home() {
             </div>
           </section>
 
-          {/* STEP 2: RPO CONVERTER (SCANNER) */}
+          {/* BADGE E HEADER CENTRALE (IN MEZZO AI DUE PROGRAMMI) */}
+          <header className="text-center py-4">
+            <div className="inline-block mb-6">
+              <div className="status-badge shadow-xl shadow-blue-500/10">
+                <span className="dot"></span>
+                {loading ? 'SYNCING DATA...' : status.msg}
+              </div>
+            </div>
+            <h1 className="text-6xl font-black tracking-tighter italic">
+              <span style={{color:'var(--fenix-blue)'}}>GR</span> FENIX
+            </h1>
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <span className="h-[1px] w-8 bg-blue-500/50"></span>
+              <p className="text-gray-500 text-[10px] tracking-[0.5em] uppercase font-bold">RPO TOOL</p>
+              <span className="h-[1px] w-8 bg-blue-500/50"></span>
+            </div>
+          </header>
+        
+          {/* STEP 2: RPO SCANNER */}
           <section className="box-lavoro relative overflow-hidden group">
             <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.02] select-none group-hover:text-green-500/[0.04] transition-colors">
               02
@@ -117,7 +117,7 @@ export default function Home() {
 
             <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
               <span className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-400 text-base shadow-inner">2</span>
-              RPO Converter
+              RPO Scanner
             </h2>
             <p className="text-gray-400 text-xs leading-relaxed mb-8 pr-10">
               Confronta l'esito ricevuto dal Registro con il tuo file Excel originale per scaricare la lista di chi ha negato il consenso con data d'iscrizione.
@@ -139,13 +139,20 @@ export default function Home() {
                 <span>{loading ? "Verifica Sicurezza in corso..." : "Avvia Bonifica Numeri"}</span>
               </button>
               
+              {/* BOX RISULTATO FINALE */}
               {scannerFiles && (
-                <div className="pt-4 border-t border-white/5 animate-bounce">
-                  <button type="button" onClick={() => saveAs(scannerFiles.excelCensored, `LISTA_MOD_${converterFiles?.fileName || 'FINALE'}.xlsx`)} 
-                    className="bottone-download py-4" style={{background: '#22c55e', color: 'white'}}>
-                     📞 Scarica la Lista 📲
+                <div className="pt-6 border-t border-white/10 mt-4">
+                  <button 
+                    type="button" 
+                    onClick={() => saveAs(scannerFiles.excelCensored, `LISTA_BONIFICATA_FENIX.xlsx`)} 
+                    className="bottone-download py-4 shadow-2xl animate-bounce" 
+                    style={{background: '#22c55e', color: 'white', border: 'none'}}
+                  >
+                     📞 SCARICA LA LISTA AGGIORNATA 📲
                   </button>
-                  <p className="text-[9px] text-gray-500 mt-4 text-center font-medium italic">I numeri in lista sono stati caricati.</p>
+                  <p className="text-[9px] text-gray-500 mt-4 text-center font-medium italic uppercase tracking-tighter">
+                    Analisi completata con successo. Il file è pronto.
+                  </p>
                 </div>
               )}
             </form>
@@ -153,12 +160,7 @@ export default function Home() {
         </div>
 
         {/* FOOTER */}
-        <footer className="mt-24 text-center">
-          <div className="flex justify-center gap-4 mb-8 opacity-30">
-            <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-            <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-            <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-          </div>
+        <footer className="mt-24 text-center opacity-50">
           <p className="text-[10px] text-gray-600 uppercase tracking-[0.5em] font-medium">
            GR FENIX RPO Tool Suite — Private & Secure by Realindi.Den — 2026 
           </p>

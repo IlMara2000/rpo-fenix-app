@@ -149,7 +149,7 @@ input[type="file"]:hover {
   height: 6px;
   background: var(--fenix-blue);
   border-radius: 50%;
-  animation: pulse 0.5s linear;
+  animation: pulse 0.5s;
 }
 
 @keyframes pulse {
