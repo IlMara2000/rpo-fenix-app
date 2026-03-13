@@ -82,17 +82,26 @@ export default function Home() {
             </div>
           </section>
 
-          {/* BADGE E HEADER */}
+          {/* BADGE E HEADER CON LOGO IMMAGINE */}
           <header className="text-center py-4">
-            <div className="inline-block mb-6">
+            <div className="inline-block mb-8">
               <div className="status-badge shadow-xl shadow-blue-500/10">
                 <span className="dot"></span>
                 {status.msg}
               </div>
             </div>
-            <h1 className="text-6xl font-black tracking-tighter italic">
-              <span style={{color:'var(--fenix-blue)'}}>GR</span> FENIX
-            </h1>
+
+            {/* LOGO AREA */}
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/image.png" 
+                alt="Logo GR Fenix" 
+                className="h-32 w-auto object-contain drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                /* Se il logo è scuro e non si vede, togli il commento qui sotto */
+                /* style={{ filter: 'brightness(0) invert(1)' }} */
+              />
+            </div>
+
             <div className="mt-2 flex items-center justify-center gap-2">
               <span className="h-[1px] w-8 bg-blue-500/50"></span>
               <p className="text-gray-500 text-[10px] tracking-[0.5em] uppercase font-bold">RPO TOOL</p>
