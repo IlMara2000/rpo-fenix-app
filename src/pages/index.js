@@ -23,7 +23,7 @@ export default function Home() {
   const handleConverterSubmit = async () => {
     if (!tempFile) return;
     setLoading(true);
-    setStatus({ msg: "INVIO AL SERVER PYTHON...", type: 'red' });
+    setStatus({ msg: "CREAZIONE ZIP IN CORSO...", type: 'red' });
     try {
       const formData = new FormData();
       formData.append('excel', tempFile);
@@ -32,10 +32,12 @@ export default function Home() {
         const errorText = await response.text();
         throw new Error(errorText);
       }
+      // Ora il server ci restituisce direttamente un file ZIP
       const blob = await response.blob();
       const fileName = tempFile.name.split('.')[0].toLowerCase().replace(/\s/g, '_');
-      setConverterFiles({ txt: blob, fileName: fileName });
-      setStatus({ msg: "CONVERSIONE RIUSCITA!", type: 'yellow' });
+      // Salviamo il blob nello stato chiamandolo 'zip'
+      setConverterFiles({ zip: blob, fileName: fileName });
+      setStatus({ msg: "ZIP CREATO CON SUCCESSO!", type: 'yellow' });
     } catch (e) { 
       setStatus({ msg: "ERRORE CONVERSIONE", type: 'red' });
       alert("DETTAGLI: " + e.message);
@@ -106,8 +108,7 @@ export default function Home() {
             Excel Converter
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
-            Estrae i numeri dall'Excel e crea il TXT pulito. <br/>
-            <b>IMPORTANTE:</b> Una volta scaricato, comprimi il file in <b>.ZIP</b> prima di caricarlo sul portale RPO.
+            Estrae i numeri dall'Excel, li formatta in UTF-8 (CRLF) e genera automaticamente l'archivio <b>.ZIP</b> (Deflate) pronto per il portale RPO.
           </p>
           <div className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
@@ -116,11 +117,11 @@ export default function Home() {
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{fileNameExcel}</span>
             </label>
             <button onClick={handleConverterSubmit} disabled={loading || !tempFile} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50">
-              {loading ? "ELABORAZIONE..." : "GENERA TXT"}
+              {loading ? "ELABORAZIONE..." : "GENERA ZIP"}
             </button>
             {converterFiles && (
-              <button onClick={() => saveAs(converterFiles.txt, `perinvio_${converterFiles.fileName}.txt`)} className="w-full py-4 bg-red-500/10 border border-red-500/40 text-red-400 rounded-2xl font-black text-xs hover:bg-red-500/20 transition-all">
-                SCARICA TXT PRONTO
+              <button onClick={() => saveAs(converterFiles.zip, `lista_${converterFiles.fileName}.zip`)} className="w-full py-4 bg-red-500/10 border border-red-500/40 text-red-400 rounded-2xl font-black text-xs hover:bg-red-500/20 transition-all">
+                SCARICA ZIP PRONTO
               </button>
             )}
           </div>
