@@ -117,11 +117,11 @@ export default function Home() {
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{fileNameExcel}</span>
             </label>
             <button onClick={handleConverterSubmit} disabled={loading || !tempFile} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50">
-              {loading ? "ELABORAZIONE..." : "GENERA ZIP"}
+              {loading ? "ELABORAZIONE..." : "GENERA .ZIP"}
             </button>
             {converterFiles && (
               <button onClick={() => saveAs(converterFiles.zip, `lista_${converterFiles.fileName}.zip`)} className="w-full py-4 bg-red-500/10 border border-red-500/40 text-red-400 rounded-2xl font-black text-xs hover:bg-red-500/20 transition-all">
-                SCARICA ZIP PRONTO
+                SCARICA .ZIP
               </button>
             )}
           </div>
@@ -134,6 +134,34 @@ export default function Home() {
             TXT Divider
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
+            Carica qui il file TXT che vuoi dividerlo in più parti per evitare l'Error 63. <br/>
+            Separerà i numeri dalla riga <b>DICHIARATA</b> in poi <b>ES.:</b> perinvio_lista.txt [50k numeri] se il limite di credito rimanente è tipo 32.334 numeri, allora bisogna dichiarare la riga 32.335.
+          </p>
+          <form onSubmit={handleDividerSubmit} className="space-y-4">
+            <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
+              <span className="text-[10px] font-bold uppercase">File RPO:</span>
+              <input type="file" name="txtFile" required onChange={e => setFileNameTxt(e.target.files[0]?.name || "nessun file")} className="hidden" />
+              <span className="text-[10px] truncate max-w-[150px] opacity-40">{fileNameTxt}</span>
+            </label>
+            <button type="submit" disabled={loading} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest active:scale-95 transition-all">
+              DIVIDI LISTA
+            </button>
+            {dividerFiles && (
+              <div className="grid grid-cols-2 gap-4">
+                <button type="button" onClick={() => saveAs(dividerFiles.txtUno, `iscritti_rpo.txt`)} className="py-4 bg-black border border-red-500/40 text-red-500 rounded-2xl font-black text-[10px]">LISTA NERA (1)</button>
+                <button type="button" onClick={() => saveAs(dividerFiles.txtZero, `numeri_ok.txt`)} className="py-4 bg-green-500/20 border border-green-500/40 text-green-400 rounded-2xl font-black text-[10px]">LISTA OK (0)</button>
+              </div>
+            )}
+          </form>
+        </section>
+        
+        {/* STEP 3 */}
+        <section className="box-lavoro relative overflow-hidden">
+          <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
+            <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">2</span>
+            TXT Cleaner
+          </h2>
+          <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
             Carica il file TXT restituito dal Registro. <br/>
             Separerà i numeri in <b>OK (chiamabili)</b> e <b>RPO (iscritti)</b>.
           </p>
@@ -144,7 +172,7 @@ export default function Home() {
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{fileNameTxt}</span>
             </label>
             <button type="submit" disabled={loading} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest active:scale-95 transition-all">
-              DIVIDI LISTE
+              SEPARA LISTA
             </button>
             {dividerFiles && (
               <div className="grid grid-cols-2 gap-4">
@@ -155,7 +183,7 @@ export default function Home() {
           </form>
         </section>
 
-        {/* STEP 3 */}
+        {/* STEP 4 */}
         <section className="box-lavoro relative overflow-hidden border-red-500/40">
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/40 flex items-center justify-center font-black">3</span>
@@ -182,7 +210,7 @@ export default function Home() {
           </form>
           {scannerResult && (
             <button onClick={() => saveAs(scannerResult.blob, `EXCEL_BONIFICATO.xlsx`)} className="w-full mt-4 py-4 bg-green-600 text-white font-black rounded-2xl animate-pulse text-sm">
-              SCARICA EXCEL PULITO ({scannerResult.count})
+              SCARICA EXCEL ({scannerResult.count})
             </button>
           )}
         </section>
