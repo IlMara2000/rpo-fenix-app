@@ -7,125 +7,78 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ msg: 'FENIX GROUP REAL ESTATE ©', type: 'info' });
 
-  // FILE INPUT
   const [scannerTxt, setScannerTxt] = useState(null);
   const [scannerExcel, setScannerExcel] = useState(null);
   const [scannerResult, setScannerResult] = useState(null);
-
   const [nameScannerTxt, setNameScannerTxt] = useState("nessun file TXT");
   const [nameScannerExcel, setNameScannerExcel] = useState("nessun file Excel");
 
-  // ==========================================
-  // 🟣 SCANNER LOGIC (VERSIONE DEFINITIVA)
-  // ==========================================
   const handleScannerSubmit = async (e) => {
     e.preventDefault();
-
-    if (!scannerTxt || !scannerExcel) {
-      alert("Carica entrambi i file!");
-      return;
-    }
+    if (!scannerTxt || !scannerExcel) return alert("Carica entrambi i file!");
 
     setLoading(true);
-    setStatus({ msg: 'SCANSIONE IN CORSO...', type: 'red' });
+    setStatus({ msg: 'SCANSIONE CHIRURGICA...', type: 'red' });
 
     try {
-      // =========================
-      // 📄 LETTURA TXT
-      // =========================
       const txtContent = await scannerTxt.text();
+      
+      // Creiamo un Set per una ricerca istantanea ed ESATTA
+      // Puliamo i numeri del TXT (solo cifre)
+      const rpoSet = new Set(
+        txtContent.split(/\r?\n/)
+          .map(n => n.trim().replace(/\D/g, ''))
+          .filter(n => n.length >= 8) // Consideriamo solo numeri di telefono reali
+      );
 
-      const rpoNumbers = txtContent
-        .split(/\r?\n/)
-        .map(n => n.trim().replace(/\D/g, ''))
-        .filter(n => n.length >= 6);
-
-      if (rpoNumbers.length === 0) {
-        throw new Error("TXT vuoto o numeri non validi");
-      }
-
-      // =========================
-      // 📊 LETTURA EXCEL
-      // =========================
-      const arrayBuffer = await scannerExcel.arrayBuffer();
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(arrayBuffer);
-
+      await workbook.xlsx.load(await scannerExcel.arrayBuffer());
       let totalMatches = 0;
 
-      // =========================
-      // 🔍 SCANSIONE
-      // =========================
       workbook.eachSheet((sheet) => {
-        sheet.eachRow((row) => {
-
+        sheet.eachRow({ includeEmpty: true }, (row) => {
           let rigaDaAnnerire = false;
 
+          // Controlliamo le celle della riga
           row.eachCell({ includeEmpty: false }, (cell) => {
-            const valoreCellaPulito = String(cell.value || "").replace(/\D/g, '');
+            // Puliamo il valore della cella (togliamo spazi, +39, ecc.)
+            let valoreCella = String(cell.value || "").replace(/\D/g, '');
+            
+            // Se il numero nell'Excel ha il prefisso 39, lo togliamo per il confronto
+            if (valoreCella.startsWith('39') && valoreCella.length > 10) {
+                valoreCella = valoreCella.substring(2);
+            }
 
-            if (valoreCellaPulito.length >= 6) {
-
-              const match = rpoNumbers.some(num => {
-                const shortNum = num.length > 8 ? num.slice(-8) : num;
-                return valoreCellaPulito.includes(shortNum);
-              });
-
-              if (match) {
-                rigaDaAnnerire = true;
-              }
+            // MATCH ESATTO: Il numero deve essere nel Set del TXT
+            if (valoreCella.length >= 8 && rpoSet.has(valoreCella)) {
+              rigaDaAnnerire = true;
             }
           });
 
-          // =========================
-          // 🎨 ANNERISCI RIGA
-          // =========================
           if (rigaDaAnnerire) {
             totalMatches++;
-
-            row.eachCell({ includeEmpty: true }, (cell) => {
+            // Anneriamo TUTTE le celle fino alla colonna 20 per sicurezza
+            for (let i = 1; i <= 20; i++) {
+              const cell = row.getCell(i);
               cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
                 fgColor: { argb: 'FF000000' }
               };
-
-              cell.font = {
-                color: { argb: 'FFFFFFFF' }
-              };
-            });
+              cell.font = { color: { argb: 'FF000000' } }; // Testo nero su fondo nero = invisibile
+              cell.value = cell.value; // Mantiene il dato ma è coperto
+            }
           }
-
         });
       });
 
-      // =========================
-      // 💾 OUTPUT FILE
-      // =========================
       const buffer = await workbook.xlsx.writeBuffer();
-
-      const blob = new Blob(
-        [buffer],
-        { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
-      );
-
-      setScannerResult({
-        blob,
-        count: totalMatches
-      });
-
-      setStatus({
-        msg: `BONIFICA COMPLETATA: ${totalMatches} RIGHE`,
-        type: 'yellow'
-      });
+      setScannerResult({ blob: new Blob([buffer]), count: totalMatches });
+      setStatus({ msg: `BONIFICA COMPLETATA: ${totalMatches} RIGHE`, type: 'yellow' });
 
     } catch (err) {
       console.error(err);
-
-      setStatus({
-        msg: 'ERRORE DURANTE LA SCANSIONE',
-        type: 'red'
-      });
+      setStatus({ msg: 'ERRORE DURANTE LA SCANSIONE', type: 'red' });
     } finally {
       setLoading(false);
     }
@@ -134,73 +87,44 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center py-12 px-6 text-white"
          style={{ background: 'linear-gradient(180deg, #ee5556 0%, #000000 75%)' }}>
-
-      <Head>
-        <title>FENIX GROUP | SCANNER</title>
-      </Head>
+      <Head><title>FENIX GROUP | SCANNER</title></Head>
 
       <header className="mb-10 text-center">
-        <h1 className="text-3xl font-black mb-4">RPO SCANNER</h1>
-        <div className="bg-black/60 border border-white/20 p-3 rounded-xl">
+        <h1 className="text-3xl font-black mb-4 tracking-tighter">RPO SCANNER</h1>
+        <div className="bg-black/60 border border-white/20 p-3 rounded-xl backdrop-blur-md uppercase text-[10px] font-bold tracking-widest">
           {status.msg}
         </div>
       </header>
 
-      <main className="w-full max-w-md bg-black/40 p-6 rounded-2xl border border-white/20">
+      <main className="w-full max-w-md bg-black/40 p-8 rounded-3xl border border-white/10 backdrop-blur-lg shadow-2xl">
+        <form onSubmit={handleScannerSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <span className="text-[10px] font-bold opacity-50 uppercase ml-2">Lista Nera (TXT)</span>
+            <label className="block bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer text-center hover:bg-white/10 transition-all">
+              <input type="file" accept=".txt" className="hidden" onChange={(e) => { setScannerTxt(e.target.files[0]); setNameScannerTxt(e.target.files[0]?.name || ""); }} />
+              <span className="text-xs font-medium truncate block">{nameScannerTxt}</span>
+            </label>
+          </div>
 
-        <form onSubmit={handleScannerSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <span className="text-[10px] font-bold opacity-50 uppercase ml-2">Database (Excel)</span>
+            <label className="block bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer text-center hover:bg-white/10 transition-all">
+              <input type="file" accept=".xlsx" className="hidden" onChange={(e) => { setScannerExcel(e.target.files[0]); setNameScannerExcel(e.target.files[0]?.name || ""); }} />
+              <span className="text-xs font-medium truncate block">{nameScannerExcel}</span>
+            </label>
+          </div>
 
-          {/* TXT */}
-          <label className="block bg-white/10 p-3 rounded-xl cursor-pointer text-center">
-            <input
-              type="file"
-              accept=".txt"
-              className="hidden"
-              onChange={(e) => {
-                setScannerTxt(e.target.files[0]);
-                setNameScannerTxt(e.target.files[0]?.name || "");
-              }}
-            />
-            <span className="text-xs">{nameScannerTxt}</span>
-          </label>
-
-          {/* EXCEL */}
-          <label className="block bg-white/10 p-3 rounded-xl cursor-pointer text-center">
-            <input
-              type="file"
-              accept=".xlsx"
-              className="hidden"
-              onChange={(e) => {
-                setScannerExcel(e.target.files[0]);
-                setNameScannerExcel(e.target.files[0]?.name || "");
-              }}
-            />
-            <span className="text-xs">{nameScannerExcel}</span>
-          </label>
-
-          {/* BUTTON */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-white text-black font-bold rounded-xl"
-          >
-            {loading ? "SCANSIONE..." : "AVVIA SCANNER"}
+          <button type="submit" disabled={loading} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl hover:scale-[0.98] transition-all disabled:opacity-50">
+            {loading ? "ELABORAZIONE..." : "AVVIA BONIFICA"}
           </button>
-
         </form>
 
-        {/* DOWNLOAD */}
         {scannerResult && (
-          <button
-            onClick={() => saveAs(scannerResult.blob, `BONIFICATO_${nameScannerExcel}`)}
-            className="mt-4 w-full py-3 bg-green-500 text-white font-bold rounded-xl"
-          >
-            SCARICA ({scannerResult.count})
+          <button onClick={() => saveAs(scannerResult.blob, `BONIFICATO_${nameScannerExcel}`)} className="mt-6 w-full py-4 bg-green-500 text-white font-black rounded-2xl shadow-lg border-2 border-green-400 animate-pulse">
+            SCARICA ({scannerResult.count} MATCH)
           </button>
         )}
-
       </main>
-
     </div>
   );
 }
