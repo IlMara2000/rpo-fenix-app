@@ -139,7 +139,7 @@ export default function Home() {
             <span className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-black">1</span>
             RPO Converter
           </h2>
-          <p className="text-gray-200 text-xs mb-8">Genera il file TXT pulito per l'invio (Python Engine).</p>
+          <p className="text-gray-200 text-xs mb-8">Inserisci la lista Excel e genera il file TXT pronto per l'invio.</p>
           <div className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
               <span className="text-[10px] font-bold uppercase">Excel Base:</span>
@@ -163,7 +163,7 @@ export default function Home() {
             <span className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-black">2</span>
             RPO Divider
           </h2>
-          <p className="text-gray-200 text-xs mb-8">Separa la risposta del Registro.</p>
+          <p className="text-gray-200 text-xs mb-8">Separa il file txt in due 0 = numeri puliti e 1 = numeri nell'RPO.</p>
           <form onSubmit={handleDividerSubmit} className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
               <span className="text-[10px] font-bold uppercase">File RPO:</span>
