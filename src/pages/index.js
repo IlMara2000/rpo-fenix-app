@@ -7,7 +7,7 @@ import { runRpoDivider } from '../logic/divider';
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState({ msg: 'FENIX GROUP REAL ESTATE ©', type: 'info' });
+  const [status, setStatus] = useState({ msg: 'FENIX GROUP REAL ESTATE © 2026', type: 'info' });
   
   // STATI SEZIONE 1 (Converter)
   const [converterFiles, setConverterFiles] = useState(null);
@@ -26,7 +26,7 @@ export default function Home() {
   const [nameScannerExcel, setNameScannerExcel] = useState("nessun file selezionato");
 
   // ==========================================
-  // 🔵 LOGICA 1: CONVERTER (Solo TXT)
+  // 🔵 LOGICA 1: CONVERTER
   // ==========================================
   const handleConverterSubmit = async () => {
     if (!tempFile) return;
@@ -64,7 +64,7 @@ export default function Home() {
   };
 
   // ==========================================
-  // 🟣 LOGICA 3: SCANNER (Blindato & Integrale)
+  // 🟣 LOGICA 3: SCANNER
   // ==========================================
   const handleScannerSubmit = async (e) => {
     e.preventDefault();
@@ -75,7 +75,6 @@ export default function Home() {
 
     try {
       const txtContent = await scannerTxt.text();
-      // Match ESATTO pulendo i numeri da ogni carattere non numerico
       const rpoSet = new Set(
         txtContent.split(/\r?\n/)
           .map(n => n.trim().replace(/\D/g, ''))
@@ -89,8 +88,6 @@ export default function Home() {
       workbook.eachSheet((sheet) => {
         sheet.eachRow({ includeEmpty: true }, (row) => {
           let hasMatch = false;
-          
-          // Cerchiamo il match esatto del numero
           row.eachCell({ includeEmpty: false }, (cell) => {
             const val = String(cell.value || "").replace(/\D/g, '');
             if (val.length >= 7 && rpoSet.has(val)) hasMatch = true;
@@ -98,11 +95,10 @@ export default function Home() {
 
           if (hasMatch) {
             totalMatches++;
-            // ANNERIMENTO TOTALE: Copriamo fino alla colonna 25 per tappare ogni buco
             for (let i = 1; i <= 25; i++) {
               const cell = row.getCell(i);
               cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF000000' } };
-              cell.font = { color: { argb: 'FF000000' } }; // Testo nero su fondo nero
+              cell.font = { color: { argb: 'FF000000' } };
               cell.value = cell.value; 
             }
           }
@@ -129,7 +125,6 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
 
-      {/* HEADER */}
       <header className="w-full max-w-4xl mb-12 flex flex-col items-center">
         <img src="/logo.png" alt="Logo" className="h-[156px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] mb-6" />
         <div className="bg-black/60 backdrop-blur-xl p-4 rounded-2xl border border-white/20 shadow-2xl shadow-black/40">
@@ -147,18 +142,18 @@ export default function Home() {
             RPO Converter
           </h2>
           <p className="text-gray-200 text-xs mb-8 pr-10 relative">Genera il file TXT pulito per l'invio al Registro delle Opposizioni.</p>
-          <div className="space-y-6 relative">
-            <label className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
-              <span className="px-4 py-2 rounded-xl text-[10px] font-black uppercase bg-white text-black">Scegli File</span>
-              <input type="file" className="hidden" onChange={e => {setTempFile(e.target.files[0]); setFileNameExcel(e.target.files[0]?.name || "nessun file");}} />
-              <span className="text-xs truncate flex-1">{fileNameExcel}</span>
+          <div className="space-y-4 relative">
+            <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
+              <span className="text-[10px] font-bold uppercase">Excel Base:</span>
+              <input type="file" className="hidden" onChange={e => {setTempFile(e.target.files[0]); setFileNameExcel(e.target.files[0]?.name || "");}} />
+              <span className="text-[10px] truncate max-w-[150px] opacity-40">{fileNameExcel}</span>
             </label>
             <button onClick={handleConverterSubmit} disabled={loading || !tempFile} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest transition-transform active:scale-95 disabled:opacity-50">
               {loading ? "ELABORAZIONE..." : "CREA FILE"}
             </button>
             {converterFiles && (
-              <button onClick={() => saveAs(converterFiles.txt, `perinvio_${converterFiles.fileName}.txt`)} className="w-full py-3 bg-white/10 border border-white/20 rounded-xl font-bold text-xs animate-pulse">
-                ⬇️ SCARICA TXT
+              <button onClick={() => saveAs(converterFiles.txt, `perinvio_${converterFiles.fileName}.txt`)} className="w-full py-4 bg-white/10 border border-white/20 text-white font-black rounded-2xl shadow-lg transition-all hover:bg-white/20 text-sm">
+                SCARICA TXT
               </button>
             )}
           </div>
@@ -172,19 +167,19 @@ export default function Home() {
             RPO Divider
           </h2>
           <p className="text-gray-200 text-xs mb-8 pr-10 relative">Separa la risposta del Registro in liste RPO e liste OK.</p>
-          <form onSubmit={handleDividerSubmit} className="space-y-6 relative">
-            <label className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
-              <span className="px-4 py-2 rounded-xl text-[10px] font-black uppercase bg-white text-black">Scegli File</span>
-              <input type="file" name="txtFile" required onChange={e => setFileNameTxt(e.target.files[0]?.name || "nessun file")} className="hidden" />
-              <span className="text-xs truncate flex-1">{fileNameTxt}</span>
+          <form onSubmit={handleDividerSubmit} className="space-y-4 relative">
+            <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
+              <span className="text-[10px] font-bold uppercase">File RPO:</span>
+              <input type="file" name="txtFile" required onChange={e => setFileNameTxt(e.target.files[0]?.name || "")} className="hidden" />
+              <span className="text-[10px] truncate max-w-[150px] opacity-40">{fileNameTxt}</span>
             </label>
             <button type="submit" disabled={loading} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest transition-transform active:scale-95 disabled:opacity-50">
               {loading ? "DIVISIONE..." : "DIVIDI LISTE"}
             </button>
             {dividerFiles && (
               <div className="grid grid-cols-2 gap-4 animate-in fade-in">
-                <button type="button" onClick={() => saveAs(dividerFiles.txtUno, `rpo_1_${dividerFiles.fileName}.txt`)} className="py-3 bg-white/10 border border-white/20 rounded-xl text-[10px] font-bold">📄 RPO (1)</button>
-                <button type="button" onClick={() => saveAs(dividerFiles.txtZero, `rpo_0_${dividerFiles.fileName}.txt`)} className="py-3 bg-white text-black rounded-xl text-[10px] font-bold">📄 OK (0)</button>
+                <button type="button" onClick={() => saveAs(dividerFiles.txtUno, `rpo_1_${dividerFiles.fileName}.txt`)} className="py-4 bg-white/10 border border-white/20 text-white rounded-2xl font-black text-xs hover:bg-white/20 transition-all">RPO (1)</button>
+                <button type="button" onClick={() => saveAs(dividerFiles.txtZero, `rpo_0_${dividerFiles.fileName}.txt`)} className="py-4 bg-white/10 border border-white/20 text-white rounded-2xl font-black text-xs hover:bg-white/20 transition-all">OK (0)</button>
               </div>
             )}
           </form>
@@ -223,7 +218,7 @@ export default function Home() {
       </main>
 
       <footer className="mt-24 opacity-30 text-[9px] tracking-[0.5em] uppercase font-bold text-center">
-        FENIX GROUP RPO TOOL SUITE - PRIVATE ACCESS © 2026
+        POWERED AND BUILDED BY REALINDI®DEN © 2026
       </footer>
     </div>
   );
