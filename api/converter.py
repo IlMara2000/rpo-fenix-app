@@ -19,55 +19,53 @@ class handler(BaseHTTPRequestHandler):
                 return
 
             file_data = form['excel'].file.read()
+            # Leggiamo tutto come stringa per evitare formati scientifici
             df = pd.read_excel(io.BytesIO(file_data), engine='openpyxl', header=None, dtype=str)
             
             numbers = set()
 
             for row in df.values:
                 for cell in row:
-                    s = str(cell).strip().lower()
-                    if not s or s == 'nan' or s == 'none': continue
+                    s = str(cell).strip()
+                    if not s or s.lower() in ['nan', 'none']: continue
                     
-                    # 1. Teniamo solo le cifre
+                    # 1. Teniamo SOLO le cifre decimali
                     clean_val = "".join(filter(str.isdigit, s))
                     if not clean_val: continue
 
-                    # 2. LOGICA ANTI-ERRORE 77 (Prefissi)
-                    
-                    # Rimuove 0039
+                    # 2. RIMOZIONE PREFISSI (Regola RPO: No 0039, No prefisso nazione)
                     if clean_val.startswith('0039'):
                         clean_val = clean_val[4:]
-                    
-                    # Rimuove il 39 se il numero totale e' di 12 cifre (es. 39 347 1234567)
-                    # Un cellulare italiano pulito è lungo 10 cifre. Se è 12, quel 39 è di troppo.
-                    if len(clean_val) == 12 and clean_val.startswith('39'):
-                        clean_val = clean_val[2:]
-                    
-                    # Rimuove il 39 se il numero totale e' di 11 cifre (es. 39 02 1234567)
-                    if len(clean_val) == 11 and clean_val.startswith('39'):
-                        clean_val = clean_val[2:]
+                    elif clean_val.startswith('39') and len(clean_val) >= 11:
+                        # Se tolgo 39 e rimane un numero che inizia con 3 (mobile) o 0 (fisso)
+                        temp = clean_val[2:]
+                        if temp.startswith('3') or temp.startswith('0'):
+                            clean_val = temp
 
-                    # 3. Validazione finale: 
-                    # L'RPO accetta solo numerazioni nazionali (8-11 cifre dopo la pulizia)
-                    # e NON deve esserci traccia di prefisso internazionale.
+                    # 3. VALIDAZIONE RIGIDA
+                    # Un numero italiano (fisso o mobile) senza prefisso va da 8 a 11 cifre.
+                    # Deve iniziare con '0' (fisso) o '3' (mobile). 
+                    # Se inizia con '00' dopo la pulizia, è un prefisso estero e va scartato (Error 77).
                     if 8 <= len(clean_val) <= 11:
-                        # Un'ultima verifica: se dopo la pulizia inizia ancora con 00, e' un errore
-                        if not clean_val.startswith('00'):
+                        if (clean_val.startswith('0') and not clean_val.startswith('00')) or clean_val.startswith('3'):
                             numbers.add(clean_val)
 
             if not numbers:
                 raise Exception("Nessuna numerazione valida trovata")
 
-            # Ordinamento e terminatore CRLF obbligatorio
-            final_list = sorted(list(numbers))
-            final_output = "\r\n".join(final_list) + "\r\n"
+            # 4. FORMATTAZIONE ASCII + CRLF (Regola RFC1951 / ASCII)
+            # Ordine alfabetico e rimozione duplicati (grazie al set)
+            sorted_list = sorted(list(numbers))
+            # Usiamo \r\n per il Carriage Return + Line Feed richiesto
+            final_output = "\r\n".join(sorted_list) + "\r\n"
 
             self.send_response(200)
+            # Forziamo ASCII e nome file tutto minuscolo come richiesto
             self.send_header('Content-type', 'text/plain; charset=us-ascii')
-            self.send_header('Content-Disposition', 'attachment; filename="da_inviare.txt"')
+            self.send_header('Content-Disposition', 'attachment; filename="lista.txt"')
             self.end_headers()
             
-            # Invio pulito
+            # Scrittura in ASCII puro (scarta caratteri non compatibili)
             self.wfile.write(final_output.encode('ascii', 'ignore'))
 
         except Exception as e:
