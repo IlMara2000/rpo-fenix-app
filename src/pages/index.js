@@ -167,7 +167,7 @@ export default function Home() {
           </p>
           <form onSubmit={handleScannerSubmit} className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
-              <span className="text-[10px] font-bold uppercase">TXT RPO (1):</span>
+              <span className="text-[10px] font-bold uppercase">TXT RPO:</span>
               <input type="file" accept=".txt" className="hidden" onChange={e => {setScannerTxt(e.target.files[0]); setNameScannerTxt(e.target.files[0]?.name || "nessun file");}} />
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{nameScannerTxt}</span>
             </label>
