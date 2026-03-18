@@ -1,9 +1,7 @@
 import ExcelJS from 'exceljs';
-import JSZip from 'jszip';
-
 
 // ===============================
-// 🔵 1. CONVERTER (TXT + ZIP)
+// 🔵 1. CONVERTER (SOLO TXT)
 // ===============================
 export const runRpoConverter = async (file) => {
   const workbook = new ExcelJS.Workbook();
@@ -42,21 +40,15 @@ export const runRpoConverter = async (file) => {
 
   const finalContent = Array.from(numbers).join('\r\n') + '\r\n';
 
-  const zip = new JSZip();
   const fileName = file.name
     .split('.')[0]
     .toLowerCase()
     .replace(/\s/g, '_');
 
-  zip.file(`${fileName}.txt`, finalContent);
-
-  const zipBlob = await zip.generateAsync({ type: 'blob' });
-
   return {
     txt: new Blob([finalContent], {
       type: 'text/plain;charset=utf-8'
     }),
-    zip: zipBlob,
     fileName
   };
 };
@@ -87,7 +79,7 @@ export const runRpoScanner = async (txtFile, excelFile) => {
   worksheet.eachRow((row) => {
     let matchFound = false;
 
-    // ⚠️ puoi ottimizzare qui se sai la colonna
+    // Controllo celle
     row.eachCell((cell) => {
       if (numberSet.has(String(cell.value).trim())) {
         matchFound = true;
