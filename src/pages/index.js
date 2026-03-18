@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { saveAs } from 'file-saver';
-import { runRpoDivider } from '../Logic/divider'; 
-import { runRpoSplitter } from '../Logic/splitter'; 
+import { runRpoDivider } from '../logic/divider'; 
+import { runRpoSplitter } from '../logic/splitter'; 
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
@@ -13,16 +13,16 @@ export default function Home() {
   const [tempFile, setTempFile] = useState(null);
   const [fileNameExcel, setFileNameExcel] = useState("nessun file selezionato");
 
-  // STEP 2 (NUOVO)
+  // STEP 2 (Divider nuovo)
   const [dividerFiles, setDividerFiles] = useState(null);
   const [splitPoint, setSplitPoint] = useState("");
   const [nameDividerTxt, setNameDividerTxt] = useState("nessun file selezionato");
 
-  // STEP 3 (EX STEP 2)
+  // STEP 3 (Splitter vecchio)
   const [splitterResult, setSplitterResult] = useState(null);
   const [nameSplitterTxt, setNameSplitterTxt] = useState("nessun file selezionato");
 
-  // STEP 4 (EX STEP 3)
+  // STEP 4 (Scanner)
   const [scannerTxt, setScannerTxt] = useState(null);
   const [scannerExcel, setScannerExcel] = useState(null);
   const [scannerResult, setScannerResult] = useState(null);
@@ -112,14 +112,14 @@ export default function Home() {
 
       <main className="w-full max-w-[1400px] grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 items-stretch">
         
-        {/* STEP 1 - CONVERTER */}
+        {/* STEP 1 */}
         <section className="box-lavoro relative overflow-hidden">
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">1</span>
             Excel Converter
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
-            Estrae i numeri dall'Excel e genera lo <b>.ZIP</b>. Attenzione al limite crediti (Error 63).
+            Estrae i numeri dall'Excel e genera automaticamente l'archivio <b>.ZIP</b> pronto per il portale RPO. 
           </p>
           <div className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
@@ -138,14 +138,14 @@ export default function Home() {
           </div>
         </section>
 
-        {/* STEP 2 - DIVIDER (TAGLIO RIGA) */}
+        {/* STEP 2 - IL NUOVO DIVIDER */}
         <section className="box-lavoro relative overflow-hidden">
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">2</span>
             TXT Divider
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
-            Taglia il TXT alla riga scelta per non superare il limite di credito rimanente.
+            Taglia il file TXT dalla riga scelta in poi per evitare l'<b>Error 63</b>.
           </p>
           <form onSubmit={handleDividerSubmit} className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
@@ -153,27 +153,33 @@ export default function Home() {
               <input type="file" name="txtToDivide" required className="hidden" onChange={e => setNameDividerTxt(e.target.files[0]?.name || "nessun file")} />
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{nameDividerTxt}</span>
             </label>
-            <input type="number" placeholder="RIGA DI TAGLIO (es. 32000)" className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white" value={splitPoint} onChange={e => setSplitPoint(e.target.value)} />
+            <input 
+              type="number" 
+              placeholder="RIGA DI TAGLIO (es. 32335)" 
+              className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white placeholder-white/20 focus:outline-none focus:border-red-500"
+              value={splitPoint}
+              onChange={(e) => setSplitPoint(e.target.value)}
+            />
             <button type="submit" disabled={loading} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest active:scale-95 transition-all">
               DIVIDI LISTA
             </button>
             {dividerFiles && (
               <div className="grid grid-cols-1 gap-2">
-                <button type="button" onClick={() => saveAs(dividerFiles.fileA, `${dividerFiles.originalName}_PARTE_1.txt`)} className="py-3 bg-black border border-red-500/40 text-red-500 rounded-2xl font-black text-[10px]">PARTE 1 ({dividerFiles.countA})</button>
-                <button type="button" onClick={() => saveAs(dividerFiles.fileB, `${dividerFiles.originalName}_PARTE_2.txt`)} className="py-3 bg-black border border-red-500/40 text-red-500 rounded-2xl font-black text-[10px]">PARTE 2 ({dividerFiles.countB})</button>
+                <button type="button" onClick={() => saveAs(dividerFiles.fileA, `${dividerFiles.originalName}_PARTE1.txt`)} className="py-3 bg-black border border-red-500/40 text-red-500 rounded-2xl font-black text-[10px]">PARTE 1 ({dividerFiles.countA})</button>
+                <button type="button" onClick={() => saveAs(dividerFiles.fileB, `${dividerFiles.originalName}_PARTE2.txt`)} className="py-3 bg-black border border-red-500/40 text-red-500 rounded-2xl font-black text-[10px]">PARTE 2 ({dividerFiles.countB})</button>
               </div>
             )}
           </form>
         </section>
         
-        {/* STEP 3 - CLEANER (EX DIVIDER 0/1) */}
+        {/* STEP 3 - EX STEP 2 (CLEANER) */}
         <section className="box-lavoro relative overflow-hidden">
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">3</span>
             TXT Cleaner
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
-            Carica il file TXT restituito dal Registro. Separerà i numeri in <b>OK (0)</b> e <b>RPO (1)</b>.
+            Separa i numeri in <b>OK (chiamabili)</b> e <b>RPO (iscritti)</b> caricando il file restituito dal Registro.
           </p>
           <form onSubmit={handleSplitterSubmit} className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
@@ -193,14 +199,14 @@ export default function Home() {
           </form>
         </section>
 
-        {/* STEP 4 - SCANNER */}
+        {/* STEP 4 - EX STEP 3 (SCANNER) */}
         <section className="box-lavoro relative overflow-hidden border-red-500/40">
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/40 flex items-center justify-center font-black">4</span>
             Excel Scanner
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
-            Confronta l'Excel originale con il file degli iscritti. Le righe verranno <b>annerite</b>.
+            Confronta l'Excel originale con il file degli iscritti. Le righe corrispondenti verranno <b>annerite</b>.
           </p>
           <form onSubmit={handleScannerSubmit} className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
@@ -227,7 +233,7 @@ export default function Home() {
       </main>
 
       <footer className="mt-24 opacity-20 text-[8px] tracking-[0.8em] uppercase font-bold text-center">
-        BUILDED BY REALINDI®DEN SYSTEM © 2026
+        REALINDI®DEN SYSTEM © 2026
       </footer>
     </div>
   );
