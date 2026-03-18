@@ -103,7 +103,7 @@ export default function Home() {
         <section className="box-lavoro relative overflow-hidden">
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">1</span>
-            RPO Converter
+            Excel Converter
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
             Estrae i numeri dall'Excel e crea il TXT pulito. <br/>
@@ -130,7 +130,7 @@ export default function Home() {
         <section className="box-lavoro relative overflow-hidden">
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">2</span>
-            RPO Divider
+            TXT Divider
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
             Carica il file TXT restituito dal Registro. <br/>
@@ -158,7 +158,7 @@ export default function Home() {
         <section className="box-lavoro relative overflow-hidden border-red-500/40">
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/40 flex items-center justify-center font-black">3</span>
-            RPO Scanner
+            TXT to Excel Scanner
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
             Confronta l'Excel originale con il file degli iscritti.<br/>
