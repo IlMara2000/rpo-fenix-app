@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { saveAs } from 'file-saver';
-import { runRpoConverter } from '../logic/converter';
 import { runRpoDivider } from '../logic/divider'; 
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ msg: 'FENIX GROUP REAL ESTATE © 2026', type: 'info' });
   
-  // STATI SEZIONE 1 (Converter)
+  // STATI SEZIONE 1 (Converter Python)
   const [converterFiles, setConverterFiles] = useState(null);
   const [tempFile, setTempFile] = useState(null);
   const [fileNameExcel, setFileNameExcel] = useState("nessun file selezionato");
@@ -25,18 +24,32 @@ export default function Home() {
   const [nameScannerExcel, setNameScannerExcel] = useState("nessun file selezionato");
 
   // ==========================================
-  // 🔵 LOGICA 1: CONVERTER (Client-side JS)
+  // 🔵 LOGICA 1: CONVERTER (Server-side PYTHON API)
   // ==========================================
   const handleConverterSubmit = async () => {
     if (!tempFile) return;
     setLoading(true);
-    setStatus({ msg: "ELABORAZIONE EXCEL...", type: 'red' });
+    setStatus({ msg: "PYTHON CONVERTER START...", type: 'red' });
+    
     try {
-      const res = await runRpoConverter(tempFile);
-      setConverterFiles(res);
-      setStatus({ msg: "FILE PRONTO PER L'RPO!", type: 'yellow' });
+      const formData = new FormData();
+      formData.append('excel', tempFile);
+
+      const response = await fetch('/api/converter', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Errore durante la conversione server');
+
+      const blob = await response.blob();
+      const fileName = tempFile.name.split('.')[0].toLowerCase().replace(/\s/g, '_');
+      
+      setConverterFiles({ txt: blob, fileName: fileName });
+      setStatus({ msg: "FILE PRONTO PER L'RPO (Via Python)!", type: 'yellow' });
     } catch (e) { 
-      setStatus({ msg: "ERRORE CONVERSIONE", type: 'red' });
+      console.error(e);
+      setStatus({ msg: "ERRORE CONVERSIONE PYTHON", type: 'red' });
     }
     setLoading(false);
   };
@@ -105,7 +118,6 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
 
-      {/* HEADER */}
       <header className="w-full max-w-4xl mb-12 flex flex-col items-center">
         <img src="/logo.png" alt="Logo" className="h-[156px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] mb-6" />
         <div className="bg-black/60 backdrop-blur-xl p-4 rounded-2xl border border-white/20 shadow-2xl shadow-black/40">
@@ -115,14 +127,14 @@ export default function Home() {
 
       <main className="w-full max-w-[1400px] grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
         
-        {/* STEP 1: CONVERTER */}
+        {/* STEP 1: CONVERTER PYTHON */}
         <section className="box-lavoro relative bg-black/40 backdrop-blur-md border border-white/10 p-8 rounded-3xl overflow-hidden transition-all hover:border-white/30">
           <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.05] select-none">01</div>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3 relative">
             <span className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-black shadow-lg">1</span>
             RPO Converter
           </h2>
-          <p className="text-gray-200 text-xs mb-8 pr-10 relative">Genera il file TXT pulito per l'invio al Registro delle Opposizioni.</p>
+          <p className="text-gray-200 text-xs mb-8 pr-10 relative">Genera il file TXT pulito per l'invio via Python.</p>
           <div className="space-y-4 relative">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
               <span className="text-[10px] font-bold uppercase">Excel Base:</span>
@@ -130,7 +142,7 @@ export default function Home() {
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{fileNameExcel}</span>
             </label>
             <button onClick={handleConverterSubmit} disabled={loading || !tempFile} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest transition-transform active:scale-95 disabled:opacity-50">
-              {loading ? "ELABORAZIONE..." : "CREA FILE"}
+              {loading ? "PYTHON ELAB..." : "CREA FILE"}
             </button>
             {converterFiles && (
               <button onClick={() => saveAs(converterFiles.txt, `perinvio_${converterFiles.fileName}.txt`)} className="w-full py-4 bg-white/10 border border-white/20 text-white rounded-2xl font-black text-xs hover:bg-white/20 transition-all">
