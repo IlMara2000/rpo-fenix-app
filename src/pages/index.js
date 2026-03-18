@@ -20,48 +20,29 @@ export default function Home() {
   const [nameScannerTxt, setNameScannerTxt] = useState("nessun file selezionato");
   const [nameScannerExcel, setNameScannerExcel] = useState("nessun file selezionato");
 
-  // ==========================================
-  // 🔵 LOGICA 1: CONVERTER (CON DIAGNOSTICA)
-  // ==========================================
   const handleConverterSubmit = async () => {
     if (!tempFile) return;
     setLoading(true);
     setStatus({ msg: "INVIO AL SERVER PYTHON...", type: 'red' });
-    
     try {
       const formData = new FormData();
       formData.append('excel', tempFile);
-
-      const response = await fetch('/api/converter', {
-        method: 'POST',
-        body: formData,
-      });
-
-      // Se il server risponde con un errore (es. 500 o 404)
+      const response = await fetch('/api/converter', { method: 'POST', body: formData });
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Server Error: ${response.status} - ${errorText}`);
+        throw new Error(errorText);
       }
-
       const blob = await response.blob();
-      if (blob.size < 10) throw new Error("Il file generato è vuoto!");
-
       const fileName = tempFile.name.split('.')[0].toLowerCase().replace(/\s/g, '_');
-      
       setConverterFiles({ txt: blob, fileName: fileName });
       setStatus({ msg: "CONVERSIONE RIUSCITA!", type: 'yellow' });
     } catch (e) { 
-      console.error(e);
-      // SCRIVE L'ERRORE ESATTO SULLO SCHERMO
-      setStatus({ msg: `ERRORE: ${e.message.substring(0, 40)}...`, type: 'red' });
-      alert("DETTAGLI ERRORE: " + e.message); // Questo ti aiuta a capire dal cellulare
+      setStatus({ msg: "ERRORE CONVERSIONE", type: 'red' });
+      alert("DETTAGLI: " + e.message);
     }
     setLoading(false);
   };
 
-  // ==========================================
-  // 🟢 LOGICA 2: DIVIDER
-  // ==========================================
   const handleDividerSubmit = async (e) => {
     e.preventDefault();
     const txt = e.target.txtFile.files[0];
@@ -79,45 +60,30 @@ export default function Home() {
     setLoading(false);
   };
 
-  // ==========================================
-  // 🟣 LOGICA 3: SCANNER
-  // ==========================================
   const handleScannerSubmit = async (e) => {
     e.preventDefault();
     if (!scannerTxt || !scannerExcel) return;
     setLoading(true);
     setStatus({ msg: 'BONIFICA IN CORSO...', type: 'red' });
-
     try {
       const formData = new FormData();
       formData.append('txt', scannerTxt);
       formData.append('excel', scannerExcel);
-
-      const response = await fetch('/api/scanner', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Errore Scanner: ${errorText}`);
-      }
-
+      const response = await fetch('/api/scanner', { method: 'POST', body: formData });
+      if (!response.ok) throw new Error('Errore Scanner');
       const blob = await response.blob();
       const matches = response.headers.get('X-Matches') || "0";
-
       setScannerResult({ blob, count: matches });
       setStatus({ msg: `PULIZIA COMPLETATA: ${matches} RIGHE`, type: 'yellow' });
     } catch (err) {
       setStatus({ msg: 'ERRORE SCANNER', type: 'red' });
-      alert(err.message);
     }
     setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center py-12 px-6 text-white" 
-         style={{ background: 'linear-gradient(180deg, #ee5556 0%, #000000 75%)', backgroundAttachment: 'fixed' }}>
+         style={{ background: 'linear-gradient(180deg, #4b1414 0%, #000000 40%, #000000 100%)', backgroundAttachment: 'fixed' }}>
       
       <Head>
         <title>FENIX GROUP | RPO TOOL SUITE</title>
@@ -125,96 +91,105 @@ export default function Home() {
       </Head>
 
       <header className="w-full max-w-4xl mb-12 flex flex-col items-center">
-        <img src="/logo.png" alt="Logo" className="h-[156px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] mb-6" />
-        <div className="bg-black/60 backdrop-blur-xl p-4 rounded-2xl border border-white/20 shadow-2xl shadow-black/40 text-center">
-          <span className="font-bold uppercase tracking-widest block px-4">{status.msg}</span>
+        <img src="/logo.png" alt="Logo" className="h-[156px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] mb-6" />
+        <div className="bg-black/80 backdrop-blur-xl p-4 rounded-2xl border border-red-500/30 shadow-2xl text-center">
+          <span className="font-bold uppercase tracking-widest block px-4 text-xs md:text-sm">{status.msg}</span>
         </div>
       </header>
 
       <main className="w-full max-w-[1400px] grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
         
         {/* STEP 1 */}
-        <section className="box-lavoro relative bg-black/40 backdrop-blur-md border border-white/10 p-8 rounded-3xl overflow-hidden">
+        <section className="box-lavoro relative overflow-hidden">
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-black">1</span>
+            <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">1</span>
             RPO Converter
           </h2>
-          <p className="text-gray-200 text-xs mb-8">Inserisci la lista Excel e genera il file TXT, RICORDA di comprimere il file in .ZIP per l'invio all'RPO.</p>
+          <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
+            Estrae i numeri dall'Excel e crea il TXT pulito. <br/>
+            <b>IMPORTANTE:</b> Una volta scaricato, comprimi il file in <b>.ZIP</b> prima di caricarlo sul portale RPO.
+          </p>
           <div className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
               <span className="text-[10px] font-bold uppercase">Excel Base:</span>
               <input type="file" className="hidden" onChange={e => {setTempFile(e.target.files[0]); setFileNameExcel(e.target.files[0]?.name || "nessun file");}} />
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{fileNameExcel}</span>
             </label>
-            <button onClick={handleConverterSubmit} disabled={loading || !tempFile} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest disabled:opacity-50">
-              {loading ? "ELABORAZIONE..." : "CREA FILE"}
+            <button onClick={handleConverterSubmit} disabled={loading || !tempFile} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50">
+              {loading ? "ELABORAZIONE..." : "GENERA TXT"}
             </button>
             {converterFiles && (
-              <button onClick={() => saveAs(converterFiles.txt, `perinvio_${converterFiles.fileName}.txt`)} className="w-full py-4 bg-white/10 border border-white/20 text-white rounded-2xl font-black text-xs">
-                SCARICA TXT
+              <button onClick={() => saveAs(converterFiles.txt, `perinvio_${converterFiles.fileName}.txt`)} className="w-full py-4 bg-red-500/10 border border-red-500/40 text-red-400 rounded-2xl font-black text-xs hover:bg-red-500/20 transition-all">
+                SCARICA TXT PRONTO
               </button>
             )}
           </div>
         </section>
 
         {/* STEP 2 */}
-        <section className="box-lavoro relative bg-black/40 backdrop-blur-md border border-white/10 p-8 rounded-3xl overflow-hidden">
+        <section className="box-lavoro relative overflow-hidden">
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-black">2</span>
+            <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">2</span>
             RPO Divider
           </h2>
-          <p className="text-gray-200 text-xs mb-8">Divide in due il file TXT (0 = Numeri Puliti / 1 = Numeri nell'RPO).</p>
+          <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
+            Carica il file TXT restituito dal Registro. <br/>
+            Separerà i numeri in <b>OK (chiamabili)</b> e <b>RPO (iscritti)</b>.
+          </p>
           <form onSubmit={handleDividerSubmit} className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
               <span className="text-[10px] font-bold uppercase">File RPO:</span>
               <input type="file" name="txtFile" required onChange={e => setFileNameTxt(e.target.files[0]?.name || "nessun file")} className="hidden" />
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{fileNameTxt}</span>
             </label>
-            <button type="submit" disabled={loading} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest">
+            <button type="submit" disabled={loading} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest active:scale-95 transition-all">
               DIVIDI LISTE
             </button>
             {dividerFiles && (
               <div className="grid grid-cols-2 gap-4">
-                <button type="button" onClick={() => saveAs(dividerFiles.txtUno, `rpo_1.txt`)} className="py-4 bg-white/10 border border-white/20 text-white rounded-2xl font-black text-xs">RPO (1)</button>
-                <button type="button" onClick={() => saveAs(dividerFiles.txtZero, `ok_0.txt`)} className="py-4 bg-white/10 border border-white/20 text-white rounded-2xl font-black text-xs">OK (0)</button>
+                <button type="button" onClick={() => saveAs(dividerFiles.txtUno, `iscritti_rpo.txt`)} className="py-4 bg-black border border-red-500/40 text-red-500 rounded-2xl font-black text-[10px]">LISTA NERA (1)</button>
+                <button type="button" onClick={() => saveAs(dividerFiles.txtZero, `numeri_ok.txt`)} className="py-4 bg-green-500/20 border border-green-500/40 text-green-400 rounded-2xl font-black text-[10px]">LISTA OK (0)</button>
               </div>
             )}
           </form>
         </section>
 
         {/* STEP 3 */}
-        <section className="box-lavoro relative bg-black/40 backdrop-blur-md border border-white/30 p-8 rounded-3xl overflow-hidden">
+        <section className="box-lavoro relative overflow-hidden border-red-500/40">
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-black">3</span>
+            <span className="w-10 h-10 rounded-xl bg-red-500/40 flex items-center justify-center font-black">3</span>
             RPO Scanner
           </h2>
-          <p className="text-gray-200 text-xs mb-8">Bonifica la lista Excel colorando le Righe di Nero.</p>
+          <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
+            Confronta l'Excel originale con il file degli iscritti.<br/>
+            Le righe corrispondenti verranno <b>annerite integralmente</b>.
+          </p>
           <form onSubmit={handleScannerSubmit} className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
-              <span className="text-[10px] font-bold uppercase">TXT RPO:</span>
+              <span className="text-[10px] font-bold uppercase">TXT RPO (1):</span>
               <input type="file" accept=".txt" className="hidden" onChange={e => {setScannerTxt(e.target.files[0]); setNameScannerTxt(e.target.files[0]?.name || "nessun file");}} />
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{nameScannerTxt}</span>
             </label>
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
-              <span className="text-[10px] font-bold uppercase">Excel Base:</span>
+              <span className="text-[10px] font-bold uppercase">Excel Originale:</span>
               <input type="file" accept=".xlsx" className="hidden" onChange={e => {setScannerExcel(e.target.files[0]); setNameScannerExcel(e.target.files[0]?.name || "nessun file");}} />
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{nameScannerExcel}</span>
             </label>
-            <button type="submit" disabled={loading || !scannerTxt || !scannerExcel} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-2xl">
-              AVVIA SCANNER
+            <button type="submit" disabled={loading || !scannerTxt || !scannerExcel} className="w-full py-4 bg-red-500 text-white font-black rounded-2xl shadow-2xl hover:bg-red-600 transition-all">
+              AVVIA BONIFICA
             </button>
           </form>
           {scannerResult && (
-            <button onClick={() => saveAs(scannerResult.blob, `PULITO.xlsx`)} className="w-full mt-4 py-4 bg-green-500 text-white font-black rounded-2xl animate-bounce text-sm">
-              SCARICA ({scannerResult.count})
+            <button onClick={() => saveAs(scannerResult.blob, `EXCEL_BONIFICATO.xlsx`)} className="w-full mt-4 py-4 bg-green-600 text-white font-black rounded-2xl animate-pulse text-sm">
+              SCARICA EXCEL PULITO ({scannerResult.count})
             </button>
           )}
         </section>
 
       </main>
 
-      <footer className="mt-24 opacity-30 text-[9px] tracking-[0.5em] uppercase font-bold text-center">
-        POWERED AND BUILDED BY REALINDI®DEN © 2026
+      <footer className="mt-24 opacity-20 text-[8px] tracking-[0.8em] uppercase font-bold text-center">
+        REALINDI®DEN SYSTEM © 2026
       </footer>
     </div>
   );
