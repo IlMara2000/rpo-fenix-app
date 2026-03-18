@@ -155,7 +155,7 @@ export default function Home() {
                 onClick={() => saveAs(scannerResult.blob, `EXCEL_ANNERITO_${new Date().getTime()}.xlsx`)}
                 className="w-full py-3 bg-green-600 rounded-xl font-bold hover:bg-green-500 transition"
               >
-                SCARICA EXCEL BONIFICATO
+                SCARICA EXCEL PULITO
               </button>
             </div>
           )}
