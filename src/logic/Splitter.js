@@ -3,8 +3,8 @@ export const runRpoSplitter = async (txtFile) => {
     const text = await txtFile.text();
     const lines = text.split(/\r?\n/);
 
-    const listOne = []; 
-    const listZero = []; 
+    const listOne = []; // Iscritti (1)
+    const listZero = []; // OK (0)
 
     lines.forEach(line => {
       if (!line.trim()) return;
