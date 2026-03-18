@@ -1,55 +1,29 @@
-export const runRpoDivider = async (txtFile) => {
+export const runRpoDivider = async (txtFile, splitLine) => {
   try {
-    // leggiamo il file txt
     const text = await txtFile.text();
-    const lines = text.split(/\r?\n/);
+    // Dividiamo il file in righe, rimuovendo righe vuote accidentali
+    const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+    
+    const index = parseInt(splitLine);
+    
+    // Parte A: dalla riga 1 alla riga X
+    const part1 = lines.slice(0, index);
+    // Parte B: dalla riga X in poi
+    const part2 = lines.slice(index);
 
-    const listOne = []; // numeri con ,1,
-    const listZero = []; // numeri con ,0,
-
-    lines.forEach(line => {
-      if (!line.trim()) return;
-
-      const parts = line.split(',');
-
-      const phone = parts[0]?.trim();
-      const status = parts[1]?.trim();
-
-      if (!phone || !status) return;
-
-      if (status === '1') {
-        listOne.push(phone);
-      }
-
-      if (status === '0') {
-        listZero.push(phone);
-      }
-    });
-
-    // creiamo i due txt
-    const txtOneContent = listOne.join('\r\n');
-    const txtZeroContent = listZero.join('\r\n');
-
-    const blobOne = new Blob(
-      [txtOneContent],
-      { type: 'text/plain;charset=utf-8' }
-    );
-
-    const blobZero = new Blob(
-      [txtZeroContent],
-      { type: 'text/plain;charset=utf-8' }
-    );
+    const blob1 = new Blob([part1.join('\r\n') + '\r\n'], { type: 'text/plain;charset=utf-8' });
+    const blob2 = new Blob([part2.join('\r\n') + '\r\n'], { type: 'text/plain;charset=utf-8' });
 
     return {
       success: true,
-      txtUno: blobOne,
-      txtZero: blobZero,
-      foundCount: listOne.length,
-      fileName: txtFile.name.replace('.txt','')
+      fileA: blob1,
+      fileB: blob2,
+      countA: part1.length,
+      countB: part2.length,
+      originalName: txtFile.name.replace('.txt', '')
     };
-
   } catch (err) {
-    console.error("Errore Divider:", err);
+    console.error("Errore nel taglio del file:", err);
     throw err;
   }
 };
