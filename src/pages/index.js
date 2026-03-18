@@ -163,7 +163,7 @@ export default function Home() {
             <span className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-black">2</span>
             RPO Divider
           </h2>
-          <p className="text-gray-200 text-xs mb-8">Separa il file txt in due 0 = numeri puliti e 1 = numeri nell'RPO.</p>
+          <p className="text-gray-200 text-xs mb-8">Divide in due il file txt (0 = Numeri Puliti / 1 = Numeri nell'RPO).</p>
           <form onSubmit={handleDividerSubmit} className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
               <span className="text-[10px] font-bold uppercase">File RPO:</span>
@@ -188,7 +188,7 @@ export default function Home() {
             <span className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-black">3</span>
             RPO Scanner
           </h2>
-          <p className="text-gray-200 text-xs mb-8">Bonifica l'Excel annerendo le righe.</p>
+          <p className="text-gray-200 text-xs mb-8">Bonifica la lista Excel colorando le Righe di Nero.</p>
           <form onSubmit={handleScannerSubmit} className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
               <span className="text-[10px] font-bold uppercase">TXT RPO:</span>
