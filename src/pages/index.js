@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { saveAs } from 'file-saver';
-import ExcelJS from 'exceljs'; 
 import { runRpoConverter } from '../logic/converter';
 import { runRpoDivider } from '../logic/divider'; 
 
@@ -18,7 +17,7 @@ export default function Home() {
   const [dividerFiles, setDividerFiles] = useState(null);
   const [fileNameTxt, setFileNameTxt] = useState("nessun file selezionato");
 
-  // STATI SEZIONE 3 (Scanner)
+  // STATI SEZIONE 3 (Scanner Python)
   const [scannerTxt, setScannerTxt] = useState(null);
   const [scannerExcel, setScannerExcel] = useState(null);
   const [scannerResult, setScannerResult] = useState(null);
@@ -26,7 +25,7 @@ export default function Home() {
   const [nameScannerExcel, setNameScannerExcel] = useState("nessun file selezionato");
 
   // ==========================================
-  // 🔵 LOGICA 1: CONVERTER
+  // 🔵 LOGICA 1: CONVERTER (Client-side JS)
   // ==========================================
   const handleConverterSubmit = async () => {
     if (!tempFile) return;
@@ -43,7 +42,7 @@ export default function Home() {
   };
 
   // ==========================================
-  // 🟢 LOGICA 2: DIVIDER
+  // 🟢 LOGICA 2: DIVIDER (Client-side JS)
   // ==========================================
   const handleDividerSubmit = async (e) => {
     e.preventDefault();
@@ -64,54 +63,35 @@ export default function Home() {
   };
 
   // ==========================================
-  // 🟣 LOGICA 3: SCANNER
+  // 🟣 LOGICA 3: SCANNER (Server-side PYTHON API)
   // ==========================================
   const handleScannerSubmit = async (e) => {
     e.preventDefault();
     if (!scannerTxt || !scannerExcel) return;
 
     setLoading(true);
-    setStatus({ msg: 'BONIFICA INTEGRALE IN CORSO...', type: 'red' });
+    setStatus({ msg: 'PYTHON IS WORKING...', type: 'red' });
 
     try {
-      const txtContent = await scannerTxt.text();
-      const rpoSet = new Set(
-        txtContent.split(/\r?\n/)
-          .map(n => n.trim().replace(/\D/g, ''))
-          .filter(n => n.length >= 7)
-      );
+      const formData = new FormData();
+      formData.append('txt', scannerTxt);
+      formData.append('excel', scannerExcel);
 
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(await scannerExcel.arrayBuffer());
-      let totalMatches = 0;
-
-      workbook.eachSheet((sheet) => {
-        sheet.eachRow({ includeEmpty: true }, (row) => {
-          let hasMatch = false;
-          row.eachCell({ includeEmpty: false }, (cell) => {
-            const val = String(cell.value || "").replace(/\D/g, '');
-            if (val.length >= 7 && rpoSet.has(val)) hasMatch = true;
-          });
-
-          if (hasMatch) {
-            totalMatches++;
-            for (let i = 1; i <= 25; i++) {
-              const cell = row.getCell(i);
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF000000' } };
-              cell.font = { color: { argb: 'FF000000' } };
-              cell.value = cell.value; 
-            }
-          }
-        });
+      const response = await fetch('/api/scanner', {
+        method: 'POST',
+        body: formData,
       });
 
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      
-      setScannerResult({ blob, count: totalMatches });
-      setStatus({ msg: `BONIFICA ULTIMATA: ${totalMatches} RIGHE`, type: 'yellow' });
+      if (!response.ok) throw new Error('Errore server');
+
+      const blob = await response.blob();
+      const matches = response.headers.get('X-Matches') || "0";
+
+      setScannerResult({ blob, count: matches });
+      setStatus({ msg: `BONIFICA PYTHON COMPLETATA: ${matches} RIGHE`, type: 'yellow' });
     } catch (err) {
-      setStatus({ msg: 'ERRORE SCANNER', type: 'red' });
+      console.error(err);
+      setStatus({ msg: 'ERRORE SERVER PYTHON', type: 'red' });
     }
     setLoading(false);
   };
@@ -125,6 +105,7 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
 
+      {/* HEADER */}
       <header className="w-full max-w-4xl mb-12 flex flex-col items-center">
         <img src="/logo.png" alt="Logo" className="h-[156px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] mb-6" />
         <div className="bg-black/60 backdrop-blur-xl p-4 rounded-2xl border border-white/20 shadow-2xl shadow-black/40">
@@ -145,14 +126,14 @@ export default function Home() {
           <div className="space-y-4 relative">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
               <span className="text-[10px] font-bold uppercase">Excel Base:</span>
-              <input type="file" className="hidden" onChange={e => {setTempFile(e.target.files[0]); setFileNameExcel(e.target.files[0]?.name || "");}} />
+              <input type="file" className="hidden" onChange={e => {setTempFile(e.target.files[0]); setFileNameExcel(e.target.files[0]?.name || "nessun file");}} />
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{fileNameExcel}</span>
             </label>
             <button onClick={handleConverterSubmit} disabled={loading || !tempFile} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest transition-transform active:scale-95 disabled:opacity-50">
               {loading ? "ELABORAZIONE..." : "CREA FILE"}
             </button>
             {converterFiles && (
-              <button onClick={() => saveAs(converterFiles.txt, `perinvio_${converterFiles.fileName}.txt`)} className="w-full py-4 bg-white/10 border border-white/20 text-white font-black rounded-2xl shadow-lg transition-all hover:bg-white/20 text-sm">
+              <button onClick={() => saveAs(converterFiles.txt, `perinvio_${converterFiles.fileName}.txt`)} className="w-full py-4 bg-white/10 border border-white/20 text-white rounded-2xl font-black text-xs hover:bg-white/20 transition-all">
                 SCARICA TXT
               </button>
             )}
@@ -170,7 +151,7 @@ export default function Home() {
           <form onSubmit={handleDividerSubmit} className="space-y-4 relative">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
               <span className="text-[10px] font-bold uppercase">File RPO:</span>
-              <input type="file" name="txtFile" required onChange={e => setFileNameTxt(e.target.files[0]?.name || "")} className="hidden" />
+              <input type="file" name="txtFile" required onChange={e => setFileNameTxt(e.target.files[0]?.name || "nessun file")} className="hidden" />
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{fileNameTxt}</span>
             </label>
             <button type="submit" disabled={loading} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest transition-transform active:scale-95 disabled:opacity-50">
@@ -185,31 +166,31 @@ export default function Home() {
           </form>
         </section>
 
-        {/* STEP 3: SCANNER */}
+        {/* STEP 3: SCANNER PYTHON */}
         <section className="box-lavoro relative bg-black/40 backdrop-blur-md border border-white/30 p-8 rounded-3xl overflow-hidden transition-all hover:border-white/50">
           <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.05] select-none">03</div>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3 relative">
             <span className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-black shadow-lg">3</span>
             RPO Scanner
           </h2>
-          <p className="text-gray-200 text-xs mb-8 pr-10 relative">Bonifica l'Excel annerendo integralmente le righe dei numeri in lista nera.</p>
+          <p className="text-gray-200 text-xs mb-8 pr-10 relative">Bonifica l'Excel annerendo integralmente le righe dei numeri in lista nera via Python.</p>
           <form onSubmit={handleScannerSubmit} className="space-y-4 relative">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
               <span className="text-[10px] font-bold uppercase">TXT RPO:</span>
-              <input type="file" accept=".txt" className="hidden" onChange={e => {setScannerTxt(e.target.files[0]); setNameScannerTxt(e.target.files[0]?.name || "");}} />
+              <input type="file" accept=".txt" className="hidden" onChange={e => {setScannerTxt(e.target.files[0]); setNameScannerTxt(e.target.files[0]?.name || "nessun file");}} />
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{nameScannerTxt}</span>
             </label>
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
               <span className="text-[10px] font-bold uppercase">Excel Base:</span>
-              <input type="file" accept=".xlsx" className="hidden" onChange={e => {setScannerExcel(e.target.files[0]); setNameScannerExcel(e.target.files[0]?.name || "");}} />
+              <input type="file" accept=".xlsx" className="hidden" onChange={e => {setScannerExcel(e.target.files[0]); setNameScannerExcel(e.target.files[0]?.name || "nessun file");}} />
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{nameScannerExcel}</span>
             </label>
             <button type="submit" disabled={loading || !scannerTxt || !scannerExcel} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-2xl transition-all active:scale-95 disabled:opacity-50">
-              {loading ? "BONIFICA..." : "AVVIA SCANNER"}
+              {loading ? "PYTHON WORKING..." : "AVVIA SCANNER"}
             </button>
           </form>
           {scannerResult && (
-            <button onClick={() => saveAs(scannerResult.blob, `BONIFICATO_${nameScannerExcel}`)} className="w-full mt-4 py-4 bg-green-500 text-white font-black rounded-2xl shadow-lg border-2 border-green-300 animate-bounce">
+            <button onClick={() => saveAs(scannerResult.blob, `BONIFICATO_${nameScannerExcel}`)} className="w-full mt-4 py-4 bg-green-500 text-white font-black rounded-2xl shadow-lg border-2 border-green-300 animate-bounce text-sm">
               SCARICA PULITO ({scannerResult.count})
             </button>
           )}
