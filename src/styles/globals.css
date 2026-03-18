@@ -5,14 +5,13 @@
 @tailwind utilities;
 
 :root {
-  --fenix-blue: #0081FB;
-  --fenix-blue-glow: rgba(0, 129, 251, 0.4);
-  --bg-dark: #050505;
+  --fenix-red: #ee5556;
+  --bg-dark: #000000;
 }
 
-/* BODY: SFONDO PROFONDO E MODERNO */
+/* BODY: SFONDO NERO TOTALE CON SFUMATURA ROSSA SOLO IN ALTO */
 body {
-  background: radial-gradient(circle at 50% -20%, #1e3a8a 0%, var(--bg-dark) 70%) no-repeat fixed;
+  background: linear-gradient(180deg, #3a1515 0%, var(--bg-dark) 50%, var(--bg-dark) 100%) no-repeat fixed;
   color: #ffffff;
   margin: 0;
   font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
@@ -20,99 +19,38 @@ body {
   min-height: 100vh;
 }
 
-/* BOX LAVORO: GLASSMORPHISM AVANZATO */
+/* BOX LAVORO: PIÙ SCURI PER ELIMINARE L'EFFETTO BIANCO */
 .box-lavoro {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(238, 85, 86, 0.2);
   border-radius: 28px;
   padding: 35px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  transition: all 0.4s ease;
 }
 
 .box-lavoro:hover {
-  border-color: rgba(0, 129, 251, 0.3);
+  border-color: var(--fenix-red);
   transform: translateY(-4px);
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 129, 251, 0.1);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 1);
 }
 
-/* BOTTONI PRINCIPALI: EFFETTO NEON E FLUIDO */
-.bottone-blu {
-  background: linear-gradient(135deg, var(--fenix-blue) 0%, #0056b3 100%);
-  color: white;
-  font-weight: 800;
-  width: 100%;
-  padding: 18px;
-  border-radius: 16px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  cursor: pointer;
-  border: none;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 15px rgba(0, 129, 251, 0.2);
-}
-
-.bottone-blu:hover {
-  transform: scale(1.02);
-  box-shadow: 0 12px 25px var(--fenix-blue-glow);
-  filter: brightness(1.1);
-}
-
-.bottone-blu::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.3), transparent);
-  transition: all 0.6s ease;
-}
-
-.bottone-blu:hover::before {
-  left: 100%;
-}
-
-/* BOTTONI DOWNLOAD: PULITI ED ELEGANTI */
-.bottone-download {
-  background: rgba(255, 255, 255, 0.95);
-  color: #000;
-  font-weight: 800;
-  width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
-
-.bottone-download:hover {
-  background: #ffffff;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(255,255,255,0.3);
-}
-
-/* INPUT FILE: STILE TECH AGENCY */
+/* INPUT FILE: TOTAL DARK */
 input[type="file"] {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 12px;
   border-radius: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: #fff;
   cursor: pointer;
   width: 100%;
-  font-size: 0.8rem;
-  transition: all 0.3s ease;
 }
 
 input[type="file"]::file-selector-button {
-  background: var(--fenix-blue);
-  color: white;
+  background: #fff;
+  color: #000;
   border: none;
   padding: 6px 12px;
   border-radius: 8px;
@@ -120,89 +58,16 @@ input[type="file"]::file-selector-button {
   text-transform: uppercase;
   font-size: 10px;
   margin-right: 15px;
-  transition: 0.3s;
 }
 
-input[type="file"]:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--fenix-blue);
-}
+/* SCROLLBAR NERA */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #000; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--fenix-red); }
 
-/* STATUS BADGE ANIMATA */
-.status-badge {
-  background: rgba(0, 129, 251, 0.1);
-  border: 1px solid rgba(0, 129, 251, 0.3);
-  color: #60a5fa;
-  padding: 6px 16px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.dot {
-  width: 6px;
-  height: 6px;
-  background: var(--fenix-blue);
-  border-radius: 50%;
-  animation: pulse 0.5s ;
-}
-
-@keyframes pulse {
-  0% { transform: scale(0.95); opacity: 0.5; }
-  50% { transform: scale(1); opacity: 0.5; box-shadow: 0 0 10px var(--fenix-blue); }
-  100% { transform: scale(0.95); opacity: 0.5; }
-}
-
-/* SCROLLBAR CUSTOM PER UN LOOK TOTAL DARK */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-dark);
-}
-::-webkit-scrollbar-thumb {
-  background: #222;
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--fenix-blue);
-}
-
-/* --- CONFIGURAZIONE MOBILE SAFARI / IOS --- */
+/* FIX iOS */
 @supports (-webkit-touch-callout: none) {
-  body {
-    /* Fix altezza viewport dinamica su iOS */
-    min-height: -webkit-fill-available;
-  }
-  
-  .bottone-blu, .bottone-download, input[type="file"] {
-    /* Rimuove lo stile di default dei bottoni iOS e i riflessi blu al touch */
-    -webkit-appearance: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  input[type="file"] {
-    /* Evita lo zoom forzato di Safari su iPhone */
-    font-size: 16px !important;
-  }
-
-  .box-lavoro {
-    /* Forza l'accelerazione hardware per il blur su Safari */
-    -webkit-backdrop-filter: blur(25px);
-    transform: translateZ(0);
-  }
-}
-
-@media (max-width: 768px) {
-  body {
-    background-attachment: scroll; /* Migliora le performance dello scroll su iPhone */
-  }
-  .box-lavoro {
-    padding: 25px;
-  }
+  body { min-height: -webkit-fill-available; }
+  input[type="file"] { font-size: 16px !important; }
 }
