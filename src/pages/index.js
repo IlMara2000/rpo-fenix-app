@@ -7,7 +7,7 @@ import { runRpoDivider } from '../logic/divider';
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState({ msg: 'FENIX GROUP REAL ESTATE ©', type: 'info' });
+  const [status, setStatus] = useState({ msg: 'FENIX GROUP REAL ESTATE © 2026', type: 'info' });
   
   // STATI SEZIONE 1 (Converter)
   const [converterFiles, setConverterFiles] = useState(null);
@@ -233,7 +233,7 @@ export default function Home() {
       </main>
 
       <footer className="mt-24 text-center opacity-40">
-        <p className="text-[9px] text-white uppercase tracking-[0.5em] font-medium">FENIX GROUP RPO TOOL SUITE © 2026</p>
+        <p className="text-[9px] text-white uppercase tracking-[0.5em] font-medium">BUILDED BY REALINDI®DEN © 2026</p>
       </footer>
     </div>
   );
