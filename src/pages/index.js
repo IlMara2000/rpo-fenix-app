@@ -108,7 +108,7 @@ export default function Home() {
             Excel Converter
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
-            Estrae i numeri dall'Excel, li formatta in UTF-8 (CRLF) e genera automaticamente l'archivio <b>.ZIP</b> (Deflate) pronto per il portale RPO.
+            Estrae i numeri dall'Excel e genera automaticamente l'archivio <b>.ZIP</b> pronto per il portale RPO. <b>ATTENZIONE</b> ricordarsi di estrarre e dividere in due o più file se le Righe di Numeri superano il limite dell'abbonamento RPO, altrimenti viene restituito Error 63!
           </p>
           <div className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
