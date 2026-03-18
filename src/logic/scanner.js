@@ -125,7 +125,7 @@ export default function Home() {
           </div>
 
           <p className="text-sm text-white/40 mb-6">
-            Confronta il TXT con l'Excel originale. Le righe corrispondenti ai numeri RPO verranno completamente annerite.
+            Confronta il TXT con i numeri dell'RPO con l'Excel originale. Le righe corrispondenti ai numeri RPO verranno completamente annerite.
           </p>
 
           <form onSubmit={handleScannerSubmit} className="space-y-4">
