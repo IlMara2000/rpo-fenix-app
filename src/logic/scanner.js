@@ -2,39 +2,46 @@ import React, { useState } from 'react';
 import Head from 'next/head';
 import { saveAs } from 'file-saver';
 import ExcelJS from 'exceljs'; 
+import { runRpoConverter } from '../logic/converter';
+import { runRpoDivider } from '../logic/divider'; 
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState({
-    msg: 'OFFICIAL FENIX RPO TOOL SUITE',
-    type: 'info'
-  });
-
-  // Stati Sezione 1 e 2
+  const [status, setStatus] = useState({ msg: 'FENIX GROUP REAL ESTATE ©', type: 'info' });
+  
+  // STATI UI
   const [tempFile, setTempFile] = useState(null);
-  const [dividerTxt, setDividerTxt] = useState(null);
+  const [fileNameExcel, setFileNameExcel] = useState("nessun file selezionato");
+  const [fileNameTxt, setFileNameTxt] = useState("nessun file selezionato");
+  const [converterFiles, setConverterFiles] = useState(null);
+  const [dividerFiles, setDividerFiles] = useState(null);
 
-  // Stati Sezione 3: RPO Scanner
+  // STATI SCANNER (SEZIONE 3)
   const [scannerTxt, setScannerTxt] = useState(null);
   const [scannerExcel, setScannerExcel] = useState(null);
   const [scannerResult, setScannerResult] = useState(null);
+  const [nameScannerTxt, setNameScannerTxt] = useState("nessun file RPO");
+  const [nameScannerExcel, setNameScannerExcel] = useState("nessun file Excel");
 
   // =========================
-  // 🟢 LOGICA SEZIONE 3: SCANNER & BLACK FILL
+  // 🟣 LOGICA SCANNER (MATCH ESATTO)
   // =========================
   const handleScannerSubmit = async (e) => {
     e.preventDefault();
     if (!scannerTxt || !scannerExcel) return alert("Carica entrambi i file!");
 
     setLoading(true);
-    setStatus({ msg: 'ANALISI INCROCIATA E ANNERIMENTO...', type: 'blue' });
+    setStatus({ msg: 'ANALISI MATCH ESATTI IN CORSO...', type: 'red' });
 
     try {
-      // 1. Leggiamo i numeri dal TXT
       const txtContent = await scannerTxt.text();
-      const rpoList = txtContent.split(/\r?\n/).map(n => n.trim()).filter(n => n !== "");
+      // Creiamo un Set di numeri puliti per un match istantaneo ed ESATTO
+      const rpoSet = new Set(
+        txtContent.split(/\r?\n/)
+          .map(n => n.trim().replace(/\D/g, '')) // Rimuove tutto ciò che non è un numero
+          .filter(n => n.length >= 6) // Evita match su stringhe troppo corte o vuote
+      );
 
-      // 2. Carichiamo l'Excel
       const arrayBuffer = await scannerExcel.arrayBuffer();
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(arrayBuffer);
@@ -43,130 +50,139 @@ export default function Home() {
 
       workbook.eachSheet((sheet) => {
         sheet.eachRow((row) => {
-          let isMatch = false;
+          let rowIsBlacklist = false;
 
           // Controlliamo ogni cella della riga
           row.eachCell({ includeEmpty: false }, (cell) => {
-            const cellValue = String(cell.value || "");
+            const cellValue = String(cell.value || "").replace(/\D/g, ''); // Puliamo il valore della cella
             
-            // Verifica se uno dei numeri RPO è contenuto nella cella
-            for (const rpoNum of rpoList) {
-              if (cellValue.includes(rpoNum)) {
-                isMatch = true;
-                break;
-              }
+            // IL MATCH DEVE ESSERE ESATTO, non una sottostringa "alla cazzo"
+            if (cellValue.length >= 6 && rpoSet.has(cellValue)) {
+              rowIsBlacklist = true;
             }
           });
 
-          // 3. Se troviamo il match, coloriamo TUTTA la riga di NERO
-          if (isMatch) {
+          // SE MATCH TROVATO: FILLIAMO L'INTERA RIGA (SOLO COLORE, NO TESTO)
+          if (rowIsBlacklist) {
             totalMatches++;
             row.eachCell({ includeEmpty: true }, (cell) => {
               cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FF000000' } // Nero Assoluto
+                fgColor: { argb: 'FF000000' } // NERO TOTALE
               };
-              cell.font = {
-                color: { argb: 'FFFFFFFF' }, // Testo Bianco per leggibilità
-                bold: true
-              };
+              cell.font = { color: { argb: 'FFFFFFFF' } }; // Testo bianco per non perderlo, ma coperto dal nero
             });
           }
         });
       });
 
-      // 4. Generiamo il file in uscita
       const buffer = await workbook.xlsx.writeBuffer();
-      const finalBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       
-      setScannerResult({ blob: finalBlob, count: totalMatches });
-      setStatus({ msg: `MATCH TROVATI: ${totalMatches}. RIGHE ANNERITE.`, type: 'yellow' });
-
+      setScannerResult({ blob, count: totalMatches });
+      setStatus({ msg: `SCANNER COMPLETATO: ${totalMatches} RIGHE FILLATE`, type: 'yellow' });
     } catch (err) {
       console.error(err);
-      setStatus({ msg: 'ERRORE DURANTE LA SCANSIONE', type: 'red' });
-    }
-    setLoading(false);
+      setStatus({ msg: 'ERRORE SCANNER', type: 'red' });
+    } finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-16 px-6 bg-[#0f0f0f] text-white">
+    <div className="min-h-screen flex flex-col items-center py-12 px-6 text-white" 
+         style={{ background: 'linear-gradient(180deg, #ee5556 0%, #000000 75%)', backgroundAttachment: 'fixed' }}>
+      
       <Head>
-        <title>GR FENIX | RPO TOOL</title>
+        <title>FENIX GROUP | RPO TOOL SUITE</title>
       </Head>
 
-      <div className="max-w-xl w-full space-y-10">
+      <header className="w-full max-w-4xl mb-12 flex flex-col items-center text-center">
+        <img src="/logo.png" alt="Logo" className="h-[156px] w-auto object-contain mb-6" />
+        <div className="status-badge bg-black/60 border-white/20 p-4 rounded-2xl">
+          <span className="text-white font-bold uppercase tracking-widest">{status.msg}</span>
+        </div>
+      </header>
+
+      <main className="w-full max-w-[1400px] grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* HEADER */}
-        <header className="text-center">
-          <div className="status-badge mb-6">{status.msg}</div>
-          <img src="/logo.png" alt="logo" className="h-16 mx-auto brightness-0 invert" />
-        </header>
-
-        {/* SEZIONE 1 & 2 (Contratte per brevità) */}
-        <section className="box-lavoro opacity-50">
-           <h2 className="text-xl font-bold">1. RPO Converter</h2>
-        </section>
-
-        <section className="box-lavoro opacity-50">
-           <h2 className="text-xl font-bold">2. RPO Divider</h2>
-        </section>
-
-        {/* ========================= */}
-        {/* 🟣 SEZIONE 3: RPO SCANNER (ATTIVA) */}
-        {/* ========================= */}
-        <section className="box-lavoro relative group !opacity-100 border-white/20">
-          <div className="absolute -top-6 -right-4 text-9xl text-white/[0.03] font-black">03</div>
-          
-          <div className="flex items-center gap-3 mb-4">
-             <span className="bg-white/10 w-8 h-8 flex items-center justify-center rounded-lg font-bold">3</span>
-             <h2 className="text-2xl font-bold">RPO Scanner</h2>
+        {/* SEZIONE 1: CONVERTER */}
+        <section className="box-lavoro relative bg-black/40 backdrop-blur-md border border-white/10 p-8 rounded-3xl">
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
+            <span className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">1</span>
+            RPO Converter
+          </h2>
+          <div className="space-y-4">
+            <label className="block bg-white/5 p-4 rounded-xl border border-white/10 cursor-pointer text-center hover:bg-white/10">
+              <input type="file" className="hidden" onChange={e => {setTempFile(e.target.files[0]); setFileNameExcel(e.target.files[0]?.name);}} />
+              <span className="text-xs">{fileNameExcel}</span>
+            </label>
+            <button onClick={async () => {
+              setLoading(true);
+              try { const res = await runRpoConverter(tempFile); setConverterFiles(res); setStatus({msg: "FILE PRONTO!"}); } catch (e) { alert("Errore"); }
+              setLoading(false);
+            }} disabled={!tempFile} className="w-full py-4 bg-white text-black font-black rounded-2xl">CREA FILE</button>
           </div>
+        </section>
 
-          <p className="text-sm text-white/40 mb-6">
-            Confronta il TXT con i numeri dell'RPO con l'Excel originale. Le righe corrispondenti ai numeri RPO verranno completamente annerite.
-          </p>
+        {/* SEZIONE 2: DIVIDER */}
+        <section className="box-lavoro relative bg-black/40 backdrop-blur-md border border-white/10 p-8 rounded-3xl">
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
+            <span className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">2</span>
+            RPO Divider
+          </h2>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            try { const res = await runRpoDivider(e.target.txtFile.files[0]); setDividerFiles(res); setStatus({msg: "DIVISO!"}); } catch (e) { alert("Errore"); }
+            setLoading(false);
+          }} className="space-y-4">
+            <label className="block bg-white/5 p-4 rounded-xl border border-white/10 cursor-pointer text-center hover:bg-white/10">
+              <input type="file" name="txtFile" className="hidden" onChange={e => setFileNameTxt(e.target.files[0]?.name)} />
+              <span className="text-xs">{fileNameTxt}</span>
+            </label>
+            <button type="submit" className="w-full py-4 bg-white text-black font-black rounded-2xl">DIVIDI LISTE</button>
+          </form>
+        </section>
 
+        {/* SEZIONE 3: SCANNER (MATCH ESATTO) */}
+        <section className="box-lavoro relative bg-black/40 backdrop-blur-md border border-white/20 p-8 rounded-3xl">
+          <div className="absolute -top-6 -right-4 text-9xl font-black text-white/[0.05] select-none">03</div>
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
+            <span className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">3</span>
+            RPO Scanner
+          </h2>
+          <p className="text-gray-400 text-[10px] mb-6 uppercase tracking-widest">Match Esatto & Fill Righe</p>
+          
           <form onSubmit={handleScannerSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs uppercase opacity-50 font-bold">Carica Risposta TXT</label>
-              <input type="file" accept=".txt" onChange={e => setScannerTxt(e.target.files[0])} className="w-full" />
-            </div>
+            <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
+              <span className="text-[10px] font-bold">TXT RPO:</span>
+              <input type="file" accept=".txt" className="hidden" onChange={e => setNameScannerTxt(e.target.files[0]?.name || "") + setScannerTxt(e.target.files[0])} />
+              <span className="text-[10px] truncate max-w-[150px] opacity-50">{nameScannerTxt}</span>
+            </label>
 
-            <div className="space-y-2">
-              <label className="text-xs uppercase opacity-50 font-bold">Carica Excel Originale</label>
-              <input type="file" accept=".xlsx" onChange={e => setScannerExcel(e.target.files[0])} className="w-full" />
-            </div>
+            <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer">
+              <span className="text-[10px] font-bold">EXCEL TMK:</span>
+              <input type="file" accept=".xlsx" className="hidden" onChange={e => setNameScannerExcel(e.target.files[0]?.name || "") + setScannerExcel(e.target.files[0])} />
+              <span className="text-[10px] truncate max-w-[150px] opacity-50">{nameScannerExcel}</span>
+            </label>
 
-            <button
-              type="submit"
-              disabled={loading || !scannerTxt || !scannerExcel}
-              className="bottone-blu w-full py-4 text-lg"
-            >
-              {loading ? "ANALISI IN CORSO..." : "AVVIA SCANNER"}
+            <button type="submit" disabled={loading || !scannerTxt || !scannerExcel} className="w-full py-4 bg-white text-black font-black rounded-2xl hover:scale-95 transition-transform shadow-2xl">
+              {loading ? "SCANNERIZZANDO..." : "AVVIA BONIFICA"}
             </button>
           </form>
 
           {scannerResult && (
-            <div className="mt-6 p-4 bg-white/5 rounded-2xl border border-white/10 animate-pulse">
-              <p className="text-center text-sm mb-4">Scansione ultimata: <b>{scannerResult.count}</b> match trovati.</p>
-              <button
-                onClick={() => saveAs(scannerResult.blob, `EXCEL_ANNERITO_${new Date().getTime()}.xlsx`)}
-                className="w-full py-3 bg-green-600 rounded-xl font-bold hover:bg-green-500 transition"
-              >
-                SCARICA EXCEL PULITO
-              </button>
-            </div>
+            <button onClick={() => saveAs(scannerResult.blob, `BONIFICATO_${nameScannerExcel}`)} className="w-full mt-4 py-3 bg-green-500 text-white font-bold rounded-xl animate-bounce">
+              SCARICA ({scannerResult.count} MATCH)
+            </button>
           )}
         </section>
 
-        <footer className="text-center opacity-30 pt-10 border-t border-white/5">
-          <p className="text-[10px] tracking-[0.2em] uppercase">
-            FENIX GROUP RPO TOOL SUITE — LOCKED & PRIVATE BY REALINDI®DEN © 2026
-          </p>
-        </footer>
-      </div>
+      </main>
+
+      <footer className="mt-24 opacity-40 text-[9px] tracking-[0.5em] uppercase">
+        FENIX GROUP RPO TOOL SUITE - 2026
+      </footer>
     </div>
   );
 }
