@@ -227,7 +227,7 @@ export default function Home() {
       </main>
 
       <footer className="mt-24 opacity-20 text-[8px] tracking-[0.8em] uppercase font-bold text-center">
-        REALINDI®DEN SYSTEM © 2026
+        BUILDED BY REALINDI®DEN SYSTEM © 2026
       </footer>
     </div>
   );
