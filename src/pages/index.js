@@ -13,12 +13,12 @@ export default function Home() {
   const [tempFile, setTempFile] = useState(null);
   const [fileNameExcel, setFileNameExcel] = useState("nessun file selezionato");
 
-  // STEP 2: Divider (Il nuovo)
+  // STEP 2: Divider
   const [dividerFiles, setDividerFiles] = useState(null);
   const [splitPoint, setSplitPoint] = useState("");
   const [nameDividerTxt, setNameDividerTxt] = useState("nessun file selezionato");
 
-  // STEP 3: Splitter (Il vecchio divider)
+  // STEP 3: Splitter/Cleaner
   const [splitterResult, setSplitterResult] = useState(null);
   const [nameSplitterTxt, setNameSplitterTxt] = useState("nessun file selezionato");
 
@@ -29,7 +29,6 @@ export default function Home() {
   const [nameScannerTxt, setNameScannerTxt] = useState("nessun file selezionato");
   const [nameScannerExcel, setNameScannerExcel] = useState("nessun file selezionato");
 
-  // LOGICA STEP 1
   const handleConverterSubmit = async () => {
     if (!tempFile) return;
     setLoading(true);
@@ -47,7 +46,6 @@ export default function Home() {
     setLoading(false);
   };
 
-  // LOGICA STEP 2 (NUOVO DIVIDER)
   const handleDividerSubmit = async (e) => {
     e.preventDefault();
     const file = e.target.txtToDivide.files[0];
@@ -56,12 +54,11 @@ export default function Home() {
     try {
       const res = await runRpoDivider(file, splitPoint);
       setDividerFiles(res);
-      setStatus({ msg: "TAGLIO LISTA COMPLETATO", type: 'yellow' });
+      setStatus({ msg: "TAGLIO COMPLETATO", type: 'yellow' });
     } catch (err) { setStatus({ msg: "ERRORE TAGLIO", type: 'red' }); }
     setLoading(false);
   };
 
-  // LOGICA STEP 3 (SPLITTER / CLEANER)
   const handleSplitterSubmit = async (e) => {
     e.preventDefault();
     const file = e.target.txtToSplit.files[0];
@@ -75,7 +72,6 @@ export default function Home() {
     setLoading(false);
   };
 
-  // LOGICA STEP 4
   const handleScannerSubmit = async (e) => {
     e.preventDefault();
     if (!scannerTxt || !scannerExcel) return;
@@ -87,7 +83,7 @@ export default function Home() {
       const response = await fetch('/api/scanner', { method: 'POST', body: formData });
       const blob = await response.blob();
       setScannerResult({ blob, count: response.headers.get('X-Matches') || "0" });
-      setStatus({ msg: "BONIFICA EXCEL COMPLETATA", type: 'yellow' });
+      setStatus({ msg: "BONIFICA COMPLETATA", type: 'yellow' });
     } catch (err) { setStatus({ msg: "ERRORE SCANNER", type: 'red' }); }
     setLoading(false);
   };
@@ -111,8 +107,8 @@ export default function Home() {
         
         {/* STEP 1: CONVERTER */}
         <section className="box-lavoro">
-          <h2 className="text-xl font-bold mb-3 flex items-center gap-2"><span className="bg-red-500/20 px-3 py-1 rounded">1</span> Converter</h2>
-          <p className="text-[10px] text-gray-400 mb-4">Crea lo ZIP per l'invio. Attenzione ai limiti di credito (Error 63).</p>
+          <h2 className="step-title"><span className="step-num">1</span> Converter</h2>
+          <p className="step-desc">Genera lo ZIP. Occhio ai limiti di credito (Error 63).</p>
           <div className="space-y-3">
             <label className="input-file-label">
               <span>{fileNameExcel}</span>
@@ -123,10 +119,10 @@ export default function Home() {
           </div>
         </section>
 
-        {/* STEP 2: DIVIDER (Il nuovo per riga) */}
+        {/* STEP 2: DIVIDER */}
         <section className="box-lavoro border-yellow-500/20">
-          <h2 className="text-xl font-bold mb-3 flex items-center gap-2 text-yellow-500"><span className="bg-yellow-500/20 px-3 py-1 rounded">2</span> Divider</h2>
-          <p className="text-[10px] text-gray-400 mb-4">Taglia il file TXT alla riga scelta per non superare i crediti RPO.</p>
+          <h2 className="step-title text-yellow-500"><span className="step-num bg-yellow-500/20">2</span> Divider</h2>
+          <p className="step-desc">Spezza il TXT alla riga scelta per non superare i crediti.</p>
           <form onSubmit={handleDividerSubmit} className="space-y-3">
             <label className="input-file-label">
               <span>{nameDividerTxt}</span>
@@ -136,23 +132,23 @@ export default function Home() {
             <button type="submit" className="btn-fenix bg-yellow-600">TAGLIA LISTA</button>
             {dividerFiles && (
               <div className="grid grid-cols-1 gap-2">
-                <button type="button" onClick={() => saveAs(dividerFiles.fileA, `${dividerFiles.originalName}_PARTE_1.txt`)} className="btn-download text-[9px]">PARTE 1 ({dividerFiles.countA} righe)</button>
-                <button type="button" onClick={() => saveAs(dividerFiles.fileB, `${dividerFiles.originalName}_PARTE_2.txt`)} className="btn-download text-[9px]">PARTE 2 ({dividerFiles.countB} righe)</button>
+                <button type="button" onClick={() => saveAs(dividerFiles.fileA, `${dividerFiles.originalName}_PARTE_1.txt`)} className="btn-download text-[9px]">PARTE 1 ({dividerFiles.countA})</button>
+                <button type="button" onClick={() => saveAs(dividerFiles.fileB, `${dividerFiles.originalName}_PARTE_2.txt`)} className="btn-download text-[9px]">PARTE 2 ({dividerFiles.countB})</button>
               </div>
             )}
           </form>
         </section>
 
-        {/* STEP 3: CLEANER (Ex Divider 0/1) */}
+        {/* STEP 3: CLEANER */}
         <section className="box-lavoro">
-          <h2 className="text-xl font-bold mb-3 flex items-center gap-2"><span className="bg-red-500/20 px-3 py-1 rounded">3</span> Cleaner</h2>
-          <p className="text-[10px] text-gray-400 mb-4">Separa il file restituito dall'RPO in Numeri OK e Iscritti (Lista Nera).</p>
+          <h2 className="step-title"><span className="step-num">3</span> Cleaner</h2>
+          <p className="step-desc">Separa il file RPO in Numeri OK e Iscritti (Lista Nera).</p>
           <form onSubmit={handleSplitterSubmit} className="space-y-3">
             <label className="input-file-label">
               <span>{nameSplitterTxt}</span>
               <input type="file" name="txtToSplit" required className="hidden" onChange={e => setNameSplitterTxt(e.target.files[0]?.name)} />
             </label>
-            <button type="submit" className="btn-fenix">PULISCI RISULTATI</button>
+            <button type="submit" className="btn-fenix">PULISCI TXT</button>
             {splitterResult && (
               <div className="grid grid-cols-2 gap-2">
                 <button type="button" onClick={() => saveAs(splitterResult.txtUno, `iscritti_rpo.txt`)} className="btn-download text-[9px] bg-red-900/40">ISCRITTI (1)</button>
@@ -164,8 +160,8 @@ export default function Home() {
 
         {/* STEP 4: SCANNER */}
         <section className="box-lavoro border-red-500/40">
-          <h2 className="text-xl font-bold mb-3 flex items-center gap-2"><span className="bg-red-500/40 px-3 py-1 rounded">4</span> Scanner</h2>
-          <p className="text-[10px] text-gray-400 mb-4">Annerisce le righe nell'Excel originale basandosi sulla Lista Nera (1).</p>
+          <h2 className="step-title"><span className="step-num">4</span> Scanner</h2>
+          <p className="step-desc">Annerisce le righe nell'Excel basandosi sulla Lista Nera.</p>
           <form onSubmit={handleScannerSubmit} className="space-y-3">
             <label className="input-file-label">
               <span>{nameScannerTxt}</span>
@@ -182,9 +178,11 @@ export default function Home() {
 
       </main>
 
-      {/* CSS RAPIDO PER PULIZIA INDEX */}
       <style jsx>{`
         .box-lavoro { @apply bg-black/40 backdrop-blur-md p-6 rounded-3xl border border-white/10 flex flex-col; }
+        .step-title { @apply text-xl font-bold mb-3 flex items-center gap-2; }
+        .step-num { @apply bg-red-500/20 px-3 py-1 rounded; }
+        .step-desc { @apply text-[10px] text-gray-400 mb-4; }
         .btn-fenix { @apply w-full py-3 bg-white text-black font-black rounded-xl uppercase text-[10px] tracking-widest active:scale-95 transition-all; }
         .btn-download { @apply w-full py-3 bg-green-500 text-white font-bold rounded-xl text-[10px] uppercase; }
         .input-file-label { @apply flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer text-[10px] overflow-hidden; }
