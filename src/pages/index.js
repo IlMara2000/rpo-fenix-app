@@ -105,6 +105,13 @@ export default function Home() {
     { title: "Fase 4: Excel Scanner", desc: "L'ultimo passaggio. Carica la 'Lista Nera' ottenuta nella Fase 3 e il tuo Excel Originale. Il software annerirà tutte le righe dei numeri iscritti, consegnandoti l'Excel bonificato." }
   ];
 
+  // Helper per evidenziare i box durante il tutorial
+  const getBoxFocusClass = (step) => {
+    if (tutorialStep === 0) return "";
+    if (tutorialStep === step) return "ring-2 ring-red-500 scale-[1.02] bg-black/80 z-[110]";
+    return "opacity-20 grayscale pointer-events-none";
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center py-12 px-6 text-white" 
          style={{ background: 'linear-gradient(180deg, #4b1414 0%, #000000 40%, #000000 100%)', backgroundAttachment: 'fixed' }}>
@@ -116,19 +123,32 @@ export default function Home() {
 
       {/* --- LAYER TUTORIAL --- */}
       {tutorialStep > 0 && (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 transition-all">
-          <div className="bg-zinc-900 border border-red-600/50 p-8 rounded-[35px] max-w-lg w-full shadow-[0_0_50px_rgba(255,0,0,0.2)] relative">
-            {/* Tasto X Chiudi */}
-            <button onClick={() => setTutorialStep(0)} className="absolute top-6 right-8 text-white/20 hover:text-white transition-all text-2xl font-light">✕</button>
+        <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-6 transition-all">
+          <div className="bg-zinc-900 border border-red-600/50 p-8 rounded-[35px] max-w-lg w-full shadow-[0_0_60px_rgba(0,0,0,0.8)] relative">
+            
+            {/* Tasto X Chiudi (quasi invisibile come richiesto) */}
+            <button onClick={() => setTutorialStep(0)} className="absolute top-6 right-8 text-white/10 hover:text-white transition-all text-2xl font-light">✕</button>
             
             <span className="text-red-500 font-black text-[10px] tracking-[0.3em] uppercase block mb-2">Step {tutorialStep} di 4</span>
             <h3 className="text-2xl font-bold mb-4">{tutorialData[tutorialStep - 1].title}</h3>
-            <p className="text-gray-400 text-sm leading-relaxed mb-10">{tutorialData[tutorialStep - 1].desc}</p>
+            <p className="text-gray-400 text-sm leading-relaxed mb-8">{tutorialData[tutorialStep - 1].desc}</p>
             
+            {/* --- RETTANGOLINI DI NAVIGAZIONE --- */}
+            <div className="flex gap-2 mb-10 justify-start">
+              {[1, 2, 3, 4].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setTutorialStep(s)}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${tutorialStep === s ? 'w-8 bg-white' : 'w-4 bg-white/20 hover:bg-white/40'}`}
+                  title={`Vai alla fase ${s}`}
+                />
+              ))}
+            </div>
+
             <div className="flex justify-between items-center">
               <button 
                 onClick={() => setTutorialStep(prev => prev > 1 ? prev - 1 : prev)}
-                className={`text-[10px] font-bold uppercase tracking-widest ${tutorialStep === 1 ? 'opacity-0 pointer-events-none' : 'opacity-40 hover:opacity-100'}`}
+                className={`text-[10px] font-bold uppercase tracking-widest ${tutorialStep === 1 ? 'opacity-0 pointer-events-none' : 'opacity-40 hover:opacity-100 transition-all'}`}
               >
                 Indietro
               </button>
@@ -166,7 +186,7 @@ export default function Home() {
       <main className="w-full max-w-[1400px] grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 items-stretch">
         
         {/* STEP 1 */}
-        <section className="box-lavoro relative overflow-hidden">
+        <section className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(1)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">1</span>
             Excel Converter
@@ -192,7 +212,7 @@ export default function Home() {
         </section>
 
         {/* STEP 2 - DIVIDER */}
-        <section className="box-lavoro relative overflow-hidden">
+        <section className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(2)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">2</span>
             TXT Divider
@@ -226,7 +246,7 @@ export default function Home() {
         </section>
         
         {/* STEP 3 - CLEANER */}
-        <section className="box-lavoro relative overflow-hidden">
+        <section className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(3)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">3</span>
             TXT Cleaner
@@ -253,7 +273,7 @@ export default function Home() {
         </section>
 
         {/* STEP 4 - SCANNER */}
-        <section className="box-lavoro relative overflow-hidden border-red-500/40">
+        <section className={`box-lavoro relative overflow-hidden border-red-500/40 ${getBoxFocusClass(4)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/40 flex items-center justify-center font-black">4</span>
             Excel Scanner
@@ -297,7 +317,7 @@ export default function Home() {
 
       <style jsx>{`
         .box-lavoro {
-          @apply bg-black/40 backdrop-blur-md p-6 rounded-[32px] border border-white/10 flex flex-col h-full transition-all;
+          @apply bg-black/40 backdrop-blur-md p-6 rounded-[32px] border border-white/10 flex flex-col h-full transition-all duration-500 ease-in-out;
         }
       `}</style>
     </div>
