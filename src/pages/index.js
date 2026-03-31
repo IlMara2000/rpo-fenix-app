@@ -35,7 +35,7 @@ export default function Home() {
   const handleConverterSubmit = async () => {
     if (!tempFile) return;
     setLoading(true);
-    setStatus({ msg: "CREAZIONE ZIP IN CORSO...", type: 'red' });
+    setStatus({ msg: "CREAZIONE .ZIP IN CORSO...", type: 'red' });
     try {
       const formData = new FormData();
       formData.append('excel', tempFile);
@@ -44,7 +44,7 @@ export default function Home() {
       const blob = await response.blob();
       const fileName = tempFile.name.split('.')[0].toLowerCase().replace(/\s/g, '_');
       setConverterFiles({ zip: blob, fileName: fileName });
-      setStatus({ msg: "ZIP CREATO CON SUCCESSO!", type: 'yellow' });
+      setStatus({ msg: ".ZIP CREATO CON SUCCESSO!", type: 'yellow' });
     } catch (e) { 
       setStatus({ msg: "ERRORE CONVERSIONE", type: 'red' });
       alert("DETTAGLI: " + e.message);
@@ -60,8 +60,8 @@ export default function Home() {
     try {
       const res = await runRpoDivider(file, splitPoint);
       setDividerFiles(res);
-      setStatus({ msg: "TAGLIO COMPLETATO", type: 'yellow' });
-    } catch (err) { setStatus({ msg: "ERRORE TAGLIO", type: 'red' }); }
+      setStatus({ msg: "DIVISIONE COMPLETATO", type: 'yellow' });
+    } catch (err) { setStatus({ msg: "ERRORE NELLA DIVISIONE", type: 'red' }); }
     setLoading(false);
   };
 
@@ -82,7 +82,7 @@ export default function Home() {
     e.preventDefault();
     if (!scannerTxt || !scannerExcel) return;
     setLoading(true);
-    setStatus({ msg: 'BONIFICA IN CORSO...', type: 'red' });
+    setStatus({ msg: 'BONIFICA DEL FILE IN CORSO...', type: 'red' });
     try {
       const formData = new FormData();
       formData.append('txt', scannerTxt);
@@ -99,8 +99,8 @@ export default function Home() {
 
   // DATI DEL TUTORIAL
   const tutorialData = [
-    { title: "Fase 1: Excel Converter", desc: "Questa fase pulisce il tuo Excel originale lasciando solo i numeri di telefono. Genera un file .ZIP che è l'unico formato accettato dal portale RPO per il caricamento." },
-    { title: "Fase 2: TXT Divider", desc: "Se hai pochi crediti sul portale RPO, usa questo strumento. Carica il file TXT (contenuto nello zip della Fase 1) e decidi a che riga tagliarlo (es. riga 30.000) per non sprecare crediti inutilmente." },
+    { title: "Fase 1: Excel Converter", desc: "Questa fase pulisce il tuo Excel originale lasciando solo i numeri di telefono. Genera una cartella compressa (il file .ZIP) che è l'unico formato accettato dal portale RPO per il caricamento." },
+    { title: "Fase 2: TXT Divider", desc: "Se hai pochi crediti sul portale RPO, usa questo strumento. Carica il file di testo .TXT (contenuto nello zip della Fase 1) e decidi a che riga tagliarlo (es. riga 30.000) per non sprecare crediti inutilmente." },
     { title: "Fase 3: TXT Cleaner", desc: "Una volta ricevuto l'esito dal portale RPO, caricalo qui. Il sistema separerà i numeri in due file: la 'Lista Nera' (iscritti RPO) e i 'Numeri OK' (chiamabili)." },
     { title: "Fase 4: Excel Scanner", desc: "L'ultimo passaggio. Carica la 'Lista Nera' ottenuta nella Fase 3 e il tuo Excel Originale. Il software annerirà tutte le righe dei numeri iscritti, consegnandoti l'Excel bonificato." },
     { title: "Monitoraggio Stato", desc: "Tieni d'occhio il riquadro nero sotto il logo. Durante ogni elaborazione, qui vedrai apparire messaggi in tempo reale sul caricamento e sull'esito delle operazioni." }
@@ -194,23 +194,23 @@ export default function Home() {
         <section className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(1)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">1</span>
-            Excel Converter
+            Convertitore Excel
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
-            Estrae i numeri dall'Excel e genera automaticamente l'archivio <b>.ZIP</b> pronto per il portale RPO. 
+            Estrae i numeri dall'Excel e genera automaticamente la cartella compressa <b>.ZIP</b> ovvero il file pronto per il portale RPO. 
           </p>
           <div className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
-              <span className="text-[10px] font-bold uppercase">Excel Base:</span>
+              <span className="text-[10px] font-bold uppercase">Lista Originale:</span>
               <input type="file" className="hidden" onChange={e => {setTempFile(e.target.files[0]); setFileNameExcel(e.target.files[0]?.name || "nessun file");}} />
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{fileNameExcel}</span>
             </label>
             <button onClick={handleConverterSubmit} disabled={loading || !tempFile} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50">
-              {loading ? "ELABORAZIONE..." : "GENERA .ZIP"}
+              {loading ? "ELABORAZIONE..." : "GENERA FILE RPO"}
             </button>
             {converterFiles && (
               <button onClick={() => saveAs(converterFiles.zip, `lista_${converterFiles.fileName}.zip`)} className="w-full py-4 bg-red-500/10 border border-red-500/40 text-red-400 rounded-2xl font-black text-xs hover:bg-red-500/20 transition-all">
-                SCARICA .ZIP
+                SCARICA IL .ZIP
               </button>
             )}
           </div>
@@ -220,20 +220,20 @@ export default function Home() {
         <section className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(2)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">2</span>
-            TXT Divider
+            Divisore File RPO
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
-            Taglia il file TXT dalla riga scelta in poi per evitare l'<b>Error 63</b>.
+            Taglia il file per l'RPO dalla riga desiderata in poi per evitare l'<b>Error 63</b> ATTENZIONE A NON METTERE IL FILE .ZIP ALTRIMENTI NON FUNZIONA! Deve essere un file di testo (quello dentro il file .ZIP ovvero la cartella compressa).
           </p>
           <form onSubmit={handleDividerSubmit} className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
-              <span className="text-[10px] font-bold uppercase">File TXT:</span>
+              <span className="text-[10px] font-bold uppercase">File .TXT:</span>
               <input type="file" name="txtToDivide" required className="hidden" onChange={e => setNameDividerTxt(e.target.files[0]?.name || "nessun file")} />
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{nameDividerTxt}</span>
             </label>
             <input 
               type="number" 
-              placeholder="RIGA DI TAGLIO (es. 32335)" 
+              placeholder="RIGA DA TAGLIARE (es. 15000)" 
               className="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-xs text-white placeholder-white/20 focus:outline-none focus:border-red-500"
               value={splitPoint}
               onChange={(e) => setSplitPoint(e.target.value)}
@@ -254,7 +254,7 @@ export default function Home() {
         <section className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(3)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">3</span>
-            TXT Cleaner
+            LISTA NERA
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
             Separa i numeri in <b>OK (chiamabili)</b> e <b>RPO (iscritti)</b> caricando il file restituito dal Registro.
@@ -266,12 +266,12 @@ export default function Home() {
               <span className="text-[10px] truncate max-w-[150px] opacity-40">{nameSplitterTxt}</span>
             </label>
             <button type="submit" disabled={loading} className="w-full py-4 bg-white text-black font-black rounded-2xl shadow-xl uppercase tracking-widest active:scale-95 transition-all">
-              SEPARA LISTA
+              SEPARA LA LISTA
             </button>
             {splitterResult && (
               <div className="grid grid-cols-2 gap-4">
-                <button type="button" onClick={() => saveAs(splitterResult.txtUno, `iscritti_rpo.txt`)} className="py-4 bg-black border border-red-500/40 text-red-500 rounded-2xl font-black text-[10px]">LISTA NERA (1)</button>
-                <button type="button" onClick={() => saveAs(splitterResult.txtZero, `numeri_ok.txt`)} className="py-4 bg-green-500/20 border border-green-500/40 text-green-400 rounded-2xl font-black text-[10px]">LISTA OK (0)</button>
+                <button type="button" onClick={() => saveAs(splitterResult.txtUno, `${dividerFiles.originalName}_LISTA_NERA.txt`)} className="py-4 bg-black border border-red-500/40 text-red-500 rounded-2xl font-black text-[10px]">LISTA NERA (1)</button>
+                <button type="button" onClick={() => saveAs(splitterResult.txtZero, `${dividerFiles.originalName}_LISTA_PULITA.txt`)} className="py-4 bg-green-500/20 border border-green-500/40 text-green-400 rounded-2xl font-black text-[10px]">LISTA OK (0)</button>
               </div>
             )}
           </form>
@@ -281,10 +281,10 @@ export default function Home() {
         <section className={`box-lavoro relative overflow-hidden border-red-500/40 ${getBoxFocusClass(4)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/40 flex items-center justify-center font-black">4</span>
-            Excel Scanner
+            PULIZIA FINALE EXCEL
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
-            Confronta l'Excel originale con il file degli iscritti. Le righe corrispondenti verranno <b>annerite</b>.
+            Confronta l'Excel originale con il file LISTA NERA degli iscritti. Le righe corrispondenti al proprietario del numero verranno <b>annerite</b>.
           </p>
           <form onSubmit={handleScannerSubmit} className="space-y-4">
             <label className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
@@ -317,7 +317,7 @@ export default function Home() {
       </main>
 
       <footer className="mt-24 opacity-20 text-[8px] tracking-[0.8em] uppercase font-bold text-center">
-        REALINDI®DEN SYSTEM © 2026
+        REALINDI®DEN SYSTEMS © 2026
       </footer>
 
       <style jsx>{`
