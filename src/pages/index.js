@@ -194,7 +194,7 @@ export default function Home() {
         <section className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(1)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">1</span>
-            Convertitore Excel
+            CONVERTITORE EXCEL
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
             Estrae i numeri dall'Excel e genera automaticamente la cartella compressa <b>.ZIP</b> ovvero il file pronto per il portale RPO. 
@@ -220,7 +220,7 @@ export default function Home() {
         <section className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(2)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">2</span>
-            Divisore File RPO
+            DIVISORE FILE RPO
           </h2>
           <p className="text-gray-300 text-[11px] mb-8 leading-relaxed">
             Taglia il file per l'RPO dalla riga desiderata in poi per evitare l'<b>Error 63</b> ATTENZIONE A NON METTERE IL FILE .ZIP ALTRIMENTI NON FUNZIONA! Deve essere un file di testo (quello dentro il file .ZIP ovvero la cartella compressa).
