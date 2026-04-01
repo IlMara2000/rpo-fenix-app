@@ -124,7 +124,14 @@ export default function Home() {
         <title>FENIX GROUP | RPO TOOL SUITE</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
-
+      
+      {/* TASTO TORNA AL MENU */}
+      <div className="w-full max-w-4xl flex justify-start mb-4">
+        <button onClick={() => window.location.href = '/'} className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-white/50 hover:text-white transition-colors bg-black/40 px-4 py-2 rounded-xl border border-white/10">
+          ← Torna al Menu Principale
+        </button>
+      </div>
+      
       {/* --- LAYER TUTORIAL --- */}
       {tutorialStep > 0 && (
         <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-6 transition-all">
