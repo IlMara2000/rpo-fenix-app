@@ -8,12 +8,12 @@ export default function MainMenu() {
          style={{ background: 'linear-gradient(180deg, #4b1414 0%, #000000 40%, #000000 100%)', backgroundAttachment: 'fixed' }}>
       
       <Head>
-        <title>FENIX GROUP | SUITE AZIENDALE</title>
+        <title>FENIX GROUP | SUITE </title>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </Head>
 
       <header className="w-full flex flex-col items-center mb-16 animate-in fade-in slide-in-from-top-10 duration-700">
-        <img src="/logo.png" alt="Logo Fenix Group" className="h-[180px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] mb-6" />
+        <img src="/logo.png" alt="Logo" className="h-[180px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] mb-6" />
         <div className="bg-black/80 backdrop-blur-xl p-4 rounded-2xl border border-red-500/30 shadow-2xl text-center">
           <span className="font-bold uppercase tracking-[0.3em] block px-6 text-xs md:text-sm text-red-500">
             Seleziona un Programma
