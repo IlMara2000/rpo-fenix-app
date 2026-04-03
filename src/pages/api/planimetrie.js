@@ -18,76 +18,65 @@ export default async function handler(req, res) {
     if (!uploadedFile) return res.status(400).json({ error: 'Nessun file ricevuto' });
 
     try {
-      // 1. CONTROLLO FORMATO
       if (!uploadedFile.mimetype || !uploadedFile.mimetype.startsWith('image/')) {
         return res.status(400).json({ error: 'Formato non supportato. Usa PNG o JPG.' });
       }
 
-      // Convertiamo l'immagine caricata in Base64 puro
+      // Convertiamo l'immagine caricata in Base64
       const fileData = fs.readFileSync(uploadedFile.filepath);
       const base64Image = Buffer.from(fileData).toString('base64');
 
-      // Prendiamo la chiave magica di Prodia da Vercel
-      const prodiaKey = process.env.PRODIA_KEY;
-      if (!prodiaKey) {
-        throw new Error("Manca la PRODIA_KEY su Vercel!");
+      // 1. LA TUA CHIAVE AL SICURO (La pesca da Vercel)
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("Manca la GEMINI_API_KEY su Vercel!");
       }
 
-      // 2. INVIO DEL LAVORO A PRODIA (1.000 generazioni gratis)
-      const createJobResponse = await fetch("https://api.prodia.com/v1/sd/transform", {
+      // 2. CHIAMATA A GOOGLE GEMINI API
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`, {
         method: "POST",
         headers: {
-          "X-Prodia-Key": prodiaKey,
           "Content-Type": "application/json",
-          "Accept": "application/json"
         },
         body: JSON.stringify({
-          model: "realisticVisionV51_v51VAE.safetensors [38a1dba3]", 
-          prompt: "Top-down view of a modern fully furnished apartment floor plan, photorealistic, 8k, interior design, highly detailed, architectural visualization, warm lighting, wooden floor, modern furniture",
-          negative_prompt: "lowres, bad quality, sketchy, blurry, text, watermark, rough layout, empty room",
-          imageData: base64Image,
-          denoising_strength: 0.75, // 0.75 è il valore magico: mantiene l'ossatura originale e arreda
-          steps: 25,
-          cfg_scale: 7
-        }),
+          contents: [
+            {
+              parts: [
+                { text: "Act as an expert interior designer. I am providing a top-down floor plan. Please return a photorealistic, fully furnished, 8k, modern luxury interior design version of this exact same layout. Keep the walls exactly where they are." },
+                {
+                  inline_data: {
+                    mime_type: uploadedFile.mimetype,
+                    data: base64Image
+                  }
+                }
+              ]
+            }
+          ]
+        })
       });
 
-      if (!createJobResponse.ok) {
-        const errorText = await createJobResponse.text();
-        throw new Error(`Errore API Prodia: ${errorText}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Errore API Google: ${errorData.error?.message || response.statusText}`);
       }
 
-      const jobData = await createJobResponse.json();
-      const jobId = jobData.job;
+      const data = await response.json();
+      
+      // Catturiamo la risposta del modello
+      const generatedContent = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-      // 3. ATTESA (Polling): Chiediamo a Prodia ogni 3 secondi se ha finito di generare
-      let status = "queued";
-      let finalImageUrl = null;
-
-      while (status !== "succeeded" && status !== "failed") {
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Aspetta 3 secondi
-
-        const checkResponse = await fetch(`https://api.prodia.com/v1/job/${jobId}`, {
-          headers: { "X-Prodia-Key": prodiaKey }
-        });
-        
-        const checkData = await checkResponse.json();
-        status = checkData.status;
-
-        if (status === "succeeded") {
-          finalImageUrl = checkData.imageUrl;
-        }
+      // 3. CONTROLLO OUTPUT
+      // Siccome le API gratuite di Google spesso rispondono a parole invece di restituire il file grafico puro,
+      // controlliamo se il risultato è effettivamente un'immagine (Base64 o URL)
+      if (!generatedContent.startsWith("data:image") && !generatedContent.startsWith("http")) {
+         throw new Error("Il server di Google ha analizzato la planimetria ma ha risposto con del testo. L'API gratuita standard potrebbe non avere i permessi per sputare fuori il file grafico modificato.");
       }
 
-      if (status === "failed") {
-        throw new Error("Il server di Prodia ha fallito la generazione dell'immagine.");
-      }
-
-      // 4. RESTITUZIONE AL FRONTEND: Mandiamo l'immagine finita alla tua app Fenix
-      res.status(200).json({ success: true, imageUrl: finalImageUrl });
+      // RESTITUZIONE AL FRONTEND
+      res.status(200).json({ success: true, imageUrl: generatedContent });
 
     } catch (error) {
-      console.error("Errore Generazione Prodia:", error.message);
+      console.error("Errore Generazione Google:", error.message);
       res.status(500).json({ error: error.message });
     }
   });
