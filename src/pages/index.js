@@ -8,8 +8,18 @@ export default function MainMenu() {
          style={{ background: 'linear-gradient(180deg, #4b1414 0%, #000000 40%, #000000 100%)', backgroundAttachment: 'fixed' }}>
       
       <Head>
-        <title>FENIX GROUP | SUITE </title>
+        <title>FENIX GROUP | SUITE</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        
+        {/* Favicon standard per le schede del browser (PC) */}
+        <link rel="icon" href="/favicon.ico" />
+        
+        {/* La magia per l'iPhone: Icona "Aggiungi a Home" */}
+        <link rel="apple-touch-icon" href="/logo.png" />
+        
+        {/* Icona per i dispositivi Android */}
+        <link rel="icon" type="image/png" sizes="192x192" href="/logo.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/logo.png" />
       </Head>
 
       <header className="w-full flex flex-col items-center mb-16 animate-in fade-in slide-in-from-top-10 duration-700">
