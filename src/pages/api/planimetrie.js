@@ -14,57 +14,58 @@ export default async function handler(req, res) {
   form.parse(req, async (err, fields, files) => {
     if (err) return res.status(500).json({ error: 'Errore nel parsing del file' });
 
-    // Sicurezza: controlla che files.file esista
     const uploadedFile = files.file ? files.file[0] : null;
     if (!uploadedFile) return res.status(400).json({ error: 'Nessun file ricevuto' });
 
     try {
-      // 1. GESTIONE FILE: Solo immagini (PNG/JPG)
       if (!uploadedFile.mimetype || !uploadedFile.mimetype.startsWith('image/')) {
         return res.status(400).json({ error: 'Formato non supportato. Usa PNG o JPG.' });
       }
 
-      // 2. CONVERSIONE IN BASE64 PURO (Per Getimg.ai)
-      // Getimg non vuole il prefisso "data:image...", vuole solo il codice puro
+      // Convertiamo l'immagine caricata in Base64
       const fileData = fs.readFileSync(uploadedFile.filepath);
       const base64Image = Buffer.from(fileData).toString('base64');
 
-      // 3. CHIAMATA A GETIMG.AI (La soluzione 100% gratuita, 100 crediti/mese)
-      const response = await fetch("https://api.getimg.ai/v1/stable-diffusion/image-to-image", {
+      // Prendiamo la chiave magica di Hugging Face da Vercel
+      const hfToken = process.env.HF_TOKEN;
+      if (!hfToken) {
+        throw new Error("Manca l'HF_TOKEN su Vercel!");
+      }
+
+      // CHIAMATA A HUGGING FACE (Server 100% Gratuito)
+      const response = await fetch("https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${process.env.GETIMG_KEY}`,
+          "Authorization": `Bearer ${hfToken}`,
           "Content-Type": "application/json",
-          "Accept": "application/json"
         },
         body: JSON.stringify({
-          model: "realistic-vision-v5-1", // Modello eccellente per il fotorealismo architettonico
-          prompt: "Top-down view of a modern fully furnished apartment floor plan, photorealistic, 8k, interior design, highly detailed, architectural visualization, warm lighting, wooden floor, modern furniture",
-          negative_prompt: "lowres, bad quality, sketchy, blurry, text, watermark, rough layout, empty room",
-          image: base64Image, 
-          strength: 0.75, // 0.75 mantiene l'ossatura originale della planimetria
-          steps: 25,
-          output_format: "jpeg"
+          inputs: "turn this floor plan into a photorealistic modern fully furnished apartment layout, 8k, interior design, warm lighting",
+          image: base64Image
         }),
       });
 
-      // Gestione errori del server cloud
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Errore API Getimg: ${errorText}`);
+        const errorData = await response.json().catch(() => ({}));
+        
+        // Gestione del "Cold Start" (Server addormentato per risparmiare energia)
+        if (errorData.error && errorData.error.includes("is currently loading")) {
+          throw new Error("Il server AI si stava riposando e si sta accendendo ora. Riprova tra 30 secondi!");
+        }
+        throw new Error(`Errore Hugging Face: ${errorData.error || response.statusText}`);
       }
 
-      const data = await response.json();
-      
-      // 4. RESTITUZIONE AL FRONTEND
-      // Getimg restituisce l'immagine in base64 puro. La formattiamo come Data URI per il frontend
-      const finalImageUrl = `data:image/jpeg;base64,${data.image}`;
+      // Hugging Face restituisce l'immagine "fisica" (buffer binario), la trasformiamo per il frontend
+      const arrayBuffer = await response.arrayBuffer();
+      const finalBase64 = Buffer.from(arrayBuffer).toString('base64');
+      const dataUri = `data:image/jpeg;base64,${finalBase64}`;
 
-      res.status(200).json({ success: true, imageUrl: finalImageUrl });
+      // RESTITUZIONE AL FRONTEND
+      res.status(200).json({ success: true, imageUrl: dataUri });
 
     } catch (error) {
-      console.error("Errore Generazione Cloud:", error.message);
-      res.status(500).json({ error: 'Errore durante la generazione della planimetria nel cloud.' });
+      console.error("Errore Generazione Hugging Face:", error.message);
+      res.status(500).json({ error: error.message });
     }
   });
 }
