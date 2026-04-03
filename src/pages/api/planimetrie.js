@@ -18,11 +18,12 @@ export default async function handler(req, res) {
     if (!uploadedFile) return res.status(400).json({ error: 'Nessun file ricevuto' });
 
     try {
+      // 1. CONTROLLO FORMATO
       if (!uploadedFile.mimetype || !uploadedFile.mimetype.startsWith('image/')) {
         return res.status(400).json({ error: 'Formato non supportato. Usa PNG o JPG.' });
       }
 
-      // Convertiamo l'immagine caricata in Base64
+      // Convertiamo l'immagine caricata in Base64 puro
       const fileData = fs.readFileSync(uploadedFile.filepath);
       const base64Image = Buffer.from(fileData).toString('base64');
 
@@ -32,7 +33,7 @@ export default async function handler(req, res) {
         throw new Error("Manca la PRODIA_KEY su Vercel!");
       }
 
-      // 1. INVIO DEL LAVORO A PRODIA (1.000 generazioni gratis)
+      // 2. INVIO DEL LAVORO A PRODIA (1.000 generazioni gratis)
       const createJobResponse = await fetch("https://api.prodia.com/v1/sd/transform", {
         method: "POST",
         headers: {
@@ -45,7 +46,7 @@ export default async function handler(req, res) {
           prompt: "Top-down view of a modern fully furnished apartment floor plan, photorealistic, 8k, interior design, highly detailed, architectural visualization, warm lighting, wooden floor, modern furniture",
           negative_prompt: "lowres, bad quality, sketchy, blurry, text, watermark, rough layout, empty room",
           imageData: base64Image,
-          denoising_strength: 0.75, // Permette a Prodia di arredare mantenendo i muri originali
+          denoising_strength: 0.75, // 0.75 è il valore magico: mantiene l'ossatura originale e arreda
           steps: 25,
           cfg_scale: 7
         }),
@@ -59,7 +60,7 @@ export default async function handler(req, res) {
       const jobData = await createJobResponse.json();
       const jobId = jobData.job;
 
-      // 2. ATTESA (Polling): Chiediamo a Prodia ogni 3 secondi se ha finito di generare
+      // 3. ATTESA (Polling): Chiediamo a Prodia ogni 3 secondi se ha finito di generare
       let status = "queued";
       let finalImageUrl = null;
 
@@ -82,7 +83,7 @@ export default async function handler(req, res) {
         throw new Error("Il server di Prodia ha fallito la generazione dell'immagine.");
       }
 
-      // 3. RESTITUZIONE AL FRONTEND: Mandiamo l'immagine finita alla tua app Fenix
+      // 4. RESTITUZIONE AL FRONTEND: Mandiamo l'immagine finita alla tua app Fenix
       res.status(200).json({ success: true, imageUrl: finalImageUrl });
 
     } catch (error) {
