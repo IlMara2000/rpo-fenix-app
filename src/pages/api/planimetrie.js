@@ -1,6 +1,5 @@
 import { IncomingForm } from 'formidable';
 import fs from 'fs';
-import axios from 'axios';
 
 // Disabilitiamo il body parser predefinito di Next.js per poter gestire il file in ingresso
 export const config = {
@@ -20,61 +19,53 @@ export default async function handler(req, res) {
     if (!uploadedFile) return res.status(400).json({ error: 'Nessun file ricevuto' });
 
     try {
-      // 1. GESTIONE FILE: Siccome Vercel blocca le librerie PDF, per ora forziamo solo immagini (PNG/JPG)
+      // 1. GESTIONE FILE: Solo immagini (PNG/JPG)
       if (!uploadedFile.mimetype || !uploadedFile.mimetype.startsWith('image/')) {
-        return res.status(400).json({ error: 'Formato non supportato su Vercel. Usa PNG o JPG (I PDF arriveranno presto!).' });
+        return res.status(400).json({ error: 'Formato non supportato. Usa PNG o JPG.' });
       }
 
-      // 2. CONVERSIONE IN BASE64
+      // 2. CONVERSIONE IN DATA URI (Per Fal.ai)
+      // Fal.ai ha bisogno che il base64 sia formattato come "Data URI" per capire che è un'immagine
       const fileData = fs.readFileSync(uploadedFile.filepath);
       const base64Image = Buffer.from(fileData).toString('base64');
+      const dataUri = `data:${uploadedFile.mimetype};base64,${base64Image}`;
 
-      // 3. LA PAYLOAD API PER AUTOMATIC1111 CON CONTROLNET MLSD
-      const sdPayload = {
-        prompt: "Top-down view of a modern fully furnished apartment floor plan, photorealistic, 8k, interior design, highly detailed, architectural visualization, warm lighting",
-        negative_prompt: "lowres, bad quality, sketchy, blurry, text, watermark, rough layout, empty room",
-        steps: 25,
-        width: 1024,
-        height: 1024,
-        cfg_scale: 7,
-        alwayson_scripts: {
-          controlnet: {
-            args: [
-              {
-                input_image: base64Image,
-                module: "mlsd", // Pre-processore MLSD (linee dritte, architettura)
-                model: "control_v11p_sd15_mlsd", // <-- Assicurati che questo nome combaci con il tuo modello ControlNet
-                weight: 1.0, // Fedeltà totale ai muri
-                resize_mode: "Just Resize",
-                control_mode: "Balanced"
-              }
-            ]
-          }
-        }
-      };
-
-      // 4. CHIAMATA ALL'API DI AUTOMATIC1111
-      // ⚠️ ATTENZIONE: Dato che l'app gira in Cloud su Vercel, non può connettersi a 127.0.0.1.
-      // Quando avvii Automatic1111 sul tuo PC, aggiungi gli argomenti: --api --share
-      // Il terminale di Automatic1111 genererà un URL pubblico tipo: https://xxxxxx.gradio.live
-      // INSERISCI QUEL LINK AL POSTO DI 127.0.0.1 (Lasciando /sdapi/v1/txt2img alla fine)
-      const sdApiUrl = 'http://127.0.0.1:7860/sdapi/v1/txt2img'; 
-      // Esempio: const sdApiUrl = 'https://12345abcdef.gradio.live/sdapi/v1/txt2img';
-
-      const sdResponse = await axios.post(sdApiUrl, sdPayload, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 120000 // Timeout lungo (2 minuti) per dare tempo alla GPU di generare l'immagine
+      // 3. CHIAMATA A FAL.AI (Il nostro nuovo super computer nel cloud)
+      // Uso fal.run invece di queue.fal.run per avere la risposta diretta (sincrona)
+      const response = await fetch("https://fal.run/fal-ai/controlnet-general", {
+        method: "POST",
+        headers: {
+          "Authorization": `Key ${process.env.FAL_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: "Top-down view of a modern fully furnished apartment floor plan, photorealistic, 8k, interior design, highly detailed, architectural visualization, warm lighting",
+          negative_prompt: "lowres, bad quality, sketchy, blurry, text, watermark, rough layout, empty room",
+          control_image_url: dataUri, // L'immagine formattata passata al cloud
+          control_net_name: "mlsd",   // Il modulo magico per le linee dritte dei muri
+          image_size: "square_hd",
+          num_inference_steps: 30,
+          guidance_scale: 7.5,
+        }),
       });
 
-      // 5. RESTITUZIONE AL FRONTEND
-      // L'API restituisce un array 'images' con l'immagine finale in Base64
-      const finalImageBase64 = sdResponse.data.images[0];
+      // Gestione errori del server cloud
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Errore API Fal.ai: ${errorText}`);
+      }
 
-      res.status(200).json({ success: true, imageBase64: finalImageBase64 });
+      const data = await response.json();
+      
+      // 4. RESTITUZIONE AL FRONTEND
+      // Fal.ai ci restituisce un link pubblico (URL) dell'immagine finale
+      const finalImageUrl = data.images[0].url;
+
+      res.status(200).json({ success: true, imageUrl: finalImageUrl });
 
     } catch (error) {
-      console.error("Errore Generazione:", error?.response?.data || error.message);
-      res.status(500).json({ error: 'Errore di comunicazione con Automatic1111. Hai inserito il link Gradio e avviato il server locale?' });
+      console.error("Errore Generazione Cloud:", error.message);
+      res.status(500).json({ error: 'Errore durante la generazione della planimetria nel cloud.' });
     }
   });
 }
