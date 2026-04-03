@@ -20,11 +20,9 @@ export default function PlanimetrieTool() {
     setStatus({ msg: 'ELABORAZIONE E GENERAZIONE AI IN CORSO...', type: 'red' });
 
     try {
-      // Prepariamo il file da inviare al nostro backend Next.js
       const formData = new FormData();
       formData.append('file', file);
 
-      // Chiamata alla nostra API che gestirà conversione PDF e comunicazione con Automatic1111
       const response = await fetch('/api/planimetrie', {
         method: 'POST',
         body: formData,
@@ -36,16 +34,8 @@ export default function PlanimetrieTool() {
         throw new Error(data.error || 'Errore di generazione');
       }
 
-      // Convertiamo la stringa Base64 restituita dall'API in un Blob scaricabile
-      const byteCharacters = atob(data.imageBase64);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/png' });
-
-      setResultImage(blob);
+      // Fal.ai ci restituisce direttamente l'URL, niente più conversioni pazze Base64!
+      setResultImage(data.imageUrl);
       setStatus({ msg: 'PLANIMETRIA ARREDATA CON SUCCESSO!', type: 'yellow' });
 
     } catch (error) {
@@ -55,11 +45,19 @@ export default function PlanimetrieTool() {
     setLoading(false);
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (resultImage) {
-      // Rimuove l'estensione originale (.pdf, .jpg, ecc) e aggiunge il suffisso
-      const baseName = file.name.replace(/\.[^/.]+$/, "");
-      saveAs(resultImage, `${baseName}_arredata.png`);
+      try {
+        // Scarichiamo l'immagine dal server di Fal per salvarla in locale
+        const res = await fetch(resultImage);
+        const blob = await res.blob();
+        const baseName = file.name.replace(/\.[^/.]+$/, "");
+        saveAs(blob, `${baseName}_arredata.png`);
+      } catch (err) {
+        console.error("Errore nel download", err);
+        // Piano B: se il browser blocca il download per sicurezza, apre la foto in una nuova scheda
+        window.open(resultImage, '_blank');
+      }
     }
   };
 
@@ -96,7 +94,7 @@ export default function PlanimetrieTool() {
             Generatore AI
           </h2>
           <p className="text-gray-400 text-xs mb-8">
-            Carica la planimetria "nuda" in formato <b>PDF, PNG o JPG</b>. Il sistema la convertirà e la invierà a Stable Diffusion tramite ControlNet MLSD per generare una versione fotorealistica arredata.
+            Carica la planimetria "nuda" in formato <b>PNG o JPG</b>. Il sistema la invierà ai server cloud di <b>Fal.ai</b> per generare una versione fotorealistica arredata mantenendo le proporzioni esatte.
           </p>
 
           <form onSubmit={handleGenerate} className="space-y-6">
@@ -104,7 +102,7 @@ export default function PlanimetrieTool() {
               <span className="text-[10px] font-bold uppercase tracking-widest">Carica Planimetria:</span>
               <input 
                 type="file" 
-                accept=".pdf,.png,.jpg,.jpeg" 
+                accept=".png,.jpg,.jpeg" 
                 className="hidden" 
                 onChange={e => {
                   setFile(e.target.files[0]); 
@@ -120,7 +118,7 @@ export default function PlanimetrieTool() {
               disabled={loading || !file} 
               className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black rounded-2xl shadow-[0_10px_30px_rgba(220,38,38,0.3)] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50 disabled:grayscale cursor-pointer"
             >
-              {loading ? "GENERAZIONE IN CORSO... (Può volerci un minuto)" : "GENERA ARREDAMENTO AI"}
+              {loading ? "GENERAZIONE IN CORSO... (Richiede pochi secondi)" : "GENERA ARREDAMENTO AI"}
             </button>
           </form>
 
@@ -128,8 +126,8 @@ export default function PlanimetrieTool() {
           {resultImage && (
             <div className="mt-8 pt-8 border-t border-white/10 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="mb-6 rounded-2xl overflow-hidden border-2 border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
-                {/* Mostra un'anteprima dell'immagine generata */}
-                <img src={URL.createObjectURL(resultImage)} alt="Preview Planimetria Arredata" className="w-full max-h-[300px] object-contain bg-black" />
+                {/* Mostra l'immagine generata tramite il link fornito da Fal.ai */}
+                <img src={resultImage} alt="Preview Planimetria Arredata" className="w-full max-h-[300px] object-contain bg-black" crossOrigin="anonymous" />
               </div>
               <button 
                 onClick={handleDownload}
