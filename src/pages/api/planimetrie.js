@@ -26,45 +26,67 @@ export default async function handler(req, res) {
       const fileData = fs.readFileSync(uploadedFile.filepath);
       const base64Image = Buffer.from(fileData).toString('base64');
 
-      // Prendiamo la chiave magica di Hugging Face da Vercel
-      const hfToken = process.env.HF_TOKEN;
-      if (!hfToken) {
-        throw new Error("Manca l'HF_TOKEN su Vercel!");
+      // Prendiamo la chiave magica di Prodia da Vercel
+      const prodiaKey = process.env.PRODIA_KEY;
+      if (!prodiaKey) {
+        throw new Error("Manca la PRODIA_KEY su Vercel!");
       }
 
-      // CHIAMATA A HUGGING FACE (Nuovo server Router aggiornato!)
-      const response = await fetch("https://router.huggingface.co/hf-inference/models/timbrooks/instruct-pix2pix", {
+      // 1. INVIO DEL LAVORO A PRODIA (1.000 generazioni gratis)
+      const createJobResponse = await fetch("https://api.prodia.com/v1/sd/transform", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${hfToken}`,
+          "X-Prodia-Key": prodiaKey,
           "Content-Type": "application/json",
+          "Accept": "application/json"
         },
         body: JSON.stringify({
-          inputs: "turn this floor plan into a photorealistic modern fully furnished apartment layout, 8k, interior design, warm lighting",
-          image: base64Image
+          model: "realisticVisionV51_v51VAE.safetensors [38a1dba3]", 
+          prompt: "Top-down view of a modern fully furnished apartment floor plan, photorealistic, 8k, interior design, highly detailed, architectural visualization, warm lighting, wooden floor, modern furniture",
+          negative_prompt: "lowres, bad quality, sketchy, blurry, text, watermark, rough layout, empty room",
+          imageData: base64Image,
+          denoising_strength: 0.75, // Permette a Prodia di arredare mantenendo i muri originali
+          steps: 25,
+          cfg_scale: 7
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        
-        // Gestione del "Cold Start" (Server addormentato per risparmiare energia)
-        if (errorData.error && errorData.error.includes("is currently loading")) {
-          throw new Error("Il server AI si stava riposando e si sta accendendo ora. Riprova tra 30 secondi!");
-        }
-        throw new Error(`Errore Hugging Face: ${errorData.error || response.statusText}`);
+      if (!createJobResponse.ok) {
+        const errorText = await createJobResponse.text();
+        throw new Error(`Errore API Prodia: ${errorText}`);
       }
 
-      // Hugging Face restituisce l'immagine "fisica" (buffer binario), la trasformiamo per il frontend
-      const arrayBuffer = await response.arrayBuffer();
-      const finalBase64 = Buffer.from(arrayBuffer).toString('base64');
-      const dataUri = `data:image/jpeg;base64,${finalBase64}`;
+      const jobData = await createJobResponse.json();
+      const jobId = jobData.job;
 
-      // RESTITUZIONE AL FRONTEND
-      res.status(200).json({ success: true, imageUrl: dataUri });
+      // 2. ATTESA (Polling): Chiediamo a Prodia ogni 3 secondi se ha finito di generare
+      let status = "queued";
+      let finalImageUrl = null;
+
+      while (status !== "succeeded" && status !== "failed") {
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Aspetta 3 secondi
+
+        const checkResponse = await fetch(`https://api.prodia.com/v1/job/${jobId}`, {
+          headers: { "X-Prodia-Key": prodiaKey }
+        });
+        
+        const checkData = await checkResponse.json();
+        status = checkData.status;
+
+        if (status === "succeeded") {
+          finalImageUrl = checkData.imageUrl;
+        }
+      }
+
+      if (status === "failed") {
+        throw new Error("Il server di Prodia ha fallito la generazione dell'immagine.");
+      }
+
+      // 3. RESTITUZIONE AL FRONTEND: Mandiamo l'immagine finita alla tua app Fenix
+      res.status(200).json({ success: true, imageUrl: finalImageUrl });
 
     } catch (error) {
-      console.error("Errore Generazione Hugging Face:", error.message);
+      console.error("Errore Generazione Prodia:", error.message);
       res.status(500).json({ error: error.message });
     }
   });
