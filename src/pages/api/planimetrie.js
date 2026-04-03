@@ -25,24 +25,22 @@ export default async function handler(req, res) {
       }
 
       // 2. CONVERSIONE IN DATA URI (Per Fal.ai)
-      // Fal.ai ha bisogno che il base64 sia formattato come "Data URI" per capire che è un'immagine
       const fileData = fs.readFileSync(uploadedFile.filepath);
       const base64Image = Buffer.from(fileData).toString('base64');
       const dataUri = `data:${uploadedFile.mimetype};base64,${base64Image}`;
 
-      // 3. CHIAMATA A FAL.AI (Il nostro nuovo super computer nel cloud)
-      // Uso fal.run invece di queue.fal.run per avere la risposta diretta (sincrona)
-      const response = await fetch("https://fal.run/fal-ai/controlnet-general", {
+      // 3. CHIAMATA A FAL.AI (Nuovo endpoint corretto: fast-sdxl)
+      const response = await fetch("https://fal.run/fal-ai/fast-sdxl", {
         method: "POST",
         headers: {
           "Authorization": `Key ${process.env.FAL_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt: "Top-down view of a modern fully furnished apartment floor plan, photorealistic, 8k, interior design, highly detailed, architectural visualization, warm lighting",
+          prompt: "Top-down view of a modern fully furnished apartment floor plan, photorealistic, 8k, interior design, highly detailed, architectural visualization, warm lighting, wooden floor, modern furniture",
           negative_prompt: "lowres, bad quality, sketchy, blurry, text, watermark, rough layout, empty room",
-          control_image_url: dataUri, // L'immagine formattata passata al cloud
-          control_net_name: "mlsd",   // Il modulo magico per le linee dritte dei muri
+          image_url: dataUri, // <--- Aggiornato per fast-sdxl
+          strength: 0.85,     // <--- 0.85 permette all'AI di arredare mantenendo l'ossatura dei muri originali
           image_size: "square_hd",
           num_inference_steps: 30,
           guidance_scale: 7.5,
@@ -58,7 +56,6 @@ export default async function handler(req, res) {
       const data = await response.json();
       
       // 4. RESTITUZIONE AL FRONTEND
-      // Fal.ai ci restituisce un link pubblico (URL) dell'immagine finale
       const finalImageUrl = data.images[0].url;
 
       res.status(200).json({ success: true, imageUrl: finalImageUrl });
