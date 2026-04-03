@@ -1,7 +1,7 @@
 import { IncomingForm } from 'formidable';
 import fs from 'fs';
 
-// Disabilitiamo il body parser predefinito di Next.js per poter gestire il file in ingresso
+// Disabilitiamo il body parser predefinito
 export const config = {
   api: { bodyParser: false },
 };
@@ -22,61 +22,49 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Formato non supportato. Usa PNG o JPG.' });
       }
 
-      // Convertiamo l'immagine caricata in Base64
+      // Convertiamo l'immagine in Base64 (codice puro per Getimg)
       const fileData = fs.readFileSync(uploadedFile.filepath);
       const base64Image = Buffer.from(fileData).toString('base64');
 
-      // 1. LA TUA CHIAVE AL SICURO (La pesca da Vercel)
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("Manca la GEMINI_API_KEY su Vercel!");
+      // Chiamiamo la chiave di Getimg da Vercel
+      const getimgKey = process.env.GETIMG_KEY;
+      if (!getimgKey) {
+        throw new Error("Manca la GETIMG_KEY su Vercel!");
       }
 
-      // 2. CHIAMATA A GOOGLE GEMINI API
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`, {
+      // CHIAMATA UFFICIALE A GETIMG.AI
+      const response = await fetch("https://api.getimg.ai/v1/stable-diffusion/image-to-image", {
         method: "POST",
         headers: {
+          "Authorization": `Bearer ${getimgKey}`,
           "Content-Type": "application/json",
+          "Accept": "application/json"
         },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: "Act as an expert interior designer. I am providing a top-down floor plan. Please return a photorealistic, fully furnished, 8k, modern luxury interior design version of this exact same layout. Keep the walls exactly where they are." },
-                {
-                  inline_data: {
-                    mime_type: uploadedFile.mimetype,
-                    data: base64Image
-                  }
-                }
-              ]
-            }
-          ]
-        })
+          model: "realistic-vision-v5-1", // Modello eccellente per l'architettura
+          prompt: "Top-down view of a modern fully furnished apartment floor plan, photorealistic, 8k, interior design, highly detailed, architectural visualization, warm lighting, wooden floor, modern furniture",
+          negative_prompt: "lowres, bad quality, sketchy, blurry, text, watermark, rough layout, empty room",
+          image: base64Image, 
+          strength: 0.75, // Mantiene i muri e cambia i mobili
+          steps: 25,
+          output_format: "jpeg"
+        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Errore API Google: ${errorData.error?.message || response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Errore Server Getimg: ${errorText}`);
       }
 
       const data = await response.json();
       
-      // Catturiamo la risposta del modello
-      const generatedContent = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      // Getimg restituisce l'immagine in base64. La formattiamo per la tua app.
+      const finalImageUrl = `data:image/jpeg;base64,${data.image}`;
 
-      // 3. CONTROLLO OUTPUT
-      // Siccome le API gratuite di Google spesso rispondono a parole invece di restituire il file grafico puro,
-      // controlliamo se il risultato è effettivamente un'immagine (Base64 o URL)
-      if (!generatedContent.startsWith("data:image") && !generatedContent.startsWith("http")) {
-         throw new Error("Il server di Google ha analizzato la planimetria ma ha risposto con del testo. L'API gratuita standard potrebbe non avere i permessi per sputare fuori il file grafico modificato.");
-      }
-
-      // RESTITUZIONE AL FRONTEND
-      res.status(200).json({ success: true, imageUrl: generatedContent });
+      res.status(200).json({ success: true, imageUrl: finalImageUrl });
 
     } catch (error) {
-      console.error("Errore Generazione Google:", error.message);
+      console.error("Errore Generazione AI:", error.message);
       res.status(500).json({ error: error.message });
     }
   });
