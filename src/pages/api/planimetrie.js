@@ -24,39 +24,41 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Formato non supportato. Usa PNG o JPG.' });
       }
 
-      // 2. CONVERSIONE IN DATA URI (Per Fal.ai)
+      // 2. CONVERSIONE IN BASE64 PURO (Per Getimg.ai)
+      // Getimg non vuole il prefisso "data:image...", vuole solo il codice puro
       const fileData = fs.readFileSync(uploadedFile.filepath);
       const base64Image = Buffer.from(fileData).toString('base64');
-      const dataUri = `data:${uploadedFile.mimetype};base64,${base64Image}`;
 
-      // 3. CHIAMATA A FAL.AI (Nuovo endpoint corretto: fast-sdxl)
-      const response = await fetch("https://fal.run/fal-ai/fast-sdxl", {
+      // 3. CHIAMATA A GETIMG.AI (La soluzione 100% gratuita, 100 crediti/mese)
+      const response = await fetch("https://api.getimg.ai/v1/stable-diffusion/image-to-image", {
         method: "POST",
         headers: {
-          "Authorization": `Key ${process.env.FAL_KEY}`,
+          "Authorization": `Bearer ${process.env.GETIMG_KEY}`,
           "Content-Type": "application/json",
+          "Accept": "application/json"
         },
         body: JSON.stringify({
+          model: "realistic-vision-v5-1", // Modello eccellente per il fotorealismo architettonico
           prompt: "Top-down view of a modern fully furnished apartment floor plan, photorealistic, 8k, interior design, highly detailed, architectural visualization, warm lighting, wooden floor, modern furniture",
           negative_prompt: "lowres, bad quality, sketchy, blurry, text, watermark, rough layout, empty room",
-          image_url: dataUri, // <--- Aggiornato per fast-sdxl
-          strength: 0.85,     // <--- 0.85 permette all'AI di arredare mantenendo l'ossatura dei muri originali
-          image_size: "square_hd",
-          num_inference_steps: 30,
-          guidance_scale: 7.5,
+          image: base64Image, 
+          strength: 0.75, // 0.75 mantiene l'ossatura originale della planimetria
+          steps: 25,
+          output_format: "jpeg"
         }),
       });
 
       // Gestione errori del server cloud
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Errore API Fal.ai: ${errorText}`);
+        throw new Error(`Errore API Getimg: ${errorText}`);
       }
 
       const data = await response.json();
       
       // 4. RESTITUZIONE AL FRONTEND
-      const finalImageUrl = data.images[0].url;
+      // Getimg restituisce l'immagine in base64 puro. La formattiamo come Data URI per il frontend
+      const finalImageUrl = `data:image/jpeg;base64,${data.image}`;
 
       res.status(200).json({ success: true, imageUrl: finalImageUrl });
 
