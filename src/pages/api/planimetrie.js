@@ -32,8 +32,8 @@ export default async function handler(req, res) {
         throw new Error("Manca l'HF_TOKEN su Vercel!");
       }
 
-      // CHIAMATA A HUGGING FACE (Server 100% Gratuito)
-      const response = await fetch("https://api-inference.huggingface.co/models/timbrooks/instruct-pix2pix", {
+      // CHIAMATA A HUGGING FACE (Nuovo server Router aggiornato!)
+      const response = await fetch("https://router.huggingface.co/hf-inference/models/timbrooks/instruct-pix2pix", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${hfToken}`,
