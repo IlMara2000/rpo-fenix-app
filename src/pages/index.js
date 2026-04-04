@@ -11,15 +11,16 @@ export default function MainMenu() {
         <title>FENIX GROUP | SUITE</title>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         
-        {/* Favicon standard per le schede del browser (PC) */}
-        <link rel="icon" href="/favicon.ico" />
+        {/* Favicon standard per PC e Browser moderni */}
+        <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
+        <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+        <link rel="shortcut icon" href="/favicon/favicon.ico" />
         
-        {/* La magia per l'iPhone: Icona "Aggiungi a Home" */}
-        <link rel="apple-touch-icon" href="/favicon.ico" />
+        {/* La magia per l'iPhone: Icona "Aggiungi a Home" perfetta */}
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
         
-        {/* Icona per i dispositivi Android */}
-        <link rel="icon" sizes="192x192" href="/favicon.ico" />
-        <link rel="icon" sizes="512x512" href="/favicon.ico" />
+        {/* Il Manifest per i dispositivi Android */}
+        <link rel="manifest" href="/favicon/site.webmanifest" />
       </Head>
 
       <header className="w-full flex flex-col items-center mb-16 animate-in fade-in slide-in-from-top-10 duration-700">
