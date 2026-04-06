@@ -17,12 +17,13 @@ export default function PlanimetrieTool() {
 
     setLoading(true);
     setResultImage(null);
-    setStatus({ msg: 'ELABORAZIONE E GENERAZIONE AI IN CORSO...', type: 'red' });
+    setStatus({ msg: 'ELABORAZIONE SUL SERVER MAC MINI M4...', type: 'red' });
 
     try {
       const formData = new FormData();
       formData.append('file', file);
 
+      // Chiama il nostro nuovo file API che comunica con Ngrok/Stable Diffusion
       const response = await fetch('/api/planimetrie', {
         method: 'POST',
         body: formData,
@@ -31,10 +32,10 @@ export default function PlanimetrieTool() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Errore di generazione');
+        throw new Error(data.error || 'Errore di generazione dal server locale');
       }
 
-      // Fal.ai ci restituisce direttamente l'URL, niente più conversioni pazze Base64!
+      // Il Mac Mini ci restituisce l'immagine in Base64 (data:image/png;base64,...)
       setResultImage(data.imageUrl);
       setStatus({ msg: 'PLANIMETRIA ARREDATA CON SUCCESSO!', type: 'yellow' });
 
@@ -48,14 +49,14 @@ export default function PlanimetrieTool() {
   const handleDownload = async () => {
     if (resultImage) {
       try {
-        // Scarichiamo l'immagine dal server di Fal per salvarla in locale
+        // Converte il Base64 del Mac in un file scaricabile
         const res = await fetch(resultImage);
         const blob = await res.blob();
         const baseName = file.name.replace(/\.[^/.]+$/, "");
         saveAs(blob, `${baseName}_arredata.png`);
       } catch (err) {
         console.error("Errore nel download", err);
-        // Piano B: se il browser blocca il download per sicurezza, apre la foto in una nuova scheda
+        // Piano B
         window.open(resultImage, '_blank');
       }
     }
@@ -91,10 +92,10 @@ export default function PlanimetrieTool() {
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center text-red-500">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             </span>
-            Generatore AI
+            Motore AI Locale
           </h2>
           <p className="text-gray-400 text-xs mb-8">
-            Carica la planimetria "nuda" in formato <b>PNG o JPG</b>. Il sistema la invierà ai server cloud di <b>Fal.ai</b> per generare una versione fotorealistica arredata mantenendo le proporzioni esatte.
+            Carica la planimetria "nuda" in formato <b>PNG o JPG</b>. Il sistema invierà la richiesta al server dedicato <b>Mac Mini M4</b> per generare una versione fotorealistica arredata a costo zero.
           </p>
 
           <form onSubmit={handleGenerate} className="space-y-6">
@@ -107,7 +108,7 @@ export default function PlanimetrieTool() {
                 onChange={e => {
                   setFile(e.target.files[0]); 
                   setFileName(e.target.files[0]?.name || "nessun file");
-                  setResultImage(null); // Resetta l'immagine precedente
+                  setResultImage(null);
                 }} 
               />
               <span className="text-[10px] truncate max-w-[200px] opacity-50">{fileName}</span>
@@ -118,7 +119,7 @@ export default function PlanimetrieTool() {
               disabled={loading || !file} 
               className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black rounded-2xl shadow-[0_10px_30px_rgba(220,38,38,0.3)] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50 disabled:grayscale cursor-pointer"
             >
-              {loading ? "GENERAZIONE IN CORSO... (Richiede pochi secondi)" : "GENERA ARREDAMENTO AI"}
+              {loading ? "GENERAZIONE IN CORSO SUL MAC... (Attendi)" : "GENERA ARREDAMENTO AI"}
             </button>
           </form>
 
@@ -126,7 +127,7 @@ export default function PlanimetrieTool() {
           {resultImage && (
             <div className="mt-8 pt-8 border-t border-white/10 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="mb-6 rounded-2xl overflow-hidden border-2 border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
-                {/* Mostra l'immagine generata tramite il link fornito da Fal.ai */}
+                {/* Mostra l'immagine generata dal Mac */}
                 <img src={resultImage} alt="Preview Planimetria Arredata" className="w-full max-h-[300px] object-contain bg-black" crossOrigin="anonymous" />
               </div>
               <button 

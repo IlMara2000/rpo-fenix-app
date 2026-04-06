@@ -1,7 +1,8 @@
 import { IncomingForm } from 'formidable';
 import fs from 'fs';
+import path from 'path';
 
-// Disabilitiamo il body parser predefinito di Next.js per poter gestire il file in ingresso
+// Disabilitiamo il body parser predefinito di Next.js
 export const config = {
   api: { bodyParser: false },
 };
@@ -22,71 +23,55 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Formato non supportato. Usa PNG o JPG.' });
       }
 
-      // Prodia vuole l'immagine in Base64 puro
+      // 1. Convertiamo l'immagine in Base64
       const fileData = fs.readFileSync(uploadedFile.filepath);
       const base64Image = Buffer.from(fileData).toString('base64');
 
-      const prodiaKey = process.env.PRODIA_KEY;
-      if (!prodiaKey) {
-        throw new Error("Manca la PRODIA_KEY su Vercel!");
+      // 2. LEGGIAMO IL LINK FRESCO DI NGROK CREATO DAL BOTTONE 3
+      // process.cwd() assicura che trovi il file json partendo dalla root del progetto
+      const configPath = path.join(process.cwd(), 'ngrok_config.json');
+      let ngrokUrl = "";
+      
+      try {
+        const configData = fs.readFileSync(configPath, 'utf8');
+        ngrokUrl = JSON.parse(configData).url;
+      } catch (e) {
+        throw new Error("File ngrok_config.json non trovato. Hai premuto il Bottone 3?");
       }
 
-      // 1. INVIO DEL LAVORO A PRODIA
-      const createJobResponse = await fetch("https://api.prodia.com/v1/sd/transform", {
+      const apiUrl = `${ngrokUrl}/sdapi/v1/img2img`;
+      console.log(`🚀 Inviando lavoro al Mac Mini M4: ${apiUrl}`);
+
+      // 3. CHIAMATA DIRETTA AL TUO MAC (Niente più Prodia o Getimg!)
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
-          "X-Prodia-Key": prodiaKey,
           "Content-Type": "application/json",
           "Accept": "application/json"
         },
         body: JSON.stringify({
-          model: "realisticVisionV51_v51VAE.safetensors [38a1dba3]", 
           prompt: "Top-down view of a modern fully furnished apartment floor plan, photorealistic, 8k, interior design, highly detailed, architectural visualization, warm lighting, wooden floor, modern furniture",
           negative_prompt: "lowres, bad quality, sketchy, blurry, text, watermark, rough layout, empty room",
-          imageData: base64Image,
-          denoising_strength: 0.75, // Permette a Prodia di arredare mantenendo i muri originali
-          steps: 25,
-          cfg_scale: 7
+          init_images: [base64Image],
+          denoising_strength: 0.75, // Mantiene i muri e cambia i mobili
+          steps: 25
         }),
       });
 
-      if (!createJobResponse.ok) {
-        const errorText = await createJobResponse.text();
-        throw new Error(`Errore API Prodia: ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Il Mac Mini ha risposto con un errore: ${errorText}`);
       }
 
-      const jobData = await createJobResponse.json();
-      const jobId = jobData.job;
+      // 4. PRENDIAMO IL RISULTATO DAL MAC E LO MANDIAMO ALL'APP
+      const data = await response.json();
+      const finalImageUrl = `data:image/png;base64,${data.images[0]}`;
 
-      // 2. ATTESA (Polling): Chiediamo a Prodia ogni 3 secondi se ha finito di generare
-      let status = "queued";
-      let finalImageUrl = null;
-
-      while (status !== "succeeded" && status !== "failed") {
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Aspetta 3 secondi tra una chiamata e l'altra
-
-        const checkResponse = await fetch(`https://api.prodia.com/v1/job/${jobId}`, {
-          headers: { "X-Prodia-Key": prodiaKey }
-        });
-        
-        const checkData = await checkResponse.json();
-        status = checkData.status;
-
-        if (status === "succeeded") {
-          finalImageUrl = checkData.imageUrl;
-        }
-      }
-
-      if (status === "failed") {
-        throw new Error("Il server di Prodia ha fallito la generazione dell'immagine.");
-      }
-
-      // 3. RESTITUZIONE AL FRONTEND: Mandiamo l'immagine finita alla tua app Fenix
       res.status(200).json({ success: true, imageUrl: finalImageUrl });
 
     } catch (error) {
-      console.error("Errore Generazione Prodia:", error.message);
-      res.status(500).json({ error: 'Errore durante la generazione della planimetria nel cloud.' });
+      console.error("Errore Generazione AI Locale:", error.message);
+      res.status(500).json({ error: error.message });
     }
   });
 }
