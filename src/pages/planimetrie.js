@@ -5,6 +5,7 @@ import { saveAs } from 'file-saver';
 
 export default function PlanimetrieTool() {
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState('INIZIALIZZAZIONE...');
   const [status, setStatus] = useState({ msg: 'PRONTO PER LA GENERAZIONE', type: 'info' });
   
   // STATO DEL SEMAFORO: 'checking' (giallo), 'online' (verde), 'offline' (rosso)
@@ -13,6 +14,29 @@ export default function PlanimetrieTool() {
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState("nessun file selezionato");
   const [resultImage, setResultImage] = useState(null);
+
+  // Effetto per cambiare il testo di caricamento mentre la CPU del Mac lavora
+  useEffect(() => {
+    if (!loading) return;
+    
+    const phrases = [
+      'ANALISI DELLA PLANIMETRIA...',
+      'RICONOSCIMENTO MURI E PORTE...',
+      'POSIZIONAMENTO ARREDI...',
+      'CALCOLO ILLUMINAZIONE 8K...',
+      'RENDERIZZAZIONE FINALE SUL MAC M4...',
+      'QUASI PRONTO...'
+    ];
+    let i = 0;
+    
+    setLoadingText(phrases[0]); // Imposta la prima frase subito
+    const interval = setInterval(() => {
+      i = (i + 1) % phrases.length;
+      setLoadingText(phrases[i]);
+    }, 4000); // Cambia frase ogni 4 secondi
+
+    return () => clearInterval(interval);
+  }, [loading]);
 
   // Funzione che controlla se il Mac Mini è acceso
   const checkServerStatus = async () => {
@@ -39,7 +63,6 @@ export default function PlanimetrieTool() {
     e.preventDefault();
     if (!file) return;
 
-    // Se è offline, blocca tutto e avvisa
     if (serverStatus === 'offline') {
       setStatus({ msg: 'ERRORE: ACCENDI PRIMA IL SERVER SUL MAC MINI!', type: 'red' });
       return;
@@ -47,7 +70,7 @@ export default function PlanimetrieTool() {
 
     setLoading(true);
     setResultImage(null);
-    setStatus({ msg: 'ELABORAZIONE SUL SERVER MAC MINI M4...', type: 'red' });
+    setStatus({ msg: 'ELABORAZIONE IN CORSO...', type: 'red' });
 
     try {
       const formData = new FormData();
@@ -137,7 +160,7 @@ export default function PlanimetrieTool() {
                 </span>
               </span>
             </div>
-            <button onClick={checkServerStatus} className="text-[9px] uppercase tracking-widest bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg transition-colors">
+            <button type="button" onClick={checkServerStatus} className="text-[9px] uppercase tracking-widest bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg transition-colors cursor-pointer">
               Aggiorna
             </button>
           </div>
@@ -162,18 +185,37 @@ export default function PlanimetrieTool() {
               <span className="text-[10px] truncate max-w-[200px] opacity-50">{fileName}</span>
             </label>
 
-            <button 
-              type="submit" 
-              disabled={loading || !file || serverStatus !== 'online'} 
-              className={`w-full py-4 text-white font-black rounded-2xl uppercase tracking-widest transition-all cursor-pointer ${
-                serverStatus === 'online' 
-                ? 'bg-red-600 hover:bg-red-500 shadow-[0_10px_30px_rgba(220,38,38,0.3)] active:scale-95' 
-                : 'bg-gray-600 opacity-50 cursor-not-allowed grayscale'
-              }`}
-            >
-              {loading ? "GENERAZIONE IN CORSO... (Attendi)" : 
-               serverStatus !== 'online' ? "SERVER OFFLINE" : "GENERA ARREDAMENTO AI"}
-            </button>
+            {/* SEZIONE BOTTONE / ANIMAZIONE DI CARICAMENTO */}
+            {loading ? (
+              <div className="w-full py-6 flex flex-col items-center justify-center bg-black/60 rounded-2xl border border-red-500/50 shadow-[0_0_30px_rgba(220,38,38,0.2)]">
+                {/* SVG SPINNER */}
+                <svg className="animate-spin h-8 w-8 text-red-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                
+                {/* TESTO DINAMICO CHE CAMBIA */}
+                <span className="text-xs font-black tracking-widest uppercase text-red-400 animate-pulse text-center px-4">
+                  {loadingText}
+                </span>
+                
+                <span className="text-[9px] text-gray-500 mt-3 text-center px-4 uppercase tracking-wider">
+                  La CPU del server M4 sta elaborando l'immagine.<br/>Non ricaricare la pagina.
+                </span>
+              </div>
+            ) : (
+              <button 
+                type="submit" 
+                disabled={!file || serverStatus !== 'online'} 
+                className={`w-full py-4 text-white font-black rounded-2xl uppercase tracking-widest transition-all cursor-pointer ${
+                  serverStatus === 'online' 
+                  ? 'bg-red-600 hover:bg-red-500 shadow-[0_10px_30px_rgba(220,38,38,0.3)] active:scale-95' 
+                  : 'bg-gray-800 border border-white/10 opacity-50 cursor-not-allowed grayscale text-gray-500'
+                }`}
+              >
+                {serverStatus !== 'online' ? "SERVER OFFLINE" : "GENERA ARREDAMENTO AI"}
+              </button>
+            )}
           </form>
 
           {resultImage && (
