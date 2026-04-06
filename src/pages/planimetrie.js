@@ -143,7 +143,7 @@ export default function PlanimetrieTool() {
           </div>
 
           <p className="text-gray-400 text-xs mb-8">
-            Carica la planimetria "nuda" in formato <b>PNG, JPG o PDF</b>. Il sistema invierà la richiesta al server dedicato <b>Mac Mini M4</b> per generare una versione fotorealistica arredata a costo zero.
+            Carica la planimetria "nuda" in formato <b>PNG o JPG</b>. Il sistema invierà la richiesta al server dedicato <b>Mac Mini M4</b> per generare una versione fotorealistica arredata a costo zero.
           </p>
 
           <form onSubmit={handleGenerate} className="space-y-6">
@@ -151,7 +151,7 @@ export default function PlanimetrieTool() {
               <span className="text-[10px] font-bold uppercase tracking-widest">Carica Planimetria:</span>
               <input 
                 type="file" 
-                accept=".png,.jpg,.jpeg,.pdf" 
+                accept=".png,.jpg,.jpeg" 
                 className="hidden" 
                 onChange={e => {
                   setFile(e.target.files[0]); 
