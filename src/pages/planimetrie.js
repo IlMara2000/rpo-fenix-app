@@ -1,5 +1,5 @@
 // src/pages/planimetrie.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import { saveAs } from 'file-saver';
 
@@ -7,69 +7,58 @@ export default function PlanimetrieTool() {
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('INIZIALIZZAZIONE...');
   const [status, setStatus] = useState({ msg: 'PRONTO PER LA GENERAZIONE', type: 'info' });
-  
-  // STATO DEL SEMAFORO: 'checking' (giallo), 'online' (verde), 'offline' (rosso)
   const [serverStatus, setServerStatus] = useState('checking');
-
+  
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState("nessun file selezionato");
   const [resultImage, setResultImage] = useState(null);
 
-  // Effetto per cambiare il testo di caricamento mentre la CPU del Mac lavora
+  // STATO PER I TESTI SOPRA LA PLANIMETRIA
+  const [overlayText, setOverlayText] = useState([]);
+  const containerRef = useRef(null);
+
+  // Ciclo messaggi di caricamento
   useEffect(() => {
     if (!loading) return;
-    
     const phrases = [
       'ANALISI DELLA PLANIMETRIA...',
-      'RICONOSCIMENTO MURI E PORTE...',
+      'RICONOSCIMENTO MURI (CONTROLNET)...',
       'POSIZIONAMENTO ARREDI...',
       'CALCOLO ILLUMINAZIONE 8K...',
       'RENDERIZZAZIONE FINALE SUL MAC M4...',
       'QUASI PRONTO...'
     ];
     let i = 0;
-    
-    setLoadingText(phrases[0]); // Imposta la prima frase subito
+    setLoadingText(phrases[0]);
     const interval = setInterval(() => {
       i = (i + 1) % phrases.length;
       setLoadingText(phrases[i]);
-    }, 4000); // Cambia frase ogni 4 secondi
-
+    }, 4000);
     return () => clearInterval(interval);
   }, [loading]);
 
-  // Funzione che controlla se il Mac Mini è acceso
   const checkServerStatus = async () => {
     setServerStatus('checking');
     try {
       const res = await fetch('/api/check-server');
       const data = await res.json();
-      if (data.isOnline) {
-        setServerStatus('online');
-      } else {
-        setServerStatus('offline');
-      }
+      setServerStatus(data.isOnline ? 'online' : 'offline');
     } catch (error) {
       setServerStatus('offline');
     }
   };
 
-  // Controlla lo stato appena apri la pagina
   useEffect(() => {
     checkServerStatus();
   }, []);
 
   const handleGenerate = async (e) => {
     e.preventDefault();
-    if (!file) return;
-
-    if (serverStatus === 'offline') {
-      setStatus({ msg: 'ERRORE: ACCENDI PRIMA IL SERVER SUL MAC MINI!', type: 'red' });
-      return;
-    }
+    if (!file || serverStatus === 'offline') return;
 
     setLoading(true);
     setResultImage(null);
+    setOverlayText([]); // Reset testi precedenti
     setStatus({ msg: 'ELABORAZIONE IN CORSO...', type: 'red' });
 
     try {
@@ -82,14 +71,10 @@ export default function PlanimetrieTool() {
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Errore di generazione dal server locale');
-      }
+      if (!response.ok) throw new Error(data.error || 'Errore server');
 
       setResultImage(data.imageUrl);
       setStatus({ msg: 'PLANIMETRIA ARREDATA CON SUCCESSO!', type: 'yellow' });
-
     } catch (error) {
       console.error(error);
       setStatus({ msg: `ERRORE: ${error.message}`, type: 'red' });
@@ -97,17 +82,27 @@ export default function PlanimetrieTool() {
     setLoading(false);
   };
 
+  // Funzione per muovere le etichette (Drag)
+  const handleDrag = (e, index) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    
+    const newTexts = [...overlayText];
+    newTexts[index] = { ...newTexts[index], x: `${x}%`, y: `${y}%` };
+    setOverlayText(newTexts);
+  };
+
   const handleDownload = async () => {
-    if (resultImage) {
-      try {
-        const res = await fetch(resultImage);
-        const blob = await res.blob();
-        const baseName = file.name.replace(/\.[^/.]+$/, "");
-        saveAs(blob, `${baseName}_arredata.png`);
-      } catch (err) {
-        console.error("Errore nel download", err);
-        window.open(resultImage, '_blank');
-      }
+    if (!resultImage) return;
+    try {
+      const res = await fetch(resultImage);
+      const blob = await res.blob();
+      const baseName = file.name.replace(/\.[^/.]+$/, "");
+      saveAs(blob, `${baseName}_arredata.png`);
+    } catch (err) {
+      window.open(resultImage, '_blank');
     }
   };
 
@@ -137,45 +132,28 @@ export default function PlanimetrieTool() {
       <main className="w-full max-w-2xl flex flex-col items-center justify-center flex-1">
         <section className="bg-black/40 backdrop-blur-md p-10 rounded-[35px] border border-white/10 w-full shadow-2xl relative">
           
-          <h2 className="text-2xl font-black uppercase tracking-widest mb-4 flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center text-red-500">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-            </span>
+          <h2 className="text-2xl font-black uppercase tracking-widest mb-4 flex items-center gap-3 text-red-500">
             Motore AI Locale
           </h2>
 
-          {/* IL SEMAFORO DI STATO */}
+          {/* SEMAFORO */}
           <div className="flex items-center justify-between bg-black/50 p-3 rounded-xl border border-white/5 mb-6">
             <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full animate-pulse shadow-[0_0_10px_currentColor] ${
-                serverStatus === 'online' ? 'bg-green-500 text-green-500' : 
-                serverStatus === 'offline' ? 'bg-red-500 text-red-500' : 'bg-yellow-500 text-yellow-500'
+              <div className={`w-3 h-3 rounded-full animate-pulse ${
+                serverStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 
+                serverStatus === 'offline' ? 'bg-red-500 shadow-[0_0_10px_#ef4444]' : 'bg-yellow-500'
               }`}></div>
-              <span className="text-xs font-bold tracking-widest uppercase text-gray-300">
-                Stato Server M4: <span className={
-                  serverStatus === 'online' ? 'text-green-400' : 
-                  serverStatus === 'offline' ? 'text-red-400' : 'text-yellow-400'
-                }>
-                  {serverStatus === 'checking' ? 'VERIFICA...' : serverStatus}
-                </span>
+              <span className="text-xs font-bold uppercase tracking-widest text-gray-300">
+                Stato Server M4: <span className={serverStatus === 'online' ? 'text-green-400' : 'text-red-400'}>{serverStatus.toUpperCase()}</span>
               </span>
             </div>
-            <button type="button" onClick={checkServerStatus} className="text-[9px] uppercase tracking-widest bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg transition-colors cursor-pointer">
-              Aggiorna
-            </button>
+            <button onClick={checkServerStatus} className="text-[9px] uppercase font-bold bg-white/10 px-3 py-1 rounded-lg hover:bg-white/20">Aggiorna</button>
           </div>
-
-          <p className="text-gray-400 text-xs mb-8">
-            Carica la planimetria "nuda" in formato <b>PNG o JPG</b>. Il sistema invierà la richiesta al server dedicato <b>Mac Mini M4</b> per generare una versione fotorealistica arredata a costo zero.
-          </p>
 
           <form onSubmit={handleGenerate} className="space-y-6">
             <label className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
               <span className="text-[10px] font-bold uppercase tracking-widest">Carica Planimetria:</span>
-              <input 
-                type="file" 
-                accept=".png,.jpg,.jpeg" 
-                className="hidden" 
+              <input type="file" accept=".png,.jpg,.jpeg" className="hidden" 
                 onChange={e => {
                   setFile(e.target.files[0]); 
                   setFileName(e.target.files[0]?.name || "nessun file");
@@ -185,48 +163,74 @@ export default function PlanimetrieTool() {
               <span className="text-[10px] truncate max-w-[200px] opacity-50">{fileName}</span>
             </label>
 
-            {/* SEZIONE BOTTONE / ANIMAZIONE DI CARICAMENTO */}
             {loading ? (
-              <div className="w-full py-6 flex flex-col items-center justify-center bg-black/60 rounded-2xl border border-red-500/50 shadow-[0_0_30px_rgba(220,38,38,0.2)]">
-                {/* SVG SPINNER */}
-                <svg className="animate-spin h-8 w-8 text-red-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <div className="w-full py-6 flex flex-col items-center justify-center bg-black/60 rounded-2xl border border-red-500/50 shadow-2xl">
+                <svg className="animate-spin h-8 w-8 text-red-500 mb-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                
-                {/* TESTO DINAMICO CHE CAMBIA */}
-                <span className="text-xs font-black tracking-widest uppercase text-red-400 animate-pulse text-center px-4">
-                  {loadingText}
-                </span>
-                
-                <span className="text-[9px] text-gray-500 mt-3 text-center px-4 uppercase tracking-wider">
-                  La CPU del server M4 sta elaborando l'immagine.<br/>Non ricaricare la pagina.
-                </span>
+                <span className="text-xs font-black tracking-widest uppercase text-red-400 animate-pulse">{loadingText}</span>
               </div>
             ) : (
-              <button 
-                type="submit" 
-                disabled={!file || serverStatus !== 'online'} 
-                className={`w-full py-4 text-white font-black rounded-2xl uppercase tracking-widest transition-all cursor-pointer ${
-                  serverStatus === 'online' 
-                  ? 'bg-red-600 hover:bg-red-500 shadow-[0_10px_30px_rgba(220,38,38,0.3)] active:scale-95' 
-                  : 'bg-gray-800 border border-white/10 opacity-50 cursor-not-allowed grayscale text-gray-500'
-                }`}
-              >
+              <button type="submit" disabled={!file || serverStatus !== 'online'} 
+                className={`w-full py-4 text-white font-black rounded-2xl uppercase tracking-widest transition-all ${
+                  serverStatus === 'online' ? 'bg-red-600 hover:bg-red-500 shadow-xl active:scale-95' : 'bg-gray-800 opacity-50 cursor-not-allowed'
+                }`}>
                 {serverStatus !== 'online' ? "SERVER OFFLINE" : "GENERA ARREDAMENTO AI"}
               </button>
             )}
           </form>
 
+          {/* AREA RISULTATO CON TESTI */}
           {resultImage && (
-            <div className="mt-8 pt-8 border-t border-white/10 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="mb-6 rounded-2xl overflow-hidden border-2 border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
-                <img src={resultImage} alt="Preview Planimetria Arredata" className="w-full max-h-[300px] object-contain bg-black" crossOrigin="anonymous" />
-              </div>
-              <button 
-                onClick={handleDownload}
-                className="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-black rounded-2xl shadow-xl uppercase tracking-widest animate-pulse cursor-pointer"
+            <div className="mt-8 pt-8 border-t border-white/10 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4">
+              
+              <div 
+                ref={containerRef}
+                className="relative mb-6 rounded-2xl overflow-hidden border-2 border-green-500/50 shadow-2xl bg-black cursor-crosshair"
+                style={{ width: '100%', minHeight: '300px' }}
               >
+                <img src={resultImage} alt="Risultato" className="w-full h-auto block" />
+                
+                {/* OVERLAY TESTI TRASCINABILI */}
+                <div className="absolute inset-0">
+                  {overlayText.map((t, i) => (
+                    <div 
+                      key={i} 
+                      draggable 
+                      onDragEnd={(e) => handleDrag(e, i)}
+                      style={{ left: t.x, top: t.y }} 
+                      className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-move pointer-events-auto"
+                    >
+                      <div className="group relative">
+                        <span className="text-white bg-black/80 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-tighter border border-white/30 shadow-2xl whitespace-nowrap">
+                          {t.label}
+                        </span>
+                        {/* Tasto cancella etichetta */}
+                        <button 
+                          onClick={() => setOverlayText(overlayText.filter((_, idx) => idx !== i))}
+                          className="absolute -top-4 -right-4 bg-red-600 text-white rounded-full w-4 h-4 text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"
+                        >✕</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* SELEZIONE RAPIDA ETICHETTE */}
+              <div className="grid grid-cols-3 gap-2 mb-6 w-full">
+                {['SOGGIORNO', 'CUCINA', 'CAMERA', 'BAGNO', 'INGRESSO', 'BALCONE'].map(label => (
+                  <button 
+                    key={label}
+                    onClick={() => setOverlayText([...overlayText, { label, x: '50%', y: '50%' }])}
+                    className="text-[9px] bg-white/5 hover:bg-red-500/30 border border-white/10 p-2 rounded-xl transition-all uppercase font-bold"
+                  >
+                    + {label}
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={handleDownload} className="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-black rounded-2xl shadow-xl uppercase tracking-widest">
                 SCARICA IMMAGINE FINALE
               </button>
             </div>
