@@ -161,7 +161,8 @@ export default function PlanimetrieTool() {
             
             <div className="flex items-center justify-between mb-4 mt-2">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">ARREDATORE D'INTERNI - AI</h2>
-              <div className={`w-2.5 h-2.5 rounded-full ${serverStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse' : 'bg-red-500 shadow-[0_0_10px_#ef4444]'}`}>STATO</div>
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white-400">STATO ➜</h3>
+              <div className={`w-2.5 h-2.5 rounded-full ${serverStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse' : 'bg-red-500 shadow-[0_0_10px_#ef4444]'}`}></div>
             </div>
 
             {/* AREA UPLOAD DIRETTA */}
