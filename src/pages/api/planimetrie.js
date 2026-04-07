@@ -66,7 +66,7 @@ export default async function handler(req, res) {
           "controlnet": {
             "args": [
               {
-                "input_image": base64Image,
+                "image": base64Image,  // ✨ FIX: Modificato da 'input_image' a 'image' per eliminare il warning!
                 "model": "control_v11p_sd15_canny", 
                 "module": "canny",                
                 "weight": 1.8,                   
