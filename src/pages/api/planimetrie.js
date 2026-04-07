@@ -7,6 +7,9 @@ export const config = {
   api: { bodyParser: false },
 };
 
+// 🔥 IL SEGRETO: Forza Vercel ad aspettare fino a 60 secondi invece di 10
+export const maxDuration = 60; 
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo non consentito' });
 
@@ -78,7 +81,7 @@ export default async function handler(req, res) {
         }
       };
 
-      console.log(`📡 Inviando richiesta 'Pure Photoreal' al Mac M4...`);
+      console.log(`📡 Inviando richiesta 'Pure Photoreal' al Mac M4 (Mood: ${styleChoice})...`);
 
       const response = await fetch(apiUrl, {
         method: "POST",

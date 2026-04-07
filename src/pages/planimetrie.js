@@ -89,14 +89,22 @@ export default function PlanimetrieTool() {
             body: formData,
           });
 
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error);
+          // 🔥 GESTIONE ERRORI AVANZATA
+          const responseText = await response.text();
+          let data;
+          try {
+            data = JSON.parse(responseText);
+          } catch (e) {
+            throw new Error(`Timeout Server Vercel (Tempo esaurito).`);
+          }
+
+          if (!response.ok) throw new Error(data.error || "Errore sconosciuto");
           
           updateItemStatus(nextTask.id, 'completed', data.imageUrl);
           setActiveViewId(prev => prev ? prev : nextTask.id); 
           
         } catch (err) {
-          console.error(err);
+          console.error("ERRORE GENERAZIONE:", err);
           updateItemStatus(nextTask.id, 'error');
         }
         setLoading(false);
@@ -123,31 +131,46 @@ export default function PlanimetrieTool() {
     }
   };
 
-  // 🚀 FIX: BLOB DOWNLOAD HEAVY-DUTY PER IMMAGINI 8K
-  const handleDownload = async (item) => {
+  // 🚀 FIX: MOTORE DI DOWNLOAD HEAVY-DUTY (A fette)
+  const handleDownload = (item) => {
     if (!item.resultImage) return;
     
     try {
-      // 1. Trasforma la stringa infinita in un oggetto fisico (Blob)
-      const res = await fetch(item.resultImage);
-      const blob = await res.blob();
+      // 1. Dividiamo l'intestazione Base64 ("data:image/png;base64,") dal codice reale
+      const base64Data = item.resultImage.split(',')[1];
       
-      // 2. Crea un link leggero e invisibile che il browser non blocca
+      // 2. Decodifica manuale pezzo per pezzo per non far schiantare il browser
+      const byteCharacters = atob(base64Data);
+      const byteArrays = [];
+      
+      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512);
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+      }
+      
+      // 3. Creazione del file fisico (Blob)
+      const blob = new Blob(byteArrays, { type: 'image/png' });
+      
+      // 4. Creazione del link di download e click simulato
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `${item.fileName.split('.')[0]}_FenixRender.png`;
       
-      // 3. Simula il click e scarica
       document.body.appendChild(link);
       link.click();
       
-      // 4. Pulisci la spazzatura
+      // 5. Pulizia
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Errore durante il download", err);
-      // Piano B: aprila in una nuova scheda
+      console.error("Errore critico durante il download manuale", err);
+      // Piano B d'emergenza
       window.open(item.resultImage, '_blank');
     }
   };
@@ -226,16 +249,18 @@ export default function PlanimetrieTool() {
                   onClick={() => item.resultImage && setActiveViewId(item.id)}
                 >
                   {item.status === 'processing' && (
-                    <div className="absolute bottom-0 left-0 h-[1px] bg-red-500 animate-progress-indefinite"></div>
+                    <div className="absolute bottom-0 left-0 h-[2px] bg-blue-500 animate-progress-indefinite"></div>
                   )}
                   <div className="flex flex-col overflow-hidden relative z-10">
                     <span className="text-[10px] font-bold truncate max-w-[130px]">{item.fileName}</span>
                     <span className={`text-[8px] font-black uppercase tracking-widest mt-1 ${
-                      item.status === 'processing' ? 'text-red-400' : 
+                      item.status === 'processing' ? 'text-blue-400 animate-pulse' : 
                       item.status === 'error' ? 'text-red-600' :
-                      item.status === 'completed' ? 'text-green-500' : 'text-white/20'
+                      item.status === 'completed' ? 'text-green-500' : 'text-white/30'
                     }`}>
-                      {item.status === 'processing' ? 'Rendering...' : item.status === 'error' ? 'Errore Rete' : 'Completato'}
+                      {item.status === 'processing' ? 'Elaborazione M4...' : 
+                       item.status === 'error' ? 'ERRORE TIMEOUT' : 
+                       item.status === 'completed' ? 'Completato' : 'In coda'}
                     </span>
                   </div>
                   
