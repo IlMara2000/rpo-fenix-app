@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* Rimosse opzioni non supportate da Next 15+ */
-}
+  // Forza Next.js a trattare sharp come dipendenza esterna.
+  // Questo risolve l'errore "Module not found" durante il build su Vercel.
+  serverExternalPackages: ['sharp'],
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
