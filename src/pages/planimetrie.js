@@ -273,18 +273,6 @@ export default function PlanimetrieTool() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-10 w-full">
-                {['SOGGIORNO', 'CUCINA', 'CAMERA', 'BAGNO', 'INGRESSO', 'BALCONE'].map(label => (
-                  <button 
-                    key={label}
-                    onClick={() => setOverlayText([...overlayText, { label, x: '50%', y: '50%' }])}
-                    className="text-[9px] bg-white/5 hover:bg-red-600 border border-white/10 p-3 rounded-2xl transition-all uppercase font-black tracking-widest hover:shadow-[0_0_20px_rgba(220,38,38,0.2)]"
-                  >
-                    + {label}
-                  </button>
-                ))}
-              </div>
-
               <button onClick={() => handleDownload(activeItem)} className="relative group w-full py-6 bg-red-600 hover:bg-red-500 text-white font-black rounded-[25px] shadow-2xl uppercase tracking-[0.3em] transition-all overflow-hidden active:scale-[0.98]">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer"></div>
                 SCARICA ARCHIVIO FINALE
