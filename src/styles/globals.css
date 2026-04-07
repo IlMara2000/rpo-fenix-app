@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,68 +6,124 @@
 
 :root {
   --fenix-red: #ee5556;
+  --fenix-red-glow: rgba(238, 85, 86, 0.15);
   --bg-dark: #000000;
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(10, 10, 10, 0.6);
 }
 
-/* BODY: SFONDO NERO TOTALE CON SFUMATURA ROSSA SOLO IN ALTO */
+/* RESET & BASE */
 body {
-  background: linear-gradient(180deg, #3a1515 0%, var(--bg-dark) 50%, var(--bg-dark) 100%) no-repeat fixed;
+  background: radial-gradient(circle at top, #2c0d0d 0%, var(--bg-dark) 70%, var(--bg-dark) 100%) no-repeat fixed;
   color: #ffffff;
   margin: 0;
-  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  letter-spacing: -0.01em;
 }
 
-/* BOX LAVORO: PIÙ SCURI PER ELIMINARE L'EFFETTO BIANCO */
+/* CARD PROFESSIONALI (GLASSMORPHISM EVOLUTO) */
 .box-lavoro {
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(238, 85, 86, 0.2);
-  border-radius: 28px;
-  padding: 35px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
-  transition: all 0.4s ease;
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-top-color: rgba(255, 255, 255, 0.12); /* Riflesso luce superiore */
+  border-radius: 32px;
+  padding: 40px;
+  box-shadow: 
+    0 4px 24px -1px rgba(0, 0, 0, 0.5),
+    0 20px 80px -20px rgba(0, 0, 0, 0.4);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .box-lavoro:hover {
-  border-color: var(--fenix-red);
-  transform: translateY(-4px);
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 1);
+  border-color: rgba(238, 85, 86, 0.4);
+  transform: translateY(-6px);
+  box-shadow: 
+    0 0 40px var(--fenix-red-glow),
+    0 40px 100px -30px rgba(0, 0, 0, 0.8);
 }
 
-/* INPUT FILE: TOTAL DARK */
+/* INPUT FILE PROFESSIONALE */
 input[type="file"] {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 12px;
-  border-radius: 14px;
-  color: #fff;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
+  padding: 16px;
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   cursor: pointer;
   width: 100%;
+  transition: all 0.3s ease;
+}
+
+input[type="file"]:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 input[type="file"]::file-selector-button {
-  background: #fff;
-  color: #000;
+  background: #ffffff;
+  color: #000000;
   border: none;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-weight: bold;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-weight: 800;
   text-transform: uppercase;
-  font-size: 10px;
-  margin-right: 15px;
+  font-size: 9px;
+  margin-right: 18px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
-/* SCROLLBAR NERA */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: #000; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: var(--fenix-red); }
+input[type="file"]::file-selector-button:hover {
+  transform: scale(1.05);
+  background: var(--fenix-red);
+  color: #fff;
+}
 
-/* FIX iOS */
+/* BOTTONI & AZIONI */
+.btn-primary {
+  @apply relative overflow-hidden transition-all duration-500 rounded-2xl font-black uppercase tracking-[0.2em];
+}
+
+/* SCROLLBAR MINIMALISTA */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { 
+  background: rgba(255, 255, 255, 0.1); 
+  border-radius: 20px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--fenix-red); }
+
+/* ANIMAZIONI DI CARICAMENTO */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.loading-skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.02) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+/* FIX iOS & ACCESSIBILITÀ */
 @supports (-webkit-touch-callout: none) {
   body { min-height: -webkit-fill-available; }
-  input[type="file"] { font-size: 16px !important; }
+  input[type="file"], select, textarea { font-size: 16px !important; }
+}
+
+/* UTILITY PER IL TESTO ARREDAMENTO */
+.label-arredo {
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
 }
