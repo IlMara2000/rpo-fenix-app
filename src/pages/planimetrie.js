@@ -160,7 +160,7 @@ export default function PlanimetrieTool() {
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
             
             <div className="flex items-center justify-between mb-4 mt-2">
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">ARREDATORE PLANIMETRIE</h2>
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">M4 PERFORMANCE ENGINE</h2>
               <div className={`w-2.5 h-2.5 rounded-full ${serverStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse' : 'bg-red-500 shadow-[0_0_10px_#ef4444]'}`}></div>
             </div>
 
@@ -176,7 +176,7 @@ export default function PlanimetrieTool() {
             </label>
           </section>
 
-          {/* LISTA CODA */}
+          {/* LISTA CODA CON BOTTONI RIPRISTINATI */}
           <div className="space-y-4">
             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 ml-2">Monitor di Sistema</h3>
             <div className="max-h-[450px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
@@ -199,13 +199,25 @@ export default function PlanimetrieTool() {
                       {item.status === 'processing' ? 'Rendering...' : 'Completato'}
                     </span>
                   </div>
+                  
+                  {/* BOTTONI DOWNLOAD E ELIMINA (RIPRISTINATI) */}
                   <div className="flex gap-2 relative z-10">
                     {item.resultImage && (
-                      <button onClick={(e) => { e.stopPropagation(); handleDownload(item); }} className="p-2 bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white rounded-xl transition-all">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDownload(item); }} 
+                        className="flex items-center justify-center p-2 bg-green-500/20 hover:bg-green-500 text-green-400 hover:text-white rounded-xl transition-all border border-green-500/30"
+                        title="Scarica Render"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                       </button>
                     )}
-                    <button onClick={(e) => { e.stopPropagation(); removeItem(item.id); }} className="p-2 bg-white/5 hover:bg-red-600 rounded-xl transition-all text-white/40 hover:text-white text-[10px]">✕</button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); removeItem(item.id); }} 
+                      className="flex items-center justify-center p-2 bg-white/5 hover:bg-red-600 rounded-xl transition-all text-white/40 hover:text-white text-[10px] w-8 h-8"
+                      title="Elimina"
+                    >
+                      ✕
+                    </button>
                   </div>
                 </div>
               ))}
