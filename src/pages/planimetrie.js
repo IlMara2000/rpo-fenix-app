@@ -12,7 +12,6 @@ export default function PlanimetrieTool() {
   
   const [queue, setQueue] = useState([]);
   const [activeViewId, setActiveViewId] = useState(null); 
-  const [overlayText, setOverlayText] = useState([]);
   const containerRef = useRef(null);
 
   // COSTANTI STILI
@@ -115,19 +114,7 @@ export default function PlanimetrieTool() {
     if (confirm("Vuoi svuotare tutta la cache dei download?")) {
       setQueue([]);
       setActiveViewId(null);
-      setOverlayText([]);
     }
-  };
-
-  const handleDrag = (e, index) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    
-    const newTexts = [...overlayText];
-    newTexts[index] = { ...newTexts[index], x: `${x}%`, y: `${y}%` };
-    setOverlayText(newTexts);
   };
 
   const handleDownload = async (item) => {
@@ -272,7 +259,7 @@ export default function PlanimetrieTool() {
           </div>
         </div>
 
-        {/* COLONNA DESTRA: EDITOR RISULTATO */}
+        {/* COLONNA DESTRA: EDITOR RISULTATO PULITO */}
         <div className="lg:col-span-2 animate-in fade-in slide-in-from-right-8 duration-700">
           {activeItem?.resultImage ? (
             <section className="bg-black/40 backdrop-blur-md p-10 rounded-[45px] border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.5)] relative overflow-hidden">
@@ -287,33 +274,13 @@ export default function PlanimetrieTool() {
                 </div>
               </div>
 
+              {/* CONTENITORE IMMAGINE NUDO E CRUDO (SENZA OVERLAY O DRAG) */}
               <div 
                 ref={containerRef}
-                className="relative mb-8 rounded-[30px] overflow-hidden border border-white/10 shadow-2xl bg-black cursor-crosshair group"
+                className="relative mb-8 rounded-[30px] overflow-hidden border border-white/10 shadow-2xl bg-black cursor-default"
                 style={{ width: '100%', minHeight: '450px' }}
               >
-                <img src={activeItem.resultImage} alt="Risultato" className="w-full h-auto block" />
-                
-                <div className="absolute inset-0">
-                  {overlayText.map((t, i) => (
-                    <div 
-                      key={i} draggable 
-                      onDragEnd={(e) => handleDrag(e, i)}
-                      style={{ left: t.x, top: t.y }} 
-                      className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-move"
-                    >
-                      <div className="group relative">
-                        <span className="text-white bg-black/90 backdrop-blur-xl px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border border-white/20 shadow-2xl whitespace-nowrap group-hover:border-red-500 transition-colors">
-                          {t.label}
-                        </span>
-                        <button 
-                          onClick={() => setOverlayText(overlayText.filter((_, idx) => idx !== i))}
-                          className="absolute -top-3 -right-3 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
-                        >✕</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <img src={activeItem.resultImage} alt="Risultato Arredato" className="w-full h-auto block" />
               </div>
 
               <button onClick={() => handleDownload(activeItem)} className="relative group w-full py-6 bg-red-600 hover:bg-red-500 text-white font-black rounded-[25px] shadow-2xl uppercase tracking-[0.3em] transition-all overflow-hidden active:scale-[0.98]">
