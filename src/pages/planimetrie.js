@@ -168,7 +168,7 @@ export default function PlanimetrieTool() {
         <div className="lg:col-span-1 space-y-6 animate-in fade-in slide-in-from-left-8 duration-700">
           <section className="bg-black/40 backdrop-blur-md p-6 rounded-[35px] border border-white/10 shadow-2xl relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-4 text-red-500">Motore AI Locale</h2>
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-4 text-red-500">ARREDATORE PLANIMETRIE</h2>
             
             {/* SEMAFORO */}
             <div className="flex items-center justify-between bg-black/50 p-3 rounded-xl border border-white/5 mb-6">
@@ -181,7 +181,7 @@ export default function PlanimetrieTool() {
 
             <label className="flex flex-col items-center justify-center bg-white/5 p-10 rounded-2xl border border-white/10 border-dashed cursor-pointer hover:bg-red-500/5 hover:border-red-500/30 transition-all group relative overflow-hidden">
               <span className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-500">📥</span>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center leading-relaxed">Multi-Upload<br/><span className="opacity-40 font-bold">Trascina i file qui</span></span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center leading-relaxed">Multi-Caricamento<br/><span className="opacity-40 font-bold">Trascina le Foto/Screen file qui</span></span>
               <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
             </label>
           </section>
