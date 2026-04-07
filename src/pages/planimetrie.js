@@ -174,9 +174,9 @@ export default function PlanimetrieTool() {
             <div className="flex items-center justify-between bg-black/50 p-3 rounded-xl border border-white/5 mb-6">
               <div className="flex items-center gap-3">
                 <div className={`w-2.5 h-2.5 rounded-full ${serverStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse' : 'bg-red-500 shadow-[0_0_10px_#ef4444]'}`}></div>
-                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Status: {serverStatus}</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">STATO SERVER: {serverStatus}</span>
               </div>
-              <button onClick={checkServerStatus} className="text-[8px] font-bold bg-white/5 px-2 py-1 rounded hover:bg-white/10 transition-colors">REFRESH</button>
+              <button onClick={checkServerStatus} className="text-[8px] font-bold bg-white/5 px-2 py-1 rounded hover:bg-white/10 transition-colors">AGGIORNA STATO SERVER</button>
             </div>
 
             <label className="flex flex-col items-center justify-center bg-white/5 p-10 rounded-2xl border border-white/10 border-dashed cursor-pointer hover:bg-red-500/5 hover:border-red-500/30 transition-all group relative overflow-hidden">
