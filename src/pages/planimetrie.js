@@ -9,7 +9,6 @@ export default function PlanimetrieTool() {
   const [activeViewId, setActiveViewId] = useState(null); 
   const containerRef = useRef(null);
 
-  // Ciclo messaggi di caricamento animato
   useEffect(() => {
     if (!loading) return;
     const phrases = [
@@ -40,14 +39,13 @@ export default function PlanimetrieTool() {
 
   useEffect(() => { checkServerStatus(); }, []);
 
-  // --- LOGICA GESTIONE FILE (CLICK + VERO DRAG & DROP) ---
   const processFiles = (fileList) => {
     const files = Array.from(fileList);
     const newItems = files.map(f => ({
       id: Math.random().toString(36).substr(2, 9),
       file: f,
       fileName: f.name,
-      style: 'modern_luxury', // Forza sempre la top di gamma
+      style: 'modern_luxury', 
       status: 'waiting',
       resultImage: null
     }));
@@ -57,12 +55,12 @@ export default function PlanimetrieTool() {
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       processFiles(e.target.files);
-      e.target.value = null; // resetta l'input
+      e.target.value = null; 
     }
   };
 
   const handleDragOver = (e) => {
-    e.preventDefault(); // Necessario per consentire il drop
+    e.preventDefault(); 
   };
 
   const handleDrop = (e) => {
@@ -71,7 +69,6 @@ export default function PlanimetrieTool() {
       processFiles(e.dataTransfer.files);
     }
   };
-  // --------------------------------------------------------
 
   useEffect(() => {
     const processQueue = async () => {
@@ -96,9 +93,6 @@ export default function PlanimetrieTool() {
           if (!response.ok) throw new Error(data.error);
           
           updateItemStatus(nextTask.id, 'completed', data.imageUrl);
-          
-          // FIX FONDAMENTALE: Usa una funzione per evitare lo "stale state"
-          // In questo modo, appena finisce, sbatte l'immagine al centro dello schermo
           setActiveViewId(prev => prev ? prev : nextTask.id); 
           
         } catch (err) {
@@ -129,15 +123,33 @@ export default function PlanimetrieTool() {
     }
   };
 
-  // FIX DOWNLOAD: Download diretto in Vanilla JS (Più sicuro e compatibile)
-  const handleDownload = (item) => {
+  // 🚀 FIX: BLOB DOWNLOAD HEAVY-DUTY PER IMMAGINI 8K
+  const handleDownload = async (item) => {
     if (!item.resultImage) return;
-    const link = document.createElement('a');
-    link.href = item.resultImage;
-    link.download = `${item.fileName.split('.')[0]}_FenixRender.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    
+    try {
+      // 1. Trasforma la stringa infinita in un oggetto fisico (Blob)
+      const res = await fetch(item.resultImage);
+      const blob = await res.blob();
+      
+      // 2. Crea un link leggero e invisibile che il browser non blocca
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${item.fileName.split('.')[0]}_FenixRender.png`;
+      
+      // 3. Simula il click e scarica
+      document.body.appendChild(link);
+      link.click();
+      
+      // 4. Pulisci la spazzatura
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Errore durante il download", err);
+      // Piano B: aprila in una nuova scheda
+      window.open(item.resultImage, '_blank');
+    }
   };
 
   const activeItem = queue.find(item => item.id === activeViewId);
@@ -150,7 +162,6 @@ export default function PlanimetrieTool() {
         <title>FENIX GROUP | INTERIOR DESIGNER</title>
       </Head>
 
-      {/* TOP BAR */}
       <div className="w-full max-w-6xl flex justify-between items-center mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
         <button onClick={() => window.location.href = '/'} className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-white/50 hover:text-white transition-colors bg-black/40 px-4 py-2 rounded-xl border border-white/10 backdrop-blur-md">
           ← Menu Principale
@@ -176,7 +187,6 @@ export default function PlanimetrieTool() {
 
       <main className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
-        {/* COLONNA SINISTRA: UPLOAD E CODA */}
         <div className="lg:col-span-1 space-y-6 animate-in fade-in slide-in-from-left-8 duration-700">
           <section className="bg-black/40 backdrop-blur-md p-6 rounded-[35px] border border-white/10 shadow-2xl relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
@@ -190,7 +200,6 @@ export default function PlanimetrieTool() {
               <div className={`w-2.5 h-2.5 rounded-full ${serverStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse' : 'bg-red-500 shadow-[0_0_10px_#ef4444]'}`}></div>
             </div>
 
-            {/* AREA UPLOAD DIRETTA CON VERO DRAG & DROP */}
             <h3 className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Caricamento Planimetria:</h3>
             <label 
               onDragOver={handleDragOver}
@@ -206,7 +215,6 @@ export default function PlanimetrieTool() {
             </label>
           </section>
 
-          {/* LISTA CODA */}
           <div className="space-y-4">
             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 ml-2">Monitor di Sistema</h3>
             <div className="max-h-[450px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
@@ -231,7 +239,6 @@ export default function PlanimetrieTool() {
                     </span>
                   </div>
                   
-                  {/* BOTTONI AZIONE */}
                   <div className="flex gap-2 relative z-10">
                     {item.resultImage && (
                       <button 
@@ -261,7 +268,6 @@ export default function PlanimetrieTool() {
           </div>
         </div>
 
-        {/* COLONNA DESTRA: PREVIEW HD */}
         <div className="lg:col-span-2 animate-in fade-in slide-in-from-right-8 duration-700">
           {activeItem?.resultImage ? (
             <section className="bg-black/40 backdrop-blur-md p-10 rounded-[45px] border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.5)] relative overflow-hidden">
@@ -275,7 +281,6 @@ export default function PlanimetrieTool() {
                 </div>
               </div>
 
-              {/* IMMAGINE PULITA */}
               <div 
                 ref={containerRef}
                 className="relative mb-8 rounded-[30px] overflow-hidden border border-white/10 shadow-2xl bg-black cursor-default"
