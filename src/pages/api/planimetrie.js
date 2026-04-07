@@ -34,20 +34,20 @@ export default async function handler(req, res) {
 
       const apiUrl = `${ngrokUrl}/sdapi/v1/img2img`;
 
-      // 3. PAYLOAD UNIFICATO: "LUXURY RENDER" + CONTROLLO MURI + HIRES FIX
+      // 3. PAYLOAD "ARCHITETTO PRECISION": OTTIMIZZATO PER SCHIZZI A MANO (CANNY)
       const payload = {
-        "prompt": "high-end 3d floor plan render, luxurious modern apartment, fully furnished, architectural visualization, top-down view, soft natural sunlight, warm interior lighting, photorealistic, 8k resolution, cinematic lighting, scandinavian design, oak parquet flooring, marble kitchen counters, plush rugs, ultra-detailed furniture, professional photography style, v-ray render, unreal engine 5 style",
-        "negative_prompt": "text, labels, letters, watermark, logo, signature, blurry, sketch, hand drawn, messy, deformed walls, lowres, bad quality, black and white, distorted furniture, cartoon, 2d, illustration, dark, grainy, noisy, cluttered, ugly curtains",
+        "prompt": "high-end 3d architectural floor plan, modern luxury apartment, photorealistic, 8k, top-down view, fully furnished, professional interior design, scandinavian style, warm wooden floors, soft cinematic shadows, high-quality textures, octane render, clean white walls",
+        "negative_prompt": "text, letters, labels, watermark, low quality, deformed, blurry, bad anatomy, messy, hand drawn, sketch lines, background noise, door swings, window symbols, grainy",
         "init_images": [base64Image],
-        "denoising_strength": 0.60, // Bilanciamento per arredare senza distorcere i muri
-        "steps": 40,               // Più passaggi per ombre e texture pulite
-        "cfg_scale": 11,           // Maggiore fedeltà al look "Luxury" richiesto
+        "denoising_strength": 0.55, // Abbassato per non far inventare nuovi muri all'AI
+        "steps": 45,               // Più passaggi per pulire le scritte dello schizzo
+        "cfg_scale": 12,           // Più alto per forzare il look "fotorealistico"
         
         // --- SEZIONE ALTA RISOLUZIONE (HIRES FIX) ---
         "enable_hr": true,
         "hr_scale": 1.5,
         "hr_upscaler": "R-ESRGAN 4x+",
-        "hr_second_pass_steps": 20, // Rifinitura extra per i portali immobiliari
+        "hr_second_pass_steps": 25,
         // --------------------------------------------
 
         "alwayson_scripts": {
@@ -55,22 +55,21 @@ export default async function handler(req, res) {
             "args": [
               {
                 "input_image": base64Image,
-                "model": "control_v11p_sd15_mlsd", 
-                "module": "mlsd", 
-                "weight": 1.5, // Forza massima sui muri originali
-                "resize_mode": "Just Resize",
+                "model": "control_v11p_sd15_canny", // USIAMO CANNY: il migliore per ricalcare gli schizzi
+                "module": "canny",                // Estrae i bordi esatti e ignora le sbavature
+                "weight": 1.8,                    // Forza quasi doppia: i muri NON si devono muovere
+                "control_mode": "ControlNet is more important", // Geometria assolutamente prioritaria
                 "processor_res": 512,
-                "control_mode": "ControlNet is more important", // Geometria prioritaria
-                "pixel_perfect": true,
-                "threshold_a": 0.1,
-                "threshold_b": 0.1
+                "threshold_a": 100,               // Filtra il rumore leggero (le scritte a penna)
+                "threshold_b": 200,               // Mantiene solo le linee spesse dei muri
+                "pixel_perfect": true
               }
             ]
           }
         }
       };
 
-      console.log("📡 Inviando richiesta 'Luxury Render' al Mac Mini M4...");
+      console.log("📡 Inviando richiesta 'Canny Precision' al Mac Mini M4...");
 
       const response = await fetch(apiUrl, {
         method: "POST",
