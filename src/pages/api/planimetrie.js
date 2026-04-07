@@ -17,6 +17,9 @@ export default async function handler(req, res) {
     const uploadedFile = files.file ? files.file[0] : null;
     if (!uploadedFile) return res.status(400).json({ error: 'Nessun file ricevuto' });
 
+    // Recuperiamo lo stile dal frontend (con fallback sul moderno in caso di errore)
+    const styleChoice = Array.isArray(fields.style) ? fields.style[0] : fields.style || 'modern_luxury';
+
     try {
       // 1. Lettura immagine e conversione
       const fileData = fs.readFileSync(uploadedFile.filepath);
@@ -34,9 +37,21 @@ export default async function handler(req, res) {
 
       const apiUrl = `${ngrokUrl}/sdapi/v1/img2img`;
 
-      // 3. PAYLOAD "ARCHITETTO PRECISION": OTTIMIZZATO PER SCHIZZI A MANO (CANNY)
+      // 3. 🎨 DIZIONARIO DEGLI STILI (Il "Cervello" del Design)
+      const stylePrompts = {
+        modern_luxury: "luxurious modern apartment, scandinavian style, warm wooden oak floors, soft cinematic shadows",
+        industrial_loft: "industrial loft, exposed brick walls, concrete floor, dark metal accents, dramatic moody lighting, leather furniture",
+        classic_elegance: "classic elegant interior, polished marble floors, gold details, luxury classic furniture, bright natural light, ornate"
+      };
+
+      const selectedStylePrompt = stylePrompts[styleChoice] || stylePrompts['modern_luxury'];
+      const basePrompt = "high-end 3d architectural floor plan, photorealistic, 8k, top-down view, fully furnished, professional interior design, high-quality textures, octane render, clean white walls";
+      
+      const fullPrompt = `${basePrompt}, ${selectedStylePrompt}`;
+
+      // 4. PAYLOAD UNIFICATO: CANNY PRECISION + STILE DINAMICO + HIRES FIX
       const payload = {
-        "prompt": "high-end 3d architectural floor plan, modern luxury apartment, photorealistic, 8k, top-down view, fully furnished, professional interior design, scandinavian style, warm wooden floors, soft cinematic shadows, high-quality textures, octane render, clean white walls",
+        "prompt": fullPrompt,
         "negative_prompt": "text, letters, labels, watermark, low quality, deformed, blurry, bad anatomy, messy, hand drawn, sketch lines, background noise, door swings, window symbols, grainy",
         "init_images": [base64Image],
         "denoising_strength": 0.55, // Abbassato per non far inventare nuovi muri all'AI
@@ -69,14 +84,11 @@ export default async function handler(req, res) {
         }
       };
 
-      console.log("📡 Inviando richiesta 'Canny Precision' al Mac Mini M4...");
+      console.log(`📡 Inviando richiesta al Mac M4 (Stile: ${styleChoice})...`);
 
       const response = await fetch(apiUrl, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify(payload),
       });
 

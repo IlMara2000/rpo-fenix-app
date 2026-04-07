@@ -7,16 +7,27 @@ export default function PlanimetrieTool() {
   const [loadingText, setLoadingText] = useState('INIZIALIZZAZIONE...');
   const [serverStatus, setServerStatus] = useState('checking');
   
+  // STATO STILE ATTIVO
+  const [activeStyle, setActiveStyle] = useState('modern_luxury');
+  
   const [queue, setQueue] = useState([]);
   const [activeViewId, setActiveViewId] = useState(null); 
   const [overlayText, setOverlayText] = useState([]);
   const containerRef = useRef(null);
+
+  // COSTANTI STILI
+  const stiliDisponibili = [
+    { id: 'modern_luxury', label: 'Lusso Moderno', icon: '✨' },
+    { id: 'industrial_loft', label: 'Industrial Loft', icon: '🧱' },
+    { id: 'classic_elegance', label: 'Eleganza Classica', icon: '🏛️' }
+  ];
 
   useEffect(() => {
     if (!loading) return;
     const phrases = [
       'ANALISI DELLA PLANIMETRIA...',
       'RICONOSCIMENTO MURI (CONTROLNET)...',
+      'APPLICAZIONE STILE...',
       'POSIZIONAMENTO ARREDI...',
       'CALCOLO ILLUMINAZIONE 8K...',
       'RENDERIZZAZIONE FINALE SUL MAC M4...',
@@ -27,7 +38,7 @@ export default function PlanimetrieTool() {
     const interval = setInterval(() => {
       i = (i + 1) % phrases.length;
       setLoadingText(phrases[i]);
-    }, 3500);
+    }, 3000);
     return () => clearInterval(interval);
   }, [loading]);
 
@@ -48,6 +59,7 @@ export default function PlanimetrieTool() {
       id: Math.random().toString(36).substr(2, 9),
       file: f,
       fileName: f.name,
+      style: activeStyle, // Associa lo stile scelto al file caricato
       status: 'waiting',
       resultImage: null
     }));
@@ -67,6 +79,7 @@ export default function PlanimetrieTool() {
         try {
           const formData = new FormData();
           formData.append('file', nextTask.file);
+          formData.append('style', nextTask.style); // Invia lo stile al backend
 
           const response = await fetch('/api/planimetrie', {
             method: 'POST',
@@ -122,7 +135,7 @@ export default function PlanimetrieTool() {
     try {
       const res = await fetch(item.resultImage);
       const blob = await res.blob();
-      saveAs(blob, `${item.fileName.split('.')[0]}_arredata.png`);
+      saveAs(blob, `${item.fileName.split('.')[0]}_${item.style}.png`); // Aggiunge lo stile al nome file
     } catch (err) {
       window.open(item.resultImage, '_blank');
     }
@@ -168,7 +181,10 @@ export default function PlanimetrieTool() {
         <div className="lg:col-span-1 space-y-6 animate-in fade-in slide-in-from-left-8 duration-700">
           <section className="bg-black/40 backdrop-blur-md p-6 rounded-[35px] border border-white/10 shadow-2xl relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-4 text-red-500">ARREDATORE PLANIMETRIE</h2>
+            
+            <div className="flex items-center justify-between mb-4 mt-2">
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">ARREDATORE PLANIMETRIE</h2>
+            </div>
             
             {/* SEMAFORO */}
             <div className="flex items-center justify-between bg-black/50 p-3 rounded-xl border border-white/5 mb-6">
@@ -179,9 +195,35 @@ export default function PlanimetrieTool() {
               <button onClick={checkServerStatus} className="text-[8px] font-bold bg-white/5 px-2 py-1 rounded hover:bg-white/10 transition-colors">AGGIORNA STATO SERVER</button>
             </div>
 
-            <label className="flex flex-col items-center justify-center bg-white/5 p-10 rounded-2xl border border-white/10 border-dashed cursor-pointer hover:bg-red-500/5 hover:border-red-500/30 transition-all group relative overflow-hidden">
+            {/* BOTTONI SELEZIONE STILE */}
+            <div className="mb-6">
+              <h3 className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">1. Scegli il Mood:</h3>
+              <div className="grid grid-cols-1 gap-2">
+                {stiliDisponibili.map((stile) => (
+                  <button
+                    key={stile.id}
+                    onClick={() => setActiveStyle(stile.id)}
+                    className={`flex items-center justify-start gap-3 p-3 rounded-xl border transition-all duration-300 ${
+                      activeStyle === stile.id 
+                        ? 'bg-red-500/20 border-red-500 shadow-[0_0_15px_rgba(238,85,86,0.3)] text-white' 
+                        : 'bg-black/50 border-white/10 text-white/50 hover:bg-white/5'
+                    }`}
+                  >
+                    <span className="text-lg">{stile.icon}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">{stile.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* AREA UPLOAD */}
+            <h3 className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">2. Carica Schizzo:</h3>
+            <label className="flex flex-col items-center justify-center bg-white/5 p-8 rounded-2xl border border-white/10 border-dashed cursor-pointer hover:bg-red-500/5 hover:border-red-500/30 transition-all group relative overflow-hidden">
               <span className="text-3xl mb-3 group-hover:scale-110 transition-transform duration-500">📥</span>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center leading-relaxed">Multi-Caricamento<br/><span className="opacity-40 font-bold">Trascina le Foto/Screen file qui</span></span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center leading-relaxed">
+                Multi-Caricamento<br/>
+                <span className="opacity-40 font-bold">Trascina le Foto/Screen file qui<br/>(Stile: {stiliDisponibili.find(s => s.id === activeStyle)?.label})</span>
+              </span>
               <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
             </label>
           </section>
@@ -238,6 +280,7 @@ export default function PlanimetrieTool() {
                 <div className="flex flex-col">
                   <h2 className="text-xl font-black uppercase tracking-tighter">Preview HD</h2>
                   <p className="text-[9px] text-white/30 uppercase tracking-[0.2em]">{activeItem.fileName}</p>
+                  <p className="text-[9px] text-red-400 uppercase tracking-[0.2em] mt-1 font-bold">Stile: {stiliDisponibili.find(s => s.id === activeItem.style)?.label}</p>
                 </div>
                 <div className="bg-green-500/10 text-green-400 border border-green-500/20 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest">
                   8K Render Active
