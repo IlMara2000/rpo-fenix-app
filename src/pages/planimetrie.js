@@ -13,11 +13,9 @@ export default function PlanimetrieTool() {
   const [fileName, setFileName] = useState("nessun file selezionato");
   const [resultImage, setResultImage] = useState(null);
 
-  // STATO PER I TESTI SOPRA LA PLANIMETRIA
   const [overlayText, setOverlayText] = useState([]);
   const containerRef = useRef(null);
 
-  // Ciclo messaggi di caricamento
   useEffect(() => {
     if (!loading) return;
     const phrases = [
@@ -58,7 +56,7 @@ export default function PlanimetrieTool() {
 
     setLoading(true);
     setResultImage(null);
-    setOverlayText([]); // Reset testi precedenti
+    setOverlayText([]); 
     setStatus({ msg: 'ELABORAZIONE IN CORSO...', type: 'red' });
 
     try {
@@ -82,7 +80,6 @@ export default function PlanimetrieTool() {
     setLoading(false);
   };
 
-  // Funzione per muovere le etichette (Drag)
   const handleDrag = (e, index) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -136,7 +133,6 @@ export default function PlanimetrieTool() {
             Motore AI Locale
           </h2>
 
-          {/* SEMAFORO */}
           <div className="flex items-center justify-between bg-black/50 p-3 rounded-xl border border-white/5 mb-6">
             <div className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full animate-pulse ${
@@ -172,16 +168,18 @@ export default function PlanimetrieTool() {
                 <span className="text-xs font-black tracking-widest uppercase text-red-400 animate-pulse">{loadingText}</span>
               </div>
             ) : (
-              <button type="submit" disabled={!file || serverStatus !== 'online'} 
-                className={`w-full py-4 text-white font-black rounded-2xl uppercase tracking-widest transition-all ${
-                  serverStatus === 'online' ? 'bg-red-600 hover:bg-red-500 shadow-xl active:scale-95' : 'bg-gray-800 opacity-50 cursor-not-allowed'
-                }`}>
-                {serverStatus !== 'online' ? "SERVER OFFLINE" : "GENERA ARREDAMENTO AI"}
-              </button>
+              /* IL BOTTONE DI GENERAZIONE SPARISCE SE C'È IL RISULTATO */
+              !resultImage && (
+                <button type="submit" disabled={!file || serverStatus !== 'online'} 
+                  className={`w-full py-4 text-white font-black rounded-2xl uppercase tracking-widest transition-all ${
+                    serverStatus === 'online' ? 'bg-red-600 hover:bg-red-500 shadow-xl active:scale-95' : 'bg-gray-800 opacity-50 cursor-not-allowed'
+                  }`}>
+                  {serverStatus !== 'online' ? "SERVER OFFLINE" : "GENERA ARREDAMENTO AI"}
+                </button>
+              )
             )}
           </form>
 
-          {/* AREA RISULTATO CON TESTI */}
           {resultImage && (
             <div className="mt-8 pt-8 border-t border-white/10 flex flex-col items-center animate-in fade-in slide-in-from-bottom-4">
               
@@ -192,7 +190,6 @@ export default function PlanimetrieTool() {
               >
                 <img src={resultImage} alt="Risultato" className="w-full h-auto block" />
                 
-                {/* OVERLAY TESTI TRASCINABILI */}
                 <div className="absolute inset-0">
                   {overlayText.map((t, i) => (
                     <div 
@@ -206,7 +203,6 @@ export default function PlanimetrieTool() {
                         <span className="text-white bg-black/80 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-tighter border border-white/30 shadow-2xl whitespace-nowrap">
                           {t.label}
                         </span>
-                        {/* Tasto cancella etichetta */}
                         <button 
                           onClick={() => setOverlayText(overlayText.filter((_, idx) => idx !== i))}
                           className="absolute -top-4 -right-4 bg-red-600 text-white rounded-full w-4 h-4 text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"
@@ -217,7 +213,7 @@ export default function PlanimetrieTool() {
                 </div>
               </div>
 
-              {/* SELEZIONE RAPIDA ETICHETTE */}
+              {/* I BOTTONI DELLE STANZE E IL DOWNLOAD RIMANGONO QUI SOTTO */}
               <div className="grid grid-cols-3 gap-2 mb-6 w-full">
                 {['SOGGIORNO', 'CUCINA', 'CAMERA', 'BAGNO', 'INGRESSO', 'BALCONE'].map(label => (
                   <button 
@@ -232,6 +228,14 @@ export default function PlanimetrieTool() {
 
               <button onClick={handleDownload} className="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-black rounded-2xl shadow-xl uppercase tracking-widest">
                 SCARICA IMMAGINE FINALE
+              </button>
+
+              {/* BOTTONE RESET SE VUOI CARICARE UN'ALTRA FOTO SENZA REFRESH */}
+              <button 
+                onClick={() => {setResultImage(null); setFile(null); setFileName("nessun file selezionato"); setOverlayText([]);}}
+                className="mt-4 text-[9px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity"
+              >
+                Annulla e carica altra foto
               </button>
             </div>
           )}
