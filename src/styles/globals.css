@@ -5,9 +5,9 @@
 @tailwind utilities;
 
 :root {
-  --fenix-red: #ee5556;
+  --fenix-red: #ee5566;
   --fenix-red-glow: rgba(238, 85, 86, 0.15);
-  --bg-dark: #000000;
+  --bg-dark: #111111;
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-bg: rgba(10, 10, 10, 0.6);
 }
