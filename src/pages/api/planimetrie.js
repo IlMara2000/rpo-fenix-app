@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     const uploadedFile = files.file ? files.file[0] : null;
     if (!uploadedFile) return res.status(400).json({ error: 'Nessun file ricevuto' });
 
-    // Recuperiamo lo stile dal frontend (con fallback sul moderno in caso di errore)
+    // Recuperiamo lo stile dal frontend (con fallback sul moderno_luxury di default)
     const styleChoice = Array.isArray(fields.style) ? fields.style[0] : fields.style || 'modern_luxury';
 
     try {
@@ -45,18 +45,21 @@ export default async function handler(req, res) {
       };
 
       const selectedStylePrompt = stylePrompts[styleChoice] || stylePrompts['modern_luxury'];
-      const basePrompt = "high-end 3d architectural floor plan, photorealistic, 8k, top-down view, fully furnished, professional interior design, high-quality textures, octane render, clean white walls";
       
+      // PROMPT BASE PULITO E NEGATIVE PROMPT ANTI-TESTO/SBAVATURE
+      const basePrompt = "high-end 3d architectural floor plan render, photorealistic, 8k, top-down view, fully furnished, professional interior design, clean white geometric walls, premium furniture, octane render";
       const fullPrompt = `${basePrompt}, ${selectedStylePrompt}`;
+      
+      const negativePrompt = "text, letters, labels, handwritten text, notes, dimensions, watermark, signature, logo, low quality, deformed walls, hand drawn sketch lines, background noise, door swings, window symbols, grainy, cluttered, messy, distorted furniture, open walls";
 
-      // 4. PAYLOAD UNIFICATO: CANNY PRECISION + STILE DINAMICO + HIRES FIX
+      // 4. PAYLOAD UNIFICATO: STILE DINAMICO + CANNY PRECISION (MAX POWER) + HIRES FIX
       const payload = {
         "prompt": fullPrompt,
-        "negative_prompt": "text, letters, labels, watermark, low quality, deformed, blurry, bad anatomy, messy, hand drawn, sketch lines, background noise, door swings, window symbols, grainy",
+        "negative_prompt": negativePrompt,
         "init_images": [base64Image],
-        "denoising_strength": 0.55, // Abbassato per non far inventare nuovi muri all'AI
-        "steps": 45,               // Più passaggi per pulire le scritte dello schizzo
-        "cfg_scale": 12,           // Più alto per forzare il look "fotorealistico"
+        "denoising_strength": 0.55, // Bilanciamento per arredare senza warping muri
+        "steps": 45,               // Passaggi extra per texture pulite
+        "cfg_scale": 12,           // Massima fedeltà al look fotorealistico
         
         // --- SEZIONE ALTA RISOLUZIONE (HIRES FIX) ---
         "enable_hr": true,
@@ -70,13 +73,13 @@ export default async function handler(req, res) {
             "args": [
               {
                 "input_image": base64Image,
-                "model": "control_v11p_sd15_canny", // USIAMO CANNY: il migliore per ricalcare gli schizzi
-                "module": "canny",                // Estrae i bordi esatti e ignora le sbavature
-                "weight": 1.8,                    // Forza quasi doppia: i muri NON si devono muovere
-                "control_mode": "ControlNet is more important", // Geometria assolutamente prioritaria
+                "model": "control_v11p_sd15_canny", // USIAMO CANNY: precisione assoluta sui muri
+                "module": "canny",                // Estrae bordi esatti
+                "weight": 1.8,                    // Forza massima strutturale: i muri non si muovono
+                "control_mode": "ControlNet is more important", // Geometria prioritaria
                 "processor_res": 512,
-                "threshold_a": 100,               // Filtra il rumore leggero (le scritte a penna)
-                "threshold_b": 200,               // Mantiene solo le linee spesse dei muri
+                "threshold_a": 100,               // Filtra rumore (scritte a penna dello schizzo)
+                "threshold_b": 200,               // Mantiene solo linee spesse
                 "pixel_perfect": true
               }
             ]
@@ -84,7 +87,7 @@ export default async function handler(req, res) {
         }
       };
 
-      console.log(`📡 Inviando richiesta al Mac M4 (Stile: ${styleChoice})...`);
+      console.log(`📡 Inviando richiesta 'Pure Furnish' al Mac M4 (Stile: ${styleChoice})...`);
 
       const response = await fetch(apiUrl, {
         method: "POST",
