@@ -125,7 +125,7 @@ export default function PlanimetrieTool() {
          style={{ background: 'linear-gradient(180deg, #4b1414 0%, #000000 40%, #000000 100%)', backgroundAttachment: 'fixed' }}>
       
       <Head>
-        <title>FENIX GROUP | HIGH-END RENDER M4</title>
+        <title>FENIX GROUP | INTERIOR DESaiGNER</title>
       </Head>
 
       {/* TOP BAR */}
@@ -160,8 +160,8 @@ export default function PlanimetrieTool() {
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
             
             <div className="flex items-center justify-between mb-4 mt-2">
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">M4 PERFORMANCE ENGINE</h2>
-              <div className={`w-2.5 h-2.5 rounded-full ${serverStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse' : 'bg-red-500 shadow-[0_0_10px_#ef4444]'}`}></div>
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">ARREDATORE D'INTERNI - AI</h2>
+              <div className={`w-2.5 h-2.5 rounded-full ${serverStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse' : 'bg-red-500 shadow-[0_0_10px_#ef4444]'}`}>STATO</div>
             </div>
 
             {/* AREA UPLOAD DIRETTA */}
