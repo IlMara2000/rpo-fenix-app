@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
-import { saveAs } from 'file-saver';
 
 export default function PlanimetrieTool() {
   const [loading, setLoading] = useState(false);
@@ -10,7 +9,7 @@ export default function PlanimetrieTool() {
   const [activeViewId, setActiveViewId] = useState(null); 
   const containerRef = useRef(null);
 
-  // Ciclo messaggi di caricamento
+  // Ciclo messaggi di caricamento animato
   useEffect(() => {
     if (!loading) return;
     const phrases = [
@@ -41,20 +40,38 @@ export default function PlanimetrieTool() {
 
   useEffect(() => { checkServerStatus(); }, []);
 
-  const handleFileChange = (e) => {
-    if (!e.target.files) return;
-    const files = Array.from(e.target.files);
+  // --- LOGICA GESTIONE FILE (CLICK + VERO DRAG & DROP) ---
+  const processFiles = (fileList) => {
+    const files = Array.from(fileList);
     const newItems = files.map(f => ({
       id: Math.random().toString(36).substr(2, 9),
       file: f,
       fileName: f.name,
-      style: 'modern_luxury', // Forza sempre la versione Top di gamma nel backend
+      style: 'modern_luxury', // Forza sempre la top di gamma
       status: 'waiting',
       resultImage: null
     }));
     setQueue(prev => [...prev, ...newItems]);
-    e.target.value = null; 
   };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processFiles(e.target.files);
+      e.target.value = null; // resetta l'input
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault(); // Necessario per consentire il drop
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
+    }
+  };
+  // --------------------------------------------------------
 
   useEffect(() => {
     const processQueue = async () => {
@@ -79,8 +96,13 @@ export default function PlanimetrieTool() {
           if (!response.ok) throw new Error(data.error);
           
           updateItemStatus(nextTask.id, 'completed', data.imageUrl);
-          if (!activeViewId) setActiveViewId(nextTask.id); 
+          
+          // FIX FONDAMENTALE: Usa una funzione per evitare lo "stale state"
+          // In questo modo, appena finisce, sbatte l'immagine al centro dello schermo
+          setActiveViewId(prev => prev ? prev : nextTask.id); 
+          
         } catch (err) {
+          console.error(err);
           updateItemStatus(nextTask.id, 'error');
         }
         setLoading(false);
@@ -107,15 +129,15 @@ export default function PlanimetrieTool() {
     }
   };
 
-  const handleDownload = async (item) => {
+  // FIX DOWNLOAD: Download diretto in Vanilla JS (Più sicuro e compatibile)
+  const handleDownload = (item) => {
     if (!item.resultImage) return;
-    try {
-      const res = await fetch(item.resultImage);
-      const blob = await res.blob();
-      saveAs(blob, `${item.fileName.split('.')[0]}_FenixRender.png`);
-    } catch (err) {
-      window.open(item.resultImage, '_blank');
-    }
+    const link = document.createElement('a');
+    link.href = item.resultImage;
+    link.download = `${item.fileName.split('.')[0]}_FenixRender.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const activeItem = queue.find(item => item.id === activeViewId);
@@ -125,7 +147,7 @@ export default function PlanimetrieTool() {
          style={{ background: 'linear-gradient(180deg, #4b1414 0%, #000000 40%, #000000 100%)', backgroundAttachment: 'fixed' }}>
       
       <Head>
-        <title>FENIX GROUP | INTERIOR DESaiGNER</title>
+        <title>FENIX GROUP | INTERIOR DESIGNER</title>
       </Head>
 
       {/* TOP BAR */}
@@ -161,23 +183,30 @@ export default function PlanimetrieTool() {
             
             <div className="flex items-center justify-between mb-4 mt-2">
               <h2 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">ARREDATORE D'INTERNI - AI</h2>
-              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white-400">ATTUALE STATO DEL SERVER M4 ➜</h3>
+            </div>
+            
+            <div className="flex items-center justify-between bg-black/50 p-3 rounded-xl border border-white/5 mb-6">
+              <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">STATO SERVER M4 ➜</span>
               <div className={`w-2.5 h-2.5 rounded-full ${serverStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse' : 'bg-red-500 shadow-[0_0_10px_#ef4444]'}`}></div>
             </div>
 
-            {/* AREA UPLOAD DIRETTA */}
+            {/* AREA UPLOAD DIRETTA CON VERO DRAG & DROP */}
             <h3 className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Caricamento Planimetria:</h3>
-            <label className="flex flex-col items-center justify-center bg-white/5 p-12 rounded-2xl border border-white/10 border-dashed cursor-pointer hover:bg-red-500/5 hover:border-red-500/30 transition-all group relative overflow-hidden">
+            <label 
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              className="flex flex-col items-center justify-center bg-white/5 p-12 rounded-2xl border border-white/10 border-dashed cursor-pointer hover:bg-red-500/5 hover:border-red-500/30 transition-all group relative overflow-hidden"
+            >
               <span className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-500">📥</span>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center leading-relaxed">
-                Trascina qui lo schizzo<br/>
+                Clicca o trascina qui lo schizzo<br/>
                 <span className="opacity-40 font-bold text-[8px]">PROCESSO AUTOMATICO 8K HD</span>
               </span>
               <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
             </label>
           </section>
 
-          {/* LISTA CODA CON BOTTONI RIPRISTINATI */}
+          {/* LISTA CODA */}
           <div className="space-y-4">
             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 ml-2">Monitor di Sistema</h3>
             <div className="max-h-[450px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
@@ -195,13 +224,14 @@ export default function PlanimetrieTool() {
                     <span className="text-[10px] font-bold truncate max-w-[130px]">{item.fileName}</span>
                     <span className={`text-[8px] font-black uppercase tracking-widest mt-1 ${
                       item.status === 'processing' ? 'text-red-400' : 
+                      item.status === 'error' ? 'text-red-600' :
                       item.status === 'completed' ? 'text-green-500' : 'text-white/20'
                     }`}>
-                      {item.status === 'processing' ? 'Rendering...' : 'Completato'}
+                      {item.status === 'processing' ? 'Rendering...' : item.status === 'error' ? 'Errore Rete' : 'Completato'}
                     </span>
                   </div>
                   
-                  {/* BOTTONI DOWNLOAD E ELIMINA (RIPRISTINATI) */}
+                  {/* BOTTONI AZIONE */}
                   <div className="flex gap-2 relative z-10">
                     {item.resultImage && (
                       <button 
@@ -231,7 +261,7 @@ export default function PlanimetrieTool() {
           </div>
         </div>
 
-        {/* COLONNA DESTRA: PREVIEW HD PULITA */}
+        {/* COLONNA DESTRA: PREVIEW HD */}
         <div className="lg:col-span-2 animate-in fade-in slide-in-from-right-8 duration-700">
           {activeItem?.resultImage ? (
             <section className="bg-black/40 backdrop-blur-md p-10 rounded-[45px] border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.5)] relative overflow-hidden">
@@ -245,7 +275,7 @@ export default function PlanimetrieTool() {
                 </div>
               </div>
 
-              {/* IMMAGINE PULITA SENZA OVERLAY O BOTTONI */}
+              {/* IMMAGINE PULITA */}
               <div 
                 ref={containerRef}
                 className="relative mb-8 rounded-[30px] overflow-hidden border border-white/10 shadow-2xl bg-black cursor-default"
@@ -256,7 +286,7 @@ export default function PlanimetrieTool() {
 
               <button onClick={() => handleDownload(activeItem)} className="relative group w-full py-6 bg-red-600 hover:bg-red-500 text-white font-black rounded-[25px] shadow-2xl uppercase tracking-[0.3em] transition-all overflow-hidden active:scale-[0.98]">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer"></div>
-                ESPORTA IMMAGINE DI LUSSO
+                SCARICA IMMAGINE DI LUSSO
               </button>
             </section>
           ) : (
