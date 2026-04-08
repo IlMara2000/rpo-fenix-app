@@ -121,12 +121,12 @@ export default function PlanimetrieTool() {
           const base64Image = await fileToBase64(nextTask.file);
 
           // 3. Costruisce il Payload (Top di Gamma: Denoising 0.95, Canny 1.8)
-          const basePrompt = "high-end 3d architectural floor plan render, photorealistic, 8k, top-down view, fully furnished, professional interior design, clean white geometric walls, premium furniture, octane render";
-          const stylePrompt = "luxurious modern apartment, scandinavian style, warm wooden oak floors, soft cinematic shadows";
+          const basePrompt = "high-end orthographic 2d architectural floor plan render, clean lines, professional visualization, premium wood floors, soft cinematic lighting, fully furnished, architectural design";
+          const stylePrompt = "luxurious modern apartment, minimal white geometric walls, soft cinematic shadows";
           
           const payload = {
             "prompt": `${basePrompt}, ${stylePrompt}`,
-            "negative_prompt": "text, letters, labels, handwritten text, notes, dimensions, watermark, signature, logo, low quality, deformed walls, hand drawn sketch lines, background noise, door swings, window symbols, grainy, cluttered, messy, distorted furniture, open walls, black and white, lineart, drawing",
+            "negative_prompt": "text, letters, labels, handwritten text, notes, dimensions, watermark, signature, logo, lowres, bad quality, sketchy, blurry, rough layout, empty room",
             "init_images": [base64Image],
             "sampler_name": "Euler",
             "scheduler": "Automatic",
@@ -160,7 +160,7 @@ export default function PlanimetrieTool() {
             headers: { 
               "Content-Type": "application/json", 
               "Accept": "application/json",
-              "ngrok-skip-browser-warning": "true" 
+              "ngrok-skip-browser-warning": "true" // SEGRETO PER PASSARE IL MURO DI NGROK GRATUITO
             },
             body: JSON.stringify(payload)
           });
@@ -169,7 +169,7 @@ export default function PlanimetrieTool() {
           
           const data = await sdRes.json();
           
-          // 5. Applica Watermark e Salva
+          // 5. Applica Watermark in locale e salva l'immagine
           const watermarkedImg = await applyWatermark(data.images[0]);
           updateItemStatus(nextTask.id, 'completed', watermarkedImg);
           setActiveViewId(prev => prev ? prev : nextTask.id); 
@@ -202,7 +202,6 @@ export default function PlanimetrieTool() {
     }
   };
 
-  // 🚀 MOTORE DI DOWNLOAD HEAVY-DUTY PER FILE 8K
   const handleDownload = (item) => {
     if (!item.resultImage) return;
     try {
