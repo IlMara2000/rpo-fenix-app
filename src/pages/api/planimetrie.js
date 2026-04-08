@@ -51,38 +51,39 @@ export default async function handler(req, res) {
       
       const negativePrompt = "text, letters, labels, handwritten text, notes, dimensions, watermark, signature, logo, low quality, deformed walls, hand drawn sketch lines, background noise, door swings, window symbols, grainy, cluttered, messy, distorted furniture, open walls, black and white, lineart, drawing";
 
-  // 4. PAYLOAD UNIFICATO: SILENZIOSO E PERFETTO
-  const payload = {
-  "prompt": fullPrompt,
-  "negative_prompt": negativePrompt,
-  "init_images": [base64Image],
-  "sampler_name": "Euler",       // Dichiariamo il Sampler esplicitamente
-  "scheduler": "Automatic",      // ✨ FIX: Zittisce il warning del Sampler
-  "denoising_strength": 0.95, 
-  "steps": 45,               
-  "cfg_scale": 10,           
-  "enable_hr": true,
-  "hr_scale": 1.5,
-  "hr_upscaler": "R-ESRGAN 4x+",
-  "hr_second_pass_steps": 25,
-  "alwayson_scripts": {
-    "controlnet": {
-      "args": [
-        {
-          "image": base64Image,  // ✨ FIX: Zittisce il warning di ControlNet
-          "model": "control_v11p_sd15_canny", 
-          "module": "canny",                
-          "weight": 1.8,                   
-          "control_mode": "ControlNet is more important", 
-          "processor_res": 512,
-          "threshold_a": 100,               
-          "threshold_b": 200,               
-          "pixel_perfect": true
+      // 4. PAYLOAD UNIFICATO: SILENZIOSO E PERFETTO
+      const payload = {
+        "prompt": fullPrompt,
+        "negative_prompt": negativePrompt,
+        "init_images": [base64Image],
+        "sampler_name": "Euler",       // Dichiariamo il Sampler esplicitamente
+        "scheduler": "Automatic",      // ✨ FIX: Zittisce il warning del Sampler
+        "denoising_strength": 0.95, 
+        "steps": 45,               
+        "cfg_scale": 10,           
+        "enable_hr": true,
+        "hr_scale": 1.5,
+        "hr_upscaler": "R-ESRGAN 4x+",
+        "hr_second_pass_steps": 25,
+        "alwayson_scripts": {
+          "controlnet": {
+            "args": [
+              {
+                "image": base64Image,  // ✨ FIX: Zittisce il warning di ControlNet
+                "model": "control_v11p_sd15_canny", 
+                "module": "canny",                
+                "weight": 1.8,                   
+                "control_mode": "ControlNet is more important", 
+                "processor_res": 512,
+                "threshold_a": 100,               
+                "threshold_b": 200,               
+                "pixel_perfect": true
+              }
+            ]
+          }
         }
-      ]
-    }
-  }
-};
+      };
+
       console.log(`📡 Inviando richiesta 'Pure Photoreal' al Mac M4 (Mood: ${styleChoice})...`);
 
       const response = await fetch(apiUrl, {
@@ -99,17 +100,23 @@ export default async function handler(req, res) {
       const data = await response.json();
       const baseImageBuffer = Buffer.from(data.images[0], 'base64');
 
+      // 5. APPLICAZIONE WATERMARK AUTOMATICO CON SHARP
       const logoPath = path.join(process.cwd(), 'public', 'logo.png');
       let finalBuffer;
 
       if (fs.existsSync(logoPath)) {
         console.log("🎨 Applicazione Watermark Fenix Group...");
+        
+        // ✨ FIX: Rimpiccioliamo il logo a 300 pixel di larghezza prima di incollarlo
+        const resizedLogoBuffer = await sharp(logoPath)
+          .resize({ width: 300 }) // Puoi cambiare questo numero per fare il logo più grande o più piccolo
+          .toBuffer();
+
         finalBuffer = await sharp(baseImageBuffer)
           .composite([{ 
-            input: logoPath, 
+            input: resizedLogoBuffer, 
             gravity: 'southeast', 
             blend: 'over',
-            opacity: 0.5 
           }])
           .toBuffer();
       } else {

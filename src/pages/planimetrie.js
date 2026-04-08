@@ -9,7 +9,7 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
-// --- HELPER: Applica il Watermark nel Browser ---
+// --- HELPER: Applica il Watermark nel Browser (Addio errori Sharp!) ---
 const applyWatermark = (base64Image) => new Promise((resolve) => {
   const img = new Image();
   img.src = "data:image/png;base64," + base64Image;
@@ -23,14 +23,17 @@ const applyWatermark = (base64Image) => new Promise((resolve) => {
     const logo = new Image();
     logo.src = "/logo.png";
     logo.onload = () => {
-      const logoWidth = 200; // Grandezza del logo
+      // Calcola le proporzioni esatte per rimpicciolire il logo a 200px
+      const logoWidth = 200; 
       const ratio = logoWidth / logo.width;
       const logoHeight = logo.height * ratio;
+      
       ctx.globalAlpha = 0.5; // Trasparenza
+      // Incolla il logo in basso a destra con un margine di 30px
       ctx.drawImage(logo, canvas.width - logoWidth - 30, canvas.height - logoHeight - 30, logoWidth, logoHeight);
       resolve(canvas.toDataURL("image/png"));
     };
-    logo.onerror = () => resolve("data:image/png;base64," + base64Image); // Se fallisce, restituisce foto pulita
+    logo.onerror = () => resolve("data:image/png;base64," + base64Image); // Fallback: foto pulita se non trova il logo
   };
 });
 
@@ -49,6 +52,7 @@ export default function PlanimetrieTool() {
       'LOCK GEOMETRICO MURI (CONTROLNET)...',
       'GENERAZIONE 8K IN CORSO (~30 SECONDI)...',
       'CALCOLO ILLUMINAZIONE...',
+      'APPLICAZIONE WATERMARK FENIX...',
       'QUASI PRONTO...'
     ];
     let i = 0;
@@ -107,7 +111,7 @@ export default function PlanimetrieTool() {
         updateItemStatus(nextTask.id, 'processing');
         
         try {
-          // 1. Recupera l'URL di Ngrok
+          // 1. Recupera l'URL di Ngrok dalla nostra API ponte
           const ngrokRes = await fetch('/api/get-ngrok');
           const config = await ngrokRes.json();
           if (!config.url) throw new Error("Tunnel non trovato");
@@ -116,7 +120,7 @@ export default function PlanimetrieTool() {
           // 2. Converte immagine in Base64
           const base64Image = await fileToBase64(nextTask.file);
 
-          // 3. Costruisce il Payload localmente
+          // 3. Costruisce il Payload (Top di Gamma: Denoising 0.95, Canny 1.8)
           const basePrompt = "high-end 3d architectural floor plan render, photorealistic, 8k, top-down view, fully furnished, professional interior design, clean white geometric walls, premium furniture, octane render";
           const stylePrompt = "luxurious modern apartment, scandinavian style, warm wooden oak floors, soft cinematic shadows";
           
@@ -136,7 +140,7 @@ export default function PlanimetrieTool() {
             "alwayson_scripts": {
               "controlnet": {
                 "args": [{
-                    "image": base64Image,
+                    "image": base64Image, 
                     "model": "control_v11p_sd15_canny", 
                     "module": "canny",                
                     "weight": 1.8,                   
@@ -150,10 +154,14 @@ export default function PlanimetrieTool() {
             }
           };
 
-          // 🔥 4. CHIAMATA DIRETTA AL MAC M4 (BYPASS VERCEL TIMEOUT)
+          // 🔥 4. CHIAMATA DIRETTA AL MAC M4 CON BYPASS NGROK E VERCEL
           const sdRes = await fetch(apiUrl, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            headers: { 
+              "Content-Type": "application/json", 
+              "Accept": "application/json",
+              "ngrok-skip-browser-warning": "true" 
+            },
             body: JSON.stringify(payload)
           });
 
@@ -194,6 +202,7 @@ export default function PlanimetrieTool() {
     }
   };
 
+  // 🚀 MOTORE DI DOWNLOAD HEAVY-DUTY PER FILE 8K
   const handleDownload = (item) => {
     if (!item.resultImage) return;
     try {
@@ -304,7 +313,7 @@ export default function PlanimetrieTool() {
                       item.status === 'completed' ? 'text-green-500' : 'text-white/30'
                     }`}>
                       {item.status === 'processing' ? 'Elaborazione M4...' : 
-                       item.status === 'error' ? 'ERRORE CONNESSIONE' : 
+                       item.status === 'error' ? 'ERRORE M4/NGROK' : 
                        item.status === 'completed' ? 'Completato' : 'In coda'}
                     </span>
                   </div>
