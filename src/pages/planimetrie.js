@@ -1,6 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 
+// --- HELPER: Converte il file in Base64 ---
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = () => resolve(reader.result.split(',')[1]);
+  reader.onerror = error => reject(error);
+});
+
+// --- HELPER: Applica il Watermark nel Browser ---
+const applyWatermark = (base64Image) => new Promise((resolve) => {
+  const img = new Image();
+  img.src = "data:image/png;base64," + base64Image;
+  img.onload = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+
+    const logo = new Image();
+    logo.src = "/logo.png";
+    logo.onload = () => {
+      const logoWidth = 200; // Grandezza del logo
+      const ratio = logoWidth / logo.width;
+      const logoHeight = logo.height * ratio;
+      ctx.globalAlpha = 0.5; // Trasparenza
+      ctx.drawImage(logo, canvas.width - logoWidth - 30, canvas.height - logoHeight - 30, logoWidth, logoHeight);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    logo.onerror = () => resolve("data:image/png;base64," + base64Image); // Se fallisce, restituisce foto pulita
+  };
+});
+
 export default function PlanimetrieTool() {
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('INIZIALIZZAZIONE...');
@@ -12,12 +45,10 @@ export default function PlanimetrieTool() {
   useEffect(() => {
     if (!loading) return;
     const phrases = [
-      'ANALISI DELLA PLANIMETRIA...',
+      'CONTATTO DIRETTO MAC M4...',
       'LOCK GEOMETRICO MURI (CONTROLNET)...',
-      'CONFIGURAZIONE TOP RENDER...',
-      'POSIZIONAMENTO ARREDI LUXURY...',
-      'CALCOLO ILLUMINAZIONE 8K...',
-      'RENDERIZZAZIONE FINALE SUL MAC M4...',
+      'GENERAZIONE 8K IN CORSO (~30 SECONDI)...',
+      'CALCOLO ILLUMINAZIONE...',
       'QUASI PRONTO...'
     ];
     let i = 0;
@@ -25,7 +56,7 @@ export default function PlanimetrieTool() {
     const interval = setInterval(() => {
       i = (i + 1) % phrases.length;
       setLoadingText(phrases[i]);
-    }, 3000);
+    }, 4000);
     return () => clearInterval(interval);
   }, [loading]);
 
@@ -45,7 +76,6 @@ export default function PlanimetrieTool() {
       id: Math.random().toString(36).substr(2, 9),
       file: f,
       fileName: f.name,
-      style: 'modern_luxury', 
       status: 'waiting',
       resultImage: null
     }));
@@ -59,10 +89,7 @@ export default function PlanimetrieTool() {
     }
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault(); 
-  };
-
+  const handleDragOver = (e) => e.preventDefault(); 
   const handleDrop = (e) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
@@ -80,27 +107,63 @@ export default function PlanimetrieTool() {
         updateItemStatus(nextTask.id, 'processing');
         
         try {
-          const formData = new FormData();
-          formData.append('file', nextTask.file);
-          formData.append('style', nextTask.style);
+          // 1. Recupera l'URL di Ngrok
+          const ngrokRes = await fetch('/api/get-ngrok');
+          const config = await ngrokRes.json();
+          if (!config.url) throw new Error("Tunnel non trovato");
+          const apiUrl = `${config.url}/sdapi/v1/img2img`;
 
-          const response = await fetch('/api/planimetrie', {
-            method: 'POST',
-            body: formData,
+          // 2. Converte immagine in Base64
+          const base64Image = await fileToBase64(nextTask.file);
+
+          // 3. Costruisce il Payload localmente
+          const basePrompt = "high-end 3d architectural floor plan render, photorealistic, 8k, top-down view, fully furnished, professional interior design, clean white geometric walls, premium furniture, octane render";
+          const stylePrompt = "luxurious modern apartment, scandinavian style, warm wooden oak floors, soft cinematic shadows";
+          
+          const payload = {
+            "prompt": `${basePrompt}, ${stylePrompt}`,
+            "negative_prompt": "text, letters, labels, handwritten text, notes, dimensions, watermark, signature, logo, low quality, deformed walls, hand drawn sketch lines, background noise, door swings, window symbols, grainy, cluttered, messy, distorted furniture, open walls, black and white, lineart, drawing",
+            "init_images": [base64Image],
+            "sampler_name": "Euler",
+            "scheduler": "Automatic",
+            "denoising_strength": 0.95, 
+            "steps": 45,               
+            "cfg_scale": 10,           
+            "enable_hr": true,
+            "hr_scale": 1.5,
+            "hr_upscaler": "R-ESRGAN 4x+",
+            "hr_second_pass_steps": 25,
+            "alwayson_scripts": {
+              "controlnet": {
+                "args": [{
+                    "image": base64Image,
+                    "model": "control_v11p_sd15_canny", 
+                    "module": "canny",                
+                    "weight": 1.8,                   
+                    "control_mode": "ControlNet is more important", 
+                    "processor_res": 512,
+                    "threshold_a": 100,               
+                    "threshold_b": 200,               
+                    "pixel_perfect": true
+                  }]
+              }
+            }
+          };
+
+          // 🔥 4. CHIAMATA DIRETTA AL MAC M4 (BYPASS VERCEL TIMEOUT)
+          const sdRes = await fetch(apiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify(payload)
           });
 
-          // 🔥 GESTIONE ERRORI AVANZATA
-          const responseText = await response.text();
-          let data;
-          try {
-            data = JSON.parse(responseText);
-          } catch (e) {
-            throw new Error(`Timeout Server Vercel (Tempo esaurito).`);
-          }
-
-          if (!response.ok) throw new Error(data.error || "Errore sconosciuto");
+          if (!sdRes.ok) throw new Error("Errore dal Mac Mini");
           
-          updateItemStatus(nextTask.id, 'completed', data.imageUrl);
+          const data = await sdRes.json();
+          
+          // 5. Applica Watermark e Salva
+          const watermarkedImg = await applyWatermark(data.images[0]);
+          updateItemStatus(nextTask.id, 'completed', watermarkedImg);
           setActiveViewId(prev => prev ? prev : nextTask.id); 
           
         } catch (err) {
@@ -131,46 +194,28 @@ export default function PlanimetrieTool() {
     }
   };
 
-  // 🚀 FIX: MOTORE DI DOWNLOAD HEAVY-DUTY (A fette)
   const handleDownload = (item) => {
     if (!item.resultImage) return;
-    
     try {
-      // 1. Dividiamo l'intestazione Base64 ("data:image/png;base64,") dal codice reale
       const base64Data = item.resultImage.split(',')[1];
-      
-      // 2. Decodifica manuale pezzo per pezzo per non far schiantare il browser
       const byteCharacters = atob(base64Data);
       const byteArrays = [];
-      
       for (let offset = 0; offset < byteCharacters.length; offset += 512) {
         const slice = byteCharacters.slice(offset, offset + 512);
         const byteNumbers = new Array(slice.length);
-        for (let i = 0; i < slice.length; i++) {
-          byteNumbers[i] = slice.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        byteArrays.push(byteArray);
+        for (let i = 0; i < slice.length; i++) byteNumbers[i] = slice.charCodeAt(i);
+        byteArrays.push(new Uint8Array(byteNumbers));
       }
-      
-      // 3. Creazione del file fisico (Blob)
       const blob = new Blob(byteArrays, { type: 'image/png' });
-      
-      // 4. Creazione del link di download e click simulato
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `${item.fileName.split('.')[0]}_FenixRender.png`;
-      
       document.body.appendChild(link);
       link.click();
-      
-      // 5. Pulizia
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Errore critico durante il download manuale", err);
-      // Piano B d'emergenza
       window.open(item.resultImage, '_blank');
     }
   };
@@ -219,7 +264,7 @@ export default function PlanimetrieTool() {
             </div>
             
             <div className="flex items-center justify-between bg-black/50 p-3 rounded-xl border border-white/5 mb-6">
-              <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">STATO SERVER M4 ➜</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">CONNESSIONE DIRETTA M4 ➜</span>
               <div className={`w-2.5 h-2.5 rounded-full ${serverStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse' : 'bg-red-500 shadow-[0_0_10px_#ef4444]'}`}></div>
             </div>
 
@@ -259,7 +304,7 @@ export default function PlanimetrieTool() {
                       item.status === 'completed' ? 'text-green-500' : 'text-white/30'
                     }`}>
                       {item.status === 'processing' ? 'Elaborazione M4...' : 
-                       item.status === 'error' ? 'ERRORE TIMEOUT' : 
+                       item.status === 'error' ? 'ERRORE CONNESSIONE' : 
                        item.status === 'completed' ? 'Completato' : 'In coda'}
                     </span>
                   </div>
@@ -329,7 +374,7 @@ export default function PlanimetrieTool() {
       </main>
 
       <footer className="mt-24 opacity-20 text-[9px] tracking-[1em] uppercase font-black text-center border-t border-white/5 w-full pt-10 pb-6">
-        FENIX GROUP ® REAL ESTATE AI | SYSTEM 2026 | M4 PERFORMANCE
+        FENIX GROUP ® REAL ESTATE AI | SYSTEM 2026 | DIRECT M4 PIPELINE
       </footer>
 
       <style jsx global>{`
