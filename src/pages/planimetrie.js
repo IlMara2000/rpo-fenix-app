@@ -26,7 +26,6 @@ const applyWatermark = (base64Image) => new Promise((resolve) => {
       const logoWidth = 200; 
       const ratio = logoWidth / logo.width;
       const logoHeight = logo.height * ratio;
-      
       ctx.globalAlpha = 0.5; 
       ctx.drawImage(logo, canvas.width - logoWidth - 30, canvas.height - logoHeight - 30, logoWidth, logoHeight);
       resolve(canvas.toDataURL("image/png"));
@@ -47,11 +46,10 @@ export default function PlanimetrieTool() {
     if (!loading) return;
     const phrases = [
       'CONTATTO DIRETTO MAC M4...',
-      'ANALISI PIANTINA 2D (CONTROLNET)...',
-      'GENERAZIONE 8K IN CORSO (~30 SECONDI)...',
-      'CALCOLO ILLUMINAZIONE DALL\'ALTO...',
-      'APPLICAZIONE WATERMARK FENIX...',
-      'QUASI PRONTO...'
+      'ESTRAZIONE LINEE CANNY...',
+      'RENDERIZZAZIONE 2D PIATTA (~30 SECONDI)...',
+      'POSIZIONAMENTO ARREDI...',
+      'APPLICAZIONE WATERMARK FENIX...'
     ];
     let i = 0;
     setLoadingText(phrases[0]);
@@ -109,40 +107,35 @@ export default function PlanimetrieTool() {
         updateItemStatus(nextTask.id, 'processing');
         
         try {
-          // 1. Recupera l'URL di Ngrok dalla API ponte
           const ngrokRes = await fetch('/api/get-ngrok');
           const config = await ngrokRes.json();
           if (!config.url) throw new Error("Tunnel non trovato");
           const apiUrl = `${config.url}/sdapi/v1/img2img`;
 
-          // 2. Converte immagine in Base64
           const base64Image = await fileToBase64(nextTask.file);
 
-          // 3. IL NUOVO CERVELLO 2D ORTOGONALE
-          const basePrompt = "Orthographic top-down 2D floor plan, flat architectural layout, strictly seen from directly above, highly detailed, modern interior design, fully furnished top view";
-          const stylePrompt = "luxurious modern apartment, realistic textures, elegant furniture top view, soft lighting";
-          
+          // 🔥 CERVELLO CALIBRATO: No radiazioni, No 3D, Solo Piante 2D Arredate
           const payload = {
-            "prompt": `${basePrompt}, ${stylePrompt}`,
-            "negative_prompt": "3D, perspective, isometric, angled view, eye level, ceiling, visible walls height, sky, text, dimensions, watermark, rough layout, hand drawing, sketch, messy",
+            "prompt": "architectural floor plan, strictly 2D flat top-down view, clean layout, fully furnished, modern furniture, photorealistic textures, wooden floors, blueprint style rendering, real estate visualization",
+            "negative_prompt": "3D, perspective, isometric, walls height, angled, tilted, sky, ceiling, realistic room photo, glowing, neon, deep fried, bad quality, messy, sketch",
             "init_images": [base64Image],
             "sampler_name": "Euler",
             "scheduler": "Automatic",
-            "denoising_strength": 0.75, // 🔥 Forza il rispetto dei muri originali
-            "steps": 40,               
-            "cfg_scale": 8,             
+            "denoising_strength": 0.85, 
+            "steps": 35,               
+            "cfg_scale": 7, // Evita i colori bruciati           
             "enable_hr": true,
             "hr_scale": 1.5,
             "hr_upscaler": "R-ESRGAN 4x+",
-            "hr_second_pass_steps": 20,
+            "hr_second_pass_steps": 15,
             "alwayson_scripts": {
               "controlnet": {
                 "args": [{
                     "image": base64Image, 
                     "model": "control_v11p_sd15_canny", 
                     "module": "canny",                
-                    "weight": 1.3,               // 🔥 Diamo un po' di respiro ai mobili
-                    "control_mode": "Balanced",  // 🔥 Bilancia linee piatte col fotorealismo
+                    "weight": 1.0,               // Peso bilanciato per non distruggere l'immagine
+                    "control_mode": "Balanced", 
                     "processor_res": 512,
                     "threshold_a": 100,               
                     "threshold_b": 200,               
@@ -152,7 +145,6 @@ export default function PlanimetrieTool() {
             }
           };
 
-          // 🔥 4. CHIAMATA DIRETTA AL MAC M4
           const sdRes = await fetch(apiUrl, {
             method: "POST",
             headers: { 
@@ -167,7 +159,6 @@ export default function PlanimetrieTool() {
           
           const data = await sdRes.json();
           
-          // 5. Applica Watermark in locale
           const watermarkedImg = await applyWatermark(data.images[0]);
           updateItemStatus(nextTask.id, 'completed', watermarkedImg);
           setActiveViewId(prev => prev ? prev : nextTask.id); 
@@ -200,7 +191,6 @@ export default function PlanimetrieTool() {
     }
   };
 
-  // 🚀 MOTORE DI DOWNLOAD
   const handleDownload = (item) => {
     if (!item.resultImage) return;
     try {
