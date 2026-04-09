@@ -114,7 +114,7 @@ export default function PlanimetrieTool() {
 
           const base64Image = await fileToBase64(nextTask.file);
 
-          // 🔥 CERVELLO CALIBRATO: No radiazioni, No 3D, Solo Piante 2D Arredate
+          // 🔥 CERVELLO CALIBRATO MAC M4: Addio Neve Arcobaleno
           const payload = {
             "prompt": "architectural floor plan, strictly 2D flat top-down view, clean layout, fully furnished, modern furniture, photorealistic textures, wooden floors, blueprint style rendering, real estate visualization",
             "negative_prompt": "3D, perspective, isometric, walls height, angled, tilted, sky, ceiling, realistic room photo, glowing, neon, deep fried, bad quality, messy, sketch",
@@ -123,11 +123,10 @@ export default function PlanimetrieTool() {
             "scheduler": "Automatic",
             "denoising_strength": 0.85, 
             "steps": 35,               
-            "cfg_scale": 7, // Evita i colori bruciati           
-            "enable_hr": true,
-            "hr_scale": 1.5,
-            "hr_upscaler": "R-ESRGAN 4x+",
-            "hr_second_pass_steps": 15,
+            "cfg_scale": 7, 
+            "width": 1024,      // 🔥 Generiamo direttamente in HD (Senza upscaler)
+            "height": 1024,     // 🔥 Generiamo direttamente in HD
+            "enable_hr": false, // 🛑 IL COLPEVOLE DEL CRASH È STATO SPENTO
             "alwayson_scripts": {
               "controlnet": {
                 "args": [{
@@ -274,7 +273,7 @@ export default function PlanimetrieTool() {
               <span className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-500">📥</span>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center leading-relaxed">
                 Clicca o trascina qui lo schizzo<br/>
-                <span className="opacity-40 font-bold text-[8px]">PROCESSO AUTOMATICO 8K HD</span>
+                <span className="opacity-40 font-bold text-[8px]">PROCESSO AUTOMATICO 1024px HD</span>
               </span>
               <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
             </label>
