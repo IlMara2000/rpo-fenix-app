@@ -114,7 +114,7 @@ export default function PlanimetrieTool() {
 
           const base64Image = await fileToBase64(nextTask.file);
 
-          // 🔥 CERVELLO CALIBRATO MAC M4: Addio Neve Arcobaleno
+          // 🔥 CERVELLO CALIBRATO MAC M4: Risoluzione "Safe Mode" 768px
           const payload = {
             "prompt": "architectural floor plan, strictly 2D flat top-down view, clean layout, fully furnished, modern furniture, photorealistic textures, wooden floors, blueprint style rendering, real estate visualization",
             "negative_prompt": "3D, perspective, isometric, walls height, angled, tilted, sky, ceiling, realistic room photo, glowing, neon, deep fried, bad quality, messy, sketch",
@@ -124,16 +124,16 @@ export default function PlanimetrieTool() {
             "denoising_strength": 0.85, 
             "steps": 35,               
             "cfg_scale": 7, 
-            "width": 1024,      // 🔥 Generiamo direttamente in HD (Senza upscaler)
-            "height": 1024,     // 🔥 Generiamo direttamente in HD
-            "enable_hr": false, // 🛑 IL COLPEVOLE DEL CRASH È STATO SPENTO
+            "width": 768,       // 🔥 ABBASSATO A 768: Evita il crash del VAE su Mac M4
+            "height": 768,      // 🔥 ABBASSATO A 768: Evita il crash del VAE su Mac M4
+            "enable_hr": false, // Teniamo spento l'upscaler per sicurezza
             "alwayson_scripts": {
               "controlnet": {
                 "args": [{
                     "image": base64Image, 
                     "model": "control_v11p_sd15_canny", 
                     "module": "canny",                
-                    "weight": 1.0,               // Peso bilanciato per non distruggere l'immagine
+                    "weight": 1.0,               
                     "control_mode": "Balanced", 
                     "processor_res": 512,
                     "threshold_a": 100,               
@@ -273,7 +273,7 @@ export default function PlanimetrieTool() {
               <span className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-500">📥</span>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center leading-relaxed">
                 Clicca o trascina qui lo schizzo<br/>
-                <span className="opacity-40 font-bold text-[8px]">PROCESSO AUTOMATICO 1024px HD</span>
+                <span className="opacity-40 font-bold text-[8px]">PROCESSO AUTOMATICO 768px HD</span>
               </span>
               <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
             </label>
