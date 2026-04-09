@@ -9,7 +9,7 @@ const fileToBase64 = (file) => new Promise((resolve, reject) => {
   reader.onerror = error => reject(error);
 });
 
-// --- HELPER: Applica il Watermark nel Browser (Addio errori Sharp!) ---
+// --- HELPER: Applica il Watermark nel Browser ---
 const applyWatermark = (base64Image) => new Promise((resolve) => {
   const img = new Image();
   img.src = "data:image/png;base64," + base64Image;
@@ -23,17 +23,15 @@ const applyWatermark = (base64Image) => new Promise((resolve) => {
     const logo = new Image();
     logo.src = "/logo.png";
     logo.onload = () => {
-      // Calcola le proporzioni esatte per rimpicciolire il logo a 200px
       const logoWidth = 200; 
       const ratio = logoWidth / logo.width;
       const logoHeight = logo.height * ratio;
       
-      ctx.globalAlpha = 0.5; // Trasparenza
-      // Incolla il logo in basso a destra con un margine di 30px
+      ctx.globalAlpha = 0.5; 
       ctx.drawImage(logo, canvas.width - logoWidth - 30, canvas.height - logoHeight - 30, logoWidth, logoHeight);
       resolve(canvas.toDataURL("image/png"));
     };
-    logo.onerror = () => resolve("data:image/png;base64," + base64Image); // Fallback: foto pulita se non trova il logo
+    logo.onerror = () => resolve("data:image/png;base64," + base64Image); 
   };
 });
 
@@ -49,9 +47,9 @@ export default function PlanimetrieTool() {
     if (!loading) return;
     const phrases = [
       'CONTATTO DIRETTO MAC M4...',
-      'LOCK GEOMETRICO MURI (CONTROLNET)...',
+      'ANALISI PIANTINA 2D (CONTROLNET)...',
       'GENERAZIONE 8K IN CORSO (~30 SECONDI)...',
-      'CALCOLO ILLUMINAZIONE...',
+      'CALCOLO ILLUMINAZIONE DALL\'ALTO...',
       'APPLICAZIONE WATERMARK FENIX...',
       'QUASI PRONTO...'
     ];
@@ -111,7 +109,7 @@ export default function PlanimetrieTool() {
         updateItemStatus(nextTask.id, 'processing');
         
         try {
-          // 1. Recupera l'URL di Ngrok dalla nostra API ponte
+          // 1. Recupera l'URL di Ngrok dalla API ponte
           const ngrokRes = await fetch('/api/get-ngrok');
           const config = await ngrokRes.json();
           if (!config.url) throw new Error("Tunnel non trovato");
@@ -120,31 +118,31 @@ export default function PlanimetrieTool() {
           // 2. Converte immagine in Base64
           const base64Image = await fileToBase64(nextTask.file);
 
-          // 3. Costruisce il Payload (Top di Gamma: Denoising 0.95, Canny 1.8)
-          const basePrompt = "high-end orthographic 2d architectural floor plan render, clean lines, professional visualization, premium wood floors, soft cinematic lighting, fully furnished, architectural design";
-          const stylePrompt = "luxurious modern apartment, minimal white geometric walls, soft cinematic shadows";
+          // 3. IL NUOVO CERVELLO 2D ORTOGONALE
+          const basePrompt = "Orthographic top-down 2D floor plan, flat architectural layout, strictly seen from directly above, highly detailed, modern interior design, fully furnished top view";
+          const stylePrompt = "luxurious modern apartment, realistic textures, elegant furniture top view, soft lighting";
           
           const payload = {
             "prompt": `${basePrompt}, ${stylePrompt}`,
-            "negative_prompt": "text, letters, labels, handwritten text, notes, dimensions, watermark, signature, logo, lowres, bad quality, sketchy, blurry, rough layout, empty room",
+            "negative_prompt": "3D, perspective, isometric, angled view, eye level, ceiling, visible walls height, sky, text, dimensions, watermark, rough layout, hand drawing, sketch, messy",
             "init_images": [base64Image],
             "sampler_name": "Euler",
             "scheduler": "Automatic",
-            "denoising_strength": 0.95, 
-            "steps": 45,               
-            "cfg_scale": 10,           
+            "denoising_strength": 0.75, // 🔥 Forza il rispetto dei muri originali
+            "steps": 40,               
+            "cfg_scale": 8,             
             "enable_hr": true,
             "hr_scale": 1.5,
             "hr_upscaler": "R-ESRGAN 4x+",
-            "hr_second_pass_steps": 25,
+            "hr_second_pass_steps": 20,
             "alwayson_scripts": {
               "controlnet": {
                 "args": [{
                     "image": base64Image, 
                     "model": "control_v11p_sd15_canny", 
                     "module": "canny",                
-                    "weight": 1.8,                   
-                    "control_mode": "ControlNet is more important", 
+                    "weight": 1.3,               // 🔥 Diamo un po' di respiro ai mobili
+                    "control_mode": "Balanced",  // 🔥 Bilancia linee piatte col fotorealismo
                     "processor_res": 512,
                     "threshold_a": 100,               
                     "threshold_b": 200,               
@@ -154,13 +152,13 @@ export default function PlanimetrieTool() {
             }
           };
 
-          // 🔥 4. CHIAMATA DIRETTA AL MAC M4 CON BYPASS NGROK E VERCEL
+          // 🔥 4. CHIAMATA DIRETTA AL MAC M4
           const sdRes = await fetch(apiUrl, {
             method: "POST",
             headers: { 
               "Content-Type": "application/json", 
               "Accept": "application/json",
-              "ngrok-skip-browser-warning": "true" // SEGRETO PER PASSARE IL MURO DI NGROK GRATUITO
+              "ngrok-skip-browser-warning": "true" 
             },
             body: JSON.stringify(payload)
           });
@@ -169,7 +167,7 @@ export default function PlanimetrieTool() {
           
           const data = await sdRes.json();
           
-          // 5. Applica Watermark in locale e salva l'immagine
+          // 5. Applica Watermark in locale
           const watermarkedImg = await applyWatermark(data.images[0]);
           updateItemStatus(nextTask.id, 'completed', watermarkedImg);
           setActiveViewId(prev => prev ? prev : nextTask.id); 
@@ -202,6 +200,7 @@ export default function PlanimetrieTool() {
     }
   };
 
+  // 🚀 MOTORE DI DOWNLOAD
   const handleDownload = (item) => {
     if (!item.resultImage) return;
     try {
