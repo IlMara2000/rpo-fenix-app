@@ -32,7 +32,7 @@ export default function MainMenu() {
         </div>
       </header>
 
-      <main className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch animate-in fade-in zoom-in-95 duration-700 delay-150">
+      <main className="w-full max-w-xl grid grid-cols-1 gap-8 items-stretch animate-in fade-in zoom-in-95 duration-700 delay-150">
         
         {/* BOTTONE PROGRAMMA RPO */}
         <Link href="/rpo" className="group">
@@ -43,19 +43,6 @@ export default function MainMenu() {
             <h2 className="text-3xl font-black uppercase tracking-widest mb-4">Programma RPO</h2>
             <p className="text-gray-400 text-sm leading-relaxed">
               Suite completa per l'estrazione, il taglio e la bonifica dei numeri di telefono con il portale del Registro Pubblico delle Opposizioni.
-            </p>
-          </div>
-        </Link>
-
-        {/* BOTTONE FOTO PLANIMETRIE */}
-        <Link href="/planimetrie" className="group">
-          <div className="bg-black/40 backdrop-blur-md p-10 rounded-[35px] border border-white/10 flex flex-col items-center text-center h-full cursor-pointer transition-all duration-500 hover:scale-[1.02] hover:bg-black/60 hover:border-red-500 hover:shadow-[0_0_50px_rgba(239,68,68,0.3)]">
-            <div className="w-20 h-20 rounded-2xl bg-red-500/20 flex items-center justify-center mb-6 group-hover:bg-red-500 transition-colors duration-500">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-            </div>
-            <h2 className="text-3xl font-black uppercase tracking-widest mb-4">Foto Planimetrie</h2>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Nuovo tool per la gestione, l'ottimizzazione e l'elaborazione delle planimetrie immobiliari e dei contenuti fotografici.
             </p>
           </div>
         </Link>
