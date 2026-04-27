@@ -1,27 +1,37 @@
 import fs from 'fs';
 import path from 'path';
 
+const fetchWithTimeout = async (url, options = {}) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
 export default async function handler(req, res) {
   try {
-    // 1. Trova il file di ngrok
     const configPath = path.join(process.cwd(), 'ngrok_config.json');
     const configData = fs.readFileSync(configPath, 'utf8');
     const ngrokUrl = JSON.parse(configData).url;
 
-    // 2. Bussa gentilmente al Mac Mini M4
-    // Chiamiamo un endpoint leggerissimo solo per vedere se risponde
-    const response = await fetch(`${ngrokUrl}/sdapi/v1/options`, {
+    const response = await fetchWithTimeout(`${ngrokUrl}/sdapi/v1/options`, {
       method: "GET",
-      headers: { "Accept": "application/json" }
+      headers: {
+        "Accept": "application/json",
+        "ngrok-skip-browser-warning": "true"
+      }
     });
 
-    if (response.ok) {
-      res.status(200).json({ isOnline: true });
-    } else {
-      res.status(200).json({ isOnline: false });
-    }
+    const contentType = response.headers.get('content-type') || '';
+    res.status(200).json({
+      isOnline: response.ok && contentType.includes('application/json'),
+      status: response.status
+    });
   } catch (error) {
-    // Se c'è un errore (file non trovato o Mac spento), è offline
-    res.status(200).json({ isOnline: false });
+    res.status(200).json({ isOnline: false, error: error.message });
   }
 }

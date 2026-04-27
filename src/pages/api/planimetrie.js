@@ -7,25 +7,80 @@ export const config = {
   api: { bodyParser: false },
 };
 
-// 🔥 IL SEGRETO: Forza Vercel ad aspettare fino a 60 secondi invece di 10
 export const maxDuration = 60; 
+
+const MAX_RENDER_SIDE = 768;
+const MIN_RENDER_SIDE = 384;
+const REQUEST_TIMEOUT_MS = 120000;
+
+const firstValue = (value) => Array.isArray(value) ? value[0] : value;
+
+const roundToMultiple = (value, multiple) => Math.max(
+  MIN_RENDER_SIDE,
+  Math.min(MAX_RENDER_SIDE, Math.round(value / multiple) * multiple)
+);
+
+const getRenderSize = (width, height) => {
+  if (!width || !height) {
+    return { width: MAX_RENDER_SIDE, height: MAX_RENDER_SIDE };
+  }
+
+  const ratio = width / height;
+  if (ratio >= 1) {
+    return {
+      width: MAX_RENDER_SIDE,
+      height: roundToMultiple(MAX_RENDER_SIDE / ratio, 64),
+    };
+  }
+
+  return {
+    width: roundToMultiple(MAX_RENDER_SIDE * ratio, 64),
+    height: MAX_RENDER_SIDE,
+  };
+};
+
+const fetchWithTimeout = async (url, options = {}) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+};
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo non consentito' });
 
-  const form = new IncomingForm();
+  const form = new IncomingForm({
+    maxFileSize: 15 * 1024 * 1024,
+    multiples: false,
+  });
 
   form.parse(req, async (err, fields, files) => {
     if (err) return res.status(500).json({ error: 'Errore nel parsing del file' });
 
-    const uploadedFile = files.file ? files.file[0] : null;
+    const uploadedFile = firstValue(files.file);
     if (!uploadedFile) return res.status(400).json({ error: 'Nessun file ricevuto' });
 
-    const styleChoice = Array.isArray(fields.style) ? fields.style[0] : fields.style || 'modern_luxury';
+    const styleChoice = firstValue(fields.style) || 'modern_luxury';
 
     try {
       const fileData = fs.readFileSync(uploadedFile.filepath);
-      const base64Image = Buffer.from(fileData).toString('base64');
+      const metadata = await sharp(fileData).metadata();
+      const renderSize = getRenderSize(metadata.width, metadata.height);
+
+      const normalizedInput = await sharp(fileData)
+        .resize({
+          width: renderSize.width,
+          height: renderSize.height,
+          fit: 'fill',
+        })
+        .png()
+        .toBuffer();
+
+      const base64Image = normalizedInput.toString('base64');
 
       const configPath = path.join(process.cwd(), 'ngrok_config.json');
       let ngrokUrl = "";
@@ -39,56 +94,57 @@ export default async function handler(req, res) {
       const apiUrl = `${ngrokUrl}/sdapi/v1/img2img`;
 
       const stylePrompts = {
-        modern_luxury: "luxurious modern apartment, scandinavian style, warm wooden oak floors, soft cinematic shadows",
-        industrial_loft: "industrial loft, exposed brick walls, concrete floor, dark metal accents, dramatic moody lighting, leather furniture",
-        classic_elegance: "classic elegant interior, polished marble floors, gold details, luxury classic furniture, bright natural light, ornate"
+        modern_luxury: "modern premium apartment floor plan, warm oak floors, elegant neutral furniture, refined real estate presentation",
+        industrial_loft: "industrial loft floor plan, concrete texture, black metal accents, leather furniture, refined moody interior design",
+        classic_elegance: "classic elegant apartment floor plan, marble details, warm classic furniture, bright premium real estate presentation"
       };
 
       const selectedStylePrompt = stylePrompts[styleChoice] || stylePrompts['modern_luxury'];
       
-      const basePrompt = "high-end 3d architectural floor plan render, photorealistic, 8k, top-down view, fully furnished, professional interior design, clean white geometric walls, premium furniture, octane render";
+      const basePrompt = "strictly 2D top-down architectural floor plan, preserve original room layout and wall geometry, fully furnished, clean real estate plan render, premium interior design, sharp walls, no perspective";
       const fullPrompt = `${basePrompt}, ${selectedStylePrompt}`;
       
-      const negativePrompt = "text, letters, labels, handwritten text, notes, dimensions, watermark, signature, logo, low quality, deformed walls, hand drawn sketch lines, background noise, door swings, window symbols, grainy, cluttered, messy, distorted furniture, open walls, black and white, lineart, drawing";
+      const negativePrompt = "3D, perspective, isometric, angled view, camera view, ceiling, sky, exterior photo, room photo, deformed walls, changed layout, extra rooms, missing rooms, text, labels, handwritten notes, dimensions, watermark, signature, logo, blurry, low quality, cluttered";
 
-// 4. PAYLOAD UNIFICATO: SILENZIOSO E PERFETTO
-const payload = {
-  "prompt": fullPrompt,
-  "negative_prompt": negativePrompt,
-  "init_images": [base64Image],
-  "sampler_name": "Euler",       // Dichiariamo il Sampler esplicitamente
-  "scheduler": "Automatic",      // ✨ FIX: Zittisce il warning del Sampler
-  "denoising_strength": 0.95, 
-  "steps": 45,               
-  "cfg_scale": 10,           
-  "enable_hr": true,
-  "hr_scale": 1.5,
-  "hr_upscaler": "R-ESRGAN 4x+",
-  "hr_second_pass_steps": 25,
-  "alwayson_scripts": {
-    "controlnet": {
-      "args": [
-        {
-          "image": base64Image,  // ✨ FIX: Zittisce il warning di ControlNet
-          "model": "control_v11p_sd15_canny", 
-          "module": "canny",                
-          "weight": 1.8,                   
-          "control_mode": "ControlNet is more important", 
-          "processor_res": 512,
-          "threshold_a": 100,               
-          "threshold_b": 200,               
-          "pixel_perfect": true
+      const payload = {
+        prompt: fullPrompt,
+        negative_prompt: negativePrompt,
+        init_images: [base64Image],
+        sampler_name: "Euler",
+        scheduler: "Automatic",
+        denoising_strength: 0.58,
+        steps: 32,
+        cfg_scale: 7,
+        width: renderSize.width,
+        height: renderSize.height,
+        resize_mode: 0,
+        enable_hr: false,
+        alwayson_scripts: {
+          controlnet: {
+            args: [
+              {
+                image: base64Image,
+                model: "control_v11p_sd15_canny",
+                module: "canny",
+                weight: 1.35,
+                control_mode: "ControlNet is more important",
+                processor_res: Math.min(renderSize.width, renderSize.height),
+                threshold_a: 80,
+                threshold_b: 180,
+                pixel_perfect: true
+              }
+            ]
+          }
         }
-      ]
-    }
-  }
-};
+      };
 
-      console.log(`📡 Inviando richiesta 'Pure Photoreal' al Mac M4 (Mood: ${styleChoice})...`);
-
-      const response = await fetch(apiUrl, {
+      const response = await fetchWithTimeout(apiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "ngrok-skip-browser-warning": "true"
+        },
         body: JSON.stringify(payload),
       });
 
@@ -98,39 +154,65 @@ const payload = {
       }
 
       const data = await response.json();
+      if (!data.images?.[0]) {
+        throw new Error("Il Mac Mini non ha restituito nessuna immagine.");
+      }
+
       const baseImageBuffer = Buffer.from(data.images[0], 'base64');
 
-      // 5. APPLICAZIONE WATERMARK AUTOMATICO CON SHARP
       const logoPath = path.join(process.cwd(), 'public', 'logo.png');
       let finalBuffer;
 
       if (fs.existsSync(logoPath)) {
-        console.log("🎨 Applicazione Watermark Fenix Group...");
-        
-        // ✨ FIX: Rimpiccioliamo il logo a 300 pixel di larghezza prima di incollarlo
+        const logoWidth = Math.max(120, Math.round(renderSize.width * 0.2));
         const resizedLogoBuffer = await sharp(logoPath)
-          .resize({ width: 300 }) // Puoi cambiare questo numero per fare il logo più grande o più piccolo
+          .resize({ width: logoWidth })
           .toBuffer();
 
         finalBuffer = await sharp(baseImageBuffer)
+          .resize({
+            width: renderSize.width,
+            height: renderSize.height,
+            fit: 'fill',
+          })
           .composite([{ 
             input: resizedLogoBuffer, 
             gravity: 'southeast', 
             blend: 'over',
           }])
+          .png()
           .toBuffer();
       } else {
-        console.warn("⚠️ Logo non trovato in public/logo.png - Procedo con render pulito.");
-        finalBuffer = baseImageBuffer;
+        finalBuffer = await sharp(baseImageBuffer)
+          .resize({
+            width: renderSize.width,
+            height: renderSize.height,
+            fit: 'fill',
+          })
+          .png()
+          .toBuffer();
       }
 
       const finalImageUrl = `data:image/png;base64,${finalBuffer.toString('base64')}`;
 
-      res.status(200).json({ success: true, imageUrl: finalImageUrl });
+      res.status(200).json({
+        success: true,
+        imageUrl: finalImageUrl,
+        meta: {
+          originalWidth: metadata.width,
+          originalHeight: metadata.height,
+          outputWidth: renderSize.width,
+          outputHeight: renderSize.height,
+          style: styleChoice
+        }
+      });
 
     } catch (error) {
       console.error("ERRORE API PLANIMETRIE:", error.message);
-      res.status(500).json({ error: error.message });
+      const message = error.name === 'AbortError'
+        ? 'Timeout: il Mac Mini non ha risposto in tempo.'
+        : error.message;
+      res.status(500).json({ error: message });
     }
   });
 }

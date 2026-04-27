@@ -1,39 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 
-// --- HELPER: Converte il file in Base64 ---
-const fileToBase64 = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = () => resolve(reader.result.split(',')[1]);
-  reader.onerror = error => reject(error);
-});
-
-// --- HELPER: Applica il Watermark nel Browser ---
-const applyWatermark = (base64Image) => new Promise((resolve) => {
-  const img = new Image();
-  img.src = "data:image/png;base64," + base64Image;
-  img.onload = () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = img.width;
-    canvas.height = img.height;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0);
-
-    const logo = new Image();
-    logo.src = "/logo.png";
-    logo.onload = () => {
-      const logoWidth = 200; 
-      const ratio = logoWidth / logo.width;
-      const logoHeight = logo.height * ratio;
-      ctx.globalAlpha = 0.5; 
-      ctx.drawImage(logo, canvas.width - logoWidth - 30, canvas.height - logoHeight - 30, logoWidth, logoHeight);
-      resolve(canvas.toDataURL("image/png"));
-    };
-    logo.onerror = () => resolve("data:image/png;base64," + base64Image); 
-  };
-});
-
 export default function PlanimetrieTool() {
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('INIZIALIZZAZIONE...');
@@ -77,7 +44,9 @@ export default function PlanimetrieTool() {
       file: f,
       fileName: f.name,
       status: 'waiting',
-      resultImage: null
+      resultImage: null,
+      errorMessage: '',
+      meta: null
     }));
     setQueue(prev => [...prev, ...newItems]);
   };
@@ -107,64 +76,26 @@ export default function PlanimetrieTool() {
         updateItemStatus(nextTask.id, 'processing');
         
         try {
-          const ngrokRes = await fetch('/api/get-ngrok');
-          const config = await ngrokRes.json();
-          if (!config.url) throw new Error("Tunnel non trovato");
-          const apiUrl = `${config.url}/sdapi/v1/img2img`;
+          const formData = new FormData();
+          formData.append('file', nextTask.file);
+          formData.append('style', 'modern_luxury');
 
-          const base64Image = await fileToBase64(nextTask.file);
-
-          // 🔥 CERVELLO CALIBRATO MAC M4: Risoluzione "Safe Mode" 768px
-          const payload = {
-            "prompt": "architectural floor plan, strictly 2D flat top-down view, clean layout, fully furnished, modern furniture, photorealistic textures, wooden floors, blueprint style rendering, real estate visualization",
-            "negative_prompt": "3D, perspective, isometric, walls height, angled, tilted, sky, ceiling, realistic room photo, glowing, neon, deep fried, bad quality, messy, sketch",
-            "init_images": [base64Image],
-            "sampler_name": "Euler",
-            "scheduler": "Automatic",
-            "denoising_strength": 0.85, 
-            "steps": 35,               
-            "cfg_scale": 7, 
-            "width": 768,       // 🔥 ABBASSATO A 768: Evita il crash del VAE su Mac M4
-            "height": 768,      // 🔥 ABBASSATO A 768: Evita il crash del VAE su Mac M4
-            "enable_hr": false, // Teniamo spento l'upscaler per sicurezza
-            "alwayson_scripts": {
-              "controlnet": {
-                "args": [{
-                    "image": base64Image, 
-                    "model": "control_v11p_sd15_canny", 
-                    "module": "canny",                
-                    "weight": 1.0,               
-                    "control_mode": "Balanced", 
-                    "processor_res": 512,
-                    "threshold_a": 100,               
-                    "threshold_b": 200,               
-                    "pixel_perfect": true
-                  }]
-              }
-            }
-          };
-
-          const sdRes = await fetch(apiUrl, {
+          const sdRes = await fetch('/api/planimetrie', {
             method: "POST",
-            headers: { 
-              "Content-Type": "application/json", 
-              "Accept": "application/json",
-              "ngrok-skip-browser-warning": "true" 
-            },
-            body: JSON.stringify(payload)
+            body: formData
           });
-
-          if (!sdRes.ok) throw new Error("Errore dal Mac Mini");
           
           const data = await sdRes.json();
+          if (!sdRes.ok || !data.success) {
+            throw new Error(data.error || "Errore durante la generazione");
+          }
           
-          const watermarkedImg = await applyWatermark(data.images[0]);
-          updateItemStatus(nextTask.id, 'completed', watermarkedImg);
+          updateItemStatus(nextTask.id, 'completed', data.imageUrl, '', data.meta);
           setActiveViewId(prev => prev ? prev : nextTask.id); 
           
         } catch (err) {
           console.error("ERRORE GENERAZIONE:", err);
-          updateItemStatus(nextTask.id, 'error');
+          updateItemStatus(nextTask.id, 'error', null, err.message || 'Errore sconosciuto');
         }
         setLoading(false);
       }
@@ -172,9 +103,9 @@ export default function PlanimetrieTool() {
     processQueue();
   }, [queue, loading, serverStatus]);
 
-  const updateItemStatus = (id, status, imageUrl = null) => {
+  const updateItemStatus = (id, status, imageUrl = null, errorMessage = '', meta = null) => {
     setQueue(prev => prev.map(item => 
-      item.id === id ? { ...item, status, resultImage: imageUrl } : item
+      item.id === id ? { ...item, status, resultImage: imageUrl, errorMessage, meta } : item
     ));
   };
 
@@ -260,7 +191,7 @@ export default function PlanimetrieTool() {
             </div>
             
             <div className="flex items-center justify-between bg-black/50 p-3 rounded-xl border border-white/5 mb-6">
-              <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">CONNESSIONE DIRETTA M4 ➜</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">PIPELINE M4 SERVER ➜</span>
               <div className={`w-2.5 h-2.5 rounded-full ${serverStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse' : 'bg-red-500 shadow-[0_0_10px_#ef4444]'}`}></div>
             </div>
 
@@ -273,7 +204,7 @@ export default function PlanimetrieTool() {
               <span className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-500">📥</span>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center leading-relaxed">
                 Clicca o trascina qui lo schizzo<br/>
-                <span className="opacity-40 font-bold text-[8px]">PROCESSO AUTOMATICO 768px HD</span>
+                <span className="opacity-40 font-bold text-[8px]">PNG CON PROPORZIONI CONSERVATE</span>
               </span>
               <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
             </label>
@@ -300,7 +231,7 @@ export default function PlanimetrieTool() {
                       item.status === 'completed' ? 'text-green-500' : 'text-white/30'
                     }`}>
                       {item.status === 'processing' ? 'Elaborazione M4...' : 
-                       item.status === 'error' ? 'ERRORE M4/NGROK' : 
+                       item.status === 'error' ? (item.errorMessage || 'ERRORE M4/NGROK') : 
                        item.status === 'completed' ? 'Completato' : 'In coda'}
                     </span>
                   </div>
@@ -341,6 +272,11 @@ export default function PlanimetrieTool() {
                 <div className="flex flex-col">
                   <h2 className="text-xl font-black uppercase tracking-tighter">Render 8K Finale</h2>
                   <p className="text-[9px] text-white/30 uppercase tracking-[0.2em]">{activeItem.fileName}</p>
+                  {activeItem.meta && (
+                    <p className="text-[9px] text-white/30 uppercase tracking-[0.2em] mt-1">
+                      PNG {activeItem.meta.outputWidth}x{activeItem.meta.outputHeight}
+                    </p>
+                  )}
                 </div>
                 <div className="bg-red-500/10 text-red-500 border border-red-500/20 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest">
                   Fenix M4 Engine Active
