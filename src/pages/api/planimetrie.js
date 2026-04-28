@@ -50,6 +50,84 @@ const fetchWithTimeout = async (url, options = {}) => {
   }
 };
 
+const addWatermark = async (imageBuffer, renderSize) => {
+  const logoPath = path.join(process.cwd(), 'public', 'logo.png');
+
+  if (!fs.existsSync(logoPath)) {
+    return sharp(imageBuffer)
+      .resize({
+        width: renderSize.width,
+        height: renderSize.height,
+        fit: 'fill',
+      })
+      .png()
+      .toBuffer();
+  }
+
+  const logoWidth = Math.max(120, Math.round(renderSize.width * 0.18));
+  const resizedLogoBuffer = await sharp(logoPath)
+    .resize({ width: logoWidth })
+    .toBuffer();
+
+  return sharp(imageBuffer)
+    .resize({
+      width: renderSize.width,
+      height: renderSize.height,
+      fit: 'fill',
+    })
+    .composite([{
+      input: resizedLogoBuffer,
+      gravity: 'southeast',
+      blend: 'over',
+    }])
+    .png()
+    .toBuffer();
+};
+
+const createLocalPlan = async (normalizedInput, renderSize) => {
+  const cleanedLines = await sharp(normalizedInput)
+    .greyscale()
+    .normalize()
+    .linear(1.25, -18)
+    .threshold(205)
+    .png()
+    .toBuffer();
+
+  const background = await sharp({
+    create: {
+      width: renderSize.width,
+      height: renderSize.height,
+      channels: 4,
+      background: '#f4efe6'
+    }
+  })
+    .png()
+    .toBuffer();
+
+  const gridSvg = Buffer.from(`
+    <svg width="${renderSize.width}" height="${renderSize.height}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+          <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#d8cfc2" stroke-width="1" opacity="0.32"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#grid)"/>
+      <rect x="18" y="18" width="${renderSize.width - 36}" height="${renderSize.height - 36}" rx="12" fill="none" stroke="#201817" stroke-width="2" opacity="0.14"/>
+    </svg>
+  `);
+
+  const composed = await sharp(background)
+    .composite([
+      { input: gridSvg, top: 0, left: 0 },
+      { input: cleanedLines, top: 0, left: 0, blend: 'multiply' }
+    ])
+    .modulate({ brightness: 1.03, saturation: 0.92 })
+    .png()
+    .toBuffer();
+
+  return addWatermark(composed, renderSize);
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo non consentito' });
 
@@ -81,117 +159,99 @@ export default async function handler(req, res) {
         .toBuffer();
 
       const base64Image = normalizedInput.toString('base64');
+      let mode = 'ai';
+      let fallbackReason = '';
+      let baseImageBuffer;
 
-      const configPath = path.join(process.cwd(), 'ngrok_config.json');
-      let ngrokUrl = "";
       try {
-        const configData = fs.readFileSync(configPath, 'utf8');
-        ngrokUrl = JSON.parse(configData).url;
-      } catch (e) {
-        throw new Error("Ngrok non configurato. Assicurati che il tunnel sia attivo sul Mac Mini.");
-      }
-
-      const apiUrl = `${ngrokUrl}/sdapi/v1/img2img`;
-
-      const stylePrompts = {
-        modern_luxury: "modern premium apartment floor plan, warm oak floors, elegant neutral furniture, refined real estate presentation",
-        industrial_loft: "industrial loft floor plan, concrete texture, black metal accents, leather furniture, refined moody interior design",
-        classic_elegance: "classic elegant apartment floor plan, marble details, warm classic furniture, bright premium real estate presentation"
-      };
-
-      const selectedStylePrompt = stylePrompts[styleChoice] || stylePrompts['modern_luxury'];
-      
-      const basePrompt = "strictly 2D top-down architectural floor plan, preserve original room layout and wall geometry, fully furnished, clean real estate plan render, premium interior design, sharp walls, no perspective";
-      const fullPrompt = `${basePrompt}, ${selectedStylePrompt}`;
-      
-      const negativePrompt = "3D, perspective, isometric, angled view, camera view, ceiling, sky, exterior photo, room photo, deformed walls, changed layout, extra rooms, missing rooms, text, labels, handwritten notes, dimensions, watermark, signature, logo, blurry, low quality, cluttered";
-
-      const payload = {
-        prompt: fullPrompt,
-        negative_prompt: negativePrompt,
-        init_images: [base64Image],
-        sampler_name: "Euler",
-        scheduler: "Automatic",
-        denoising_strength: 0.58,
-        steps: 32,
-        cfg_scale: 7,
-        width: renderSize.width,
-        height: renderSize.height,
-        resize_mode: 0,
-        enable_hr: false,
-        alwayson_scripts: {
-          controlnet: {
-            args: [
-              {
-                image: base64Image,
-                model: "control_v11p_sd15_canny",
-                module: "canny",
-                weight: 1.35,
-                control_mode: "ControlNet is more important",
-                processor_res: Math.min(renderSize.width, renderSize.height),
-                threshold_a: 80,
-                threshold_b: 180,
-                pixel_perfect: true
-              }
-            ]
-          }
+        const configPath = path.join(process.cwd(), 'ngrok_config.json');
+        let ngrokUrl = "";
+        try {
+          const configData = fs.readFileSync(configPath, 'utf8');
+          ngrokUrl = JSON.parse(configData).url;
+        } catch (e) {
+          throw new Error("Ngrok non configurato. Assicurati che il tunnel sia attivo sul Mac Mini.");
         }
-      };
 
-      const response = await fetchWithTimeout(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "ngrok-skip-browser-warning": "true"
-        },
-        body: JSON.stringify(payload),
-      });
+        const apiUrl = `${ngrokUrl}/sdapi/v1/img2img`;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Errore dal Mac Mini: ${errorText}`);
+        const stylePrompts = {
+          modern_luxury: "modern premium apartment floor plan, warm oak floors, elegant neutral furniture, refined real estate presentation",
+          industrial_loft: "industrial loft floor plan, concrete texture, black metal accents, leather furniture, refined moody interior design",
+          classic_elegance: "classic elegant apartment floor plan, marble details, warm classic furniture, bright premium real estate presentation"
+        };
+
+        const selectedStylePrompt = stylePrompts[styleChoice] || stylePrompts['modern_luxury'];
+
+        const basePrompt = "strictly 2D top-down architectural floor plan, preserve original room layout and wall geometry, fully furnished, clean real estate plan render, premium interior design, sharp walls, no perspective";
+        const fullPrompt = `${basePrompt}, ${selectedStylePrompt}`;
+
+        const negativePrompt = "3D, perspective, isometric, angled view, camera view, ceiling, sky, exterior photo, room photo, deformed walls, changed layout, extra rooms, missing rooms, text, labels, handwritten notes, dimensions, watermark, signature, logo, blurry, low quality, cluttered";
+
+        const payload = {
+          prompt: fullPrompt,
+          negative_prompt: negativePrompt,
+          init_images: [base64Image],
+          sampler_name: "Euler",
+          scheduler: "Automatic",
+          denoising_strength: 0.58,
+          steps: 32,
+          cfg_scale: 7,
+          width: renderSize.width,
+          height: renderSize.height,
+          resize_mode: 0,
+          enable_hr: false,
+          alwayson_scripts: {
+            controlnet: {
+              args: [
+                {
+                  image: base64Image,
+                  model: "control_v11p_sd15_canny",
+                  module: "canny",
+                  weight: 1.35,
+                  control_mode: "ControlNet is more important",
+                  processor_res: Math.min(renderSize.width, renderSize.height),
+                  threshold_a: 80,
+                  threshold_b: 180,
+                  pixel_perfect: true
+                }
+              ]
+            }
+          }
+        };
+
+        const response = await fetchWithTimeout(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "ngrok-skip-browser-warning": "true"
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Errore dal Mac Mini: ${errorText}`);
+        }
+
+        const data = await response.json();
+        if (!data.images?.[0]) {
+          throw new Error("Il Mac Mini non ha restituito nessuna immagine.");
+        }
+
+        baseImageBuffer = Buffer.from(data.images[0], 'base64');
+      } catch (generationError) {
+        mode = 'local';
+        fallbackReason = generationError.name === 'AbortError'
+          ? 'Timeout Mac Mini'
+          : generationError.message;
+        baseImageBuffer = await createLocalPlan(normalizedInput, renderSize);
       }
 
-      const data = await response.json();
-      if (!data.images?.[0]) {
-        throw new Error("Il Mac Mini non ha restituito nessuna immagine.");
-      }
-
-      const baseImageBuffer = Buffer.from(data.images[0], 'base64');
-
-      const logoPath = path.join(process.cwd(), 'public', 'logo.png');
-      let finalBuffer;
-
-      if (fs.existsSync(logoPath)) {
-        const logoWidth = Math.max(120, Math.round(renderSize.width * 0.2));
-        const resizedLogoBuffer = await sharp(logoPath)
-          .resize({ width: logoWidth })
-          .toBuffer();
-
-        finalBuffer = await sharp(baseImageBuffer)
-          .resize({
-            width: renderSize.width,
-            height: renderSize.height,
-            fit: 'fill',
-          })
-          .composite([{ 
-            input: resizedLogoBuffer, 
-            gravity: 'southeast', 
-            blend: 'over',
-          }])
-          .png()
-          .toBuffer();
-      } else {
-        finalBuffer = await sharp(baseImageBuffer)
-          .resize({
-            width: renderSize.width,
-            height: renderSize.height,
-            fit: 'fill',
-          })
-          .png()
-          .toBuffer();
-      }
+      const finalBuffer = mode === 'ai'
+        ? await addWatermark(baseImageBuffer, renderSize)
+        : baseImageBuffer;
 
       const finalImageUrl = `data:image/png;base64,${finalBuffer.toString('base64')}`;
 
@@ -203,7 +263,9 @@ export default async function handler(req, res) {
           originalHeight: metadata.height,
           outputWidth: renderSize.width,
           outputHeight: renderSize.height,
-          style: styleChoice
+          style: styleChoice,
+          mode,
+          fallbackReason
         }
       });
 
