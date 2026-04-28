@@ -32,7 +32,7 @@ export default function MainMenu() {
         </div>
       </header>
 
-      <main className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch animate-in fade-in zoom-in-95 duration-700 delay-150">
+      <main className="w-full max-w-xl grid grid-cols-1 gap-8 items-stretch animate-in fade-in zoom-in-95 duration-700 delay-150">
         
         {/* BOTTONE PROGRAMMA RPO */}
         <Link href="/rpo" className="group">
@@ -43,22 +43,6 @@ export default function MainMenu() {
             <h2 className="text-3xl font-black uppercase tracking-widest mb-4">Programma RPO</h2>
             <p className="text-gray-400 text-sm leading-relaxed">
               Suite completa per l'estrazione, il taglio e la bonifica dei numeri di telefono con il portale del Registro Pubblico delle Opposizioni.
-            </p>
-          </div>
-        </Link>
-
-        {/* BOTTONE FOTO PLANIMETRIE */}
-        <Link href="/planimetrie" className="group">
-          <div className="bg-black/40 backdrop-blur-md p-10 rounded-[35px] border border-white/10 flex flex-col items-center text-center h-full cursor-pointer transition-all duration-500 hover:scale-[1.02] hover:bg-black/60 hover:border-red-500 hover:shadow-[0_0_50px_rgba(239,68,68,0.3)]">
-            <div className="w-20 h-20 rounded-2xl bg-red-500/20 flex items-center justify-center mb-6 group-hover:bg-red-500 transition-colors duration-500">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7.5A2.5 2.5 0 015.5 5h13A2.5 2.5 0 0121 7.5v9A2.5 2.5 0 0118.5 19h-13A2.5 2.5 0 013 16.5v-9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14l2.25-2.25a1 1 0 011.42 0L14 14m-1-1l1.25-1.25a1 1 0 011.42 0L18 14M8.5 9.5h.01" />
-              </svg>
-            </div>
-            <h2 className="text-3xl font-black uppercase tracking-widest mb-4">Foto Planimetrie</h2>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Area dedicata al caricamento di schizzi e planimetrie in immagine per generare render arredati con anteprima, coda e download finale.
             </p>
           </div>
         </Link>
