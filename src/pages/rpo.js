@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import { saveAs } from 'file-saver';
 import { runRpoDivider } from '../logic/divider'; 
@@ -10,6 +10,9 @@ export default function Home() {
   
   // STATO TUTORIAL (0 = chiuso, 1-5 = passi del tutorial)
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [tutorialBubble, setTutorialBubble] = useState({ top: 160, left: 24, placement: 'below' });
+  const boxRefs = useRef({});
+  const statusRef = useRef(null);
 
   // STEP 1
   const [converterFiles, setConverterFiles] = useState(null);
@@ -106,14 +109,64 @@ export default function Home() {
     { title: "Monitoraggio Stato", desc: "Tieni d'occhio il riquadro nero sotto il logo. Durante ogni elaborazione, qui vedrai apparire messaggi in tempo reale sul caricamento e sull'esito delle operazioni." }
   ];
 
+  const getTutorialTarget = (step) => {
+    if (step === 5) return statusRef.current;
+    return boxRefs.current[step];
+  };
+
+  useEffect(() => {
+    if (tutorialStep === 0) return;
+
+    let scrollTimer;
+    const updateBubblePosition = () => {
+      const target = getTutorialTarget(tutorialStep);
+      if (!target) return;
+
+      const rect = target.getBoundingClientRect();
+      const bubbleWidth = Math.min(380, window.innerWidth - 32);
+      const bubbleHeight = 250;
+      const spacing = 18;
+      const left = Math.min(
+        window.innerWidth - bubbleWidth - 16,
+        Math.max(16, rect.left + (rect.width / 2) - (bubbleWidth / 2))
+      );
+      const hasRoomAbove = rect.top > bubbleHeight + spacing;
+      const top = hasRoomAbove
+        ? rect.top - bubbleHeight - spacing
+        : Math.min(window.innerHeight - bubbleHeight - 16, rect.bottom + spacing);
+
+      setTutorialBubble({
+        left,
+        top: Math.max(16, top),
+        placement: hasRoomAbove ? 'above' : 'below'
+      });
+    };
+
+    const target = getTutorialTarget(tutorialStep);
+    target?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    scrollTimer = window.setTimeout(updateBubblePosition, 280);
+
+    window.addEventListener('resize', updateBubblePosition);
+    window.addEventListener('scroll', updateBubblePosition, true);
+
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.removeEventListener('resize', updateBubblePosition);
+      window.removeEventListener('scroll', updateBubblePosition, true);
+    };
+  }, [tutorialStep]);
+
   // Helper per evidenziare i box durante il tutorial
   const getBoxFocusClass = (step) => {
     if (tutorialStep === 0) return "";
-    // Se lo step attuale è il 5 (Stato), oscuriamo tutti i box principali
-    if (tutorialStep === 5) return "opacity-20 grayscale pointer-events-none transition-all duration-500";
-    // Altrimenti evidenziamo il box specifico
-    if (tutorialStep === step) return "ring-2 ring-red-500 scale-[1.02] bg-black/80 z-[110]";
-    return "opacity-20 grayscale pointer-events-none";
+    if (tutorialStep === step) return "ring-2 ring-red-500 scale-[1.02] bg-black/90 z-[130] shadow-[0_0_70px_rgba(239,68,68,0.35)]";
+    return "z-0";
+  };
+
+  const getHeaderFocusClass = () => {
+    if (tutorialStep === 0) return "";
+    if (tutorialStep === 5) return "z-[130] relative";
+    return "";
   };
 
   return (
@@ -134,17 +187,25 @@ export default function Home() {
       
       {/* --- LAYER TUTORIAL --- */}
       {tutorialStep > 0 && (
-        <div className="fixed inset-0 z-[120] bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-6 transition-all">
-          <div className="bg-zinc-900 border border-red-600/50 p-8 rounded-[35px] max-w-lg w-full shadow-[0_0_60px_rgba(0,0,0,0.8)] relative">
-            
-            <button onClick={() => setTutorialStep(0)} className="absolute top-6 right-8 text-white/10 hover:text-white transition-all text-2xl font-light">✕</button>
+        <>
+          <div className="fixed inset-0 z-[100] bg-black/65 backdrop-blur-[2px] transition-all" />
+          <div
+            className="fixed z-[140] w-[calc(100vw-32px)] max-w-[380px] bg-zinc-950 border border-red-600/60 p-6 rounded-[28px] shadow-[0_24px_90px_rgba(0,0,0,0.9)] transition-all duration-300"
+            style={{ top: tutorialBubble.top, left: tutorialBubble.left }}
+          >
+            <div className={`absolute left-1/2 -translate-x-1/2 w-5 h-5 bg-zinc-950 border-red-600/60 rotate-45 ${
+              tutorialBubble.placement === 'above'
+                ? '-bottom-2.5 border-b border-r'
+                : '-top-2.5 border-t border-l'
+            }`} />
+
+            <button onClick={() => setTutorialStep(0)} className="absolute top-5 right-6 text-white/20 hover:text-white transition-all text-2xl font-light">✕</button>
             
             <span className="text-red-500 font-black text-[10px] tracking-[0.3em] uppercase block mb-2">Step {tutorialStep} di 5</span>
-            <h3 className="text-2xl font-bold mb-4">{tutorialData[tutorialStep - 1].title}</h3>
-            <p className="text-gray-400 text-sm leading-relaxed mb-8">{tutorialData[tutorialStep - 1].desc}</p>
+            <h3 className="text-xl font-bold mb-3 pr-8">{tutorialData[tutorialStep - 1].title}</h3>
+            <p className="text-gray-400 text-sm leading-relaxed mb-6">{tutorialData[tutorialStep - 1].desc}</p>
             
-            {/* --- RETTANGOLINI DI NAVIGAZIONE (Ora 5) --- */}
-            <div className="flex gap-2 mb-10 justify-start">
+            <div className="flex gap-2 mb-7 justify-start">
               {[1, 2, 3, 4, 5].map((s) => (
                 <button
                   key={s}
@@ -170,7 +231,7 @@ export default function Home() {
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* --- BOTTONE TUTORIAL VOLANTE --- */}
@@ -186,11 +247,11 @@ export default function Home() {
         </button>
       </div>
 
-      <header className={`w-full max-w-4xl mb-12 flex flex-col items-center transition-all duration-500 ${(tutorialStep > 0 && tutorialStep !== 5) ? 'opacity-20' : ''}`}>
+      <header className={`w-full max-w-4xl mb-12 flex flex-col items-center transition-all duration-500 ${getHeaderFocusClass()}`}>
         <img src="/logo.png" alt="Logo" className="h-[156px] w-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] mb-6" />
         
         {/* BARRA DI STATO: Si illumina nello Step 5 */}
-        <div className={`bg-black/80 backdrop-blur-xl p-4 rounded-2xl border border-red-500/30 shadow-2xl text-center transition-all duration-500 ${tutorialStep === 5 ? 'ring-4 ring-white scale-110 z-[130] relative' : ''}`}>
+        <div ref={statusRef} className={`bg-black/80 backdrop-blur-xl p-4 rounded-2xl border border-red-500/30 shadow-2xl text-center transition-all duration-500 ${tutorialStep === 5 ? 'ring-4 ring-white scale-110 shadow-[0_0_70px_rgba(255,255,255,0.22)]' : ''}`}>
           <span className="font-bold uppercase tracking-widest block px-4 text-xs md:text-sm">{status.msg}</span>
         </div>
       </header>
@@ -198,7 +259,7 @@ export default function Home() {
       <main className="w-full max-w-[1400px] grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 items-stretch">
         
         {/* STEP 1 */}
-        <section className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(1)}`}>
+        <section ref={el => { boxRefs.current[1] = el; }} className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(1)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">1</span>
             CONVERTITORE EXCEL
@@ -224,7 +285,7 @@ export default function Home() {
         </section>
 
         {/* STEP 2 - DIVIDER */}
-        <section className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(2)}`}>
+        <section ref={el => { boxRefs.current[2] = el; }} className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(2)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">2</span>
             DIVISORE FILE RPO
@@ -258,7 +319,7 @@ export default function Home() {
         </section>
         
         {/* STEP 3 - CLEANER */}
-        <section className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(3)}`}>
+        <section ref={el => { boxRefs.current[3] = el; }} className={`box-lavoro relative overflow-hidden ${getBoxFocusClass(3)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center font-black">3</span>
             LISTA NERA
@@ -285,7 +346,7 @@ export default function Home() {
         </section>
 
         {/* STEP 4 - SCANNER */}
-        <section className={`box-lavoro relative overflow-hidden border-red-500/40 ${getBoxFocusClass(4)}`}>
+        <section ref={el => { boxRefs.current[4] = el; }} className={`box-lavoro relative overflow-hidden border-red-500/40 ${getBoxFocusClass(4)}`}>
           <h2 className="text-2xl font-bold mb-3 flex items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-red-500/40 flex items-center justify-center font-black">4</span>
             PULIZIA FINALE EXCEL
