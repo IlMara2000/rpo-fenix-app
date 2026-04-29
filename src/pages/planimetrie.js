@@ -11,11 +11,11 @@ export default function PlanimetrieTool() {
   useEffect(() => {
     if (!loading) return;
     const phrases = [
-      'PREPARAZIONE PNG...',
-      'LETTURA FOTO...',
-      'PULIZIA LINEE...',
-      'COMPOSIZIONE STANZE...',
-      'INSERIMENTO ARREDI 2D...'
+      'LETTURA PLANIMETRIA...',
+      'INVIO AL MODELLO IMMAGINI...',
+      'INTERPRETAZIONE STANZE...',
+      'GENERAZIONE ARREDO...',
+      'FINALIZZAZIONE PNG...'
     ];
     let i = 0;
     setLoadingText(phrases[0]);
@@ -175,12 +175,12 @@ export default function PlanimetrieTool() {
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
             
             <div className="flex items-center justify-between mb-4 mt-2">
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">PLANIMETRIE ARREDATE 2D</h2>
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">PLANIMETRIE ARREDATE AI</h2>
             </div>
             
             <div className="flex items-center justify-between bg-black/50 p-3 rounded-xl border border-white/5 mb-6">
               <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">
-                ARREDO 2D V2 LOCALE
+                IMAGE EDITING AI
               </span>
               <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse"></div>
             </div>
@@ -194,7 +194,7 @@ export default function PlanimetrieTool() {
               <span className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-500">📥</span>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center leading-relaxed">
                 Clicca o trascina qui lo schizzo<br/>
-                <span className="opacity-40 font-bold text-[8px]">STANZE + ARREDI 2D</span>
+                <span className="opacity-40 font-bold text-[8px]">ARREDO 2D PROFESSIONALE</span>
               </span>
               <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
             </label>
@@ -222,7 +222,7 @@ export default function PlanimetrieTool() {
                     }`}>
                       {item.status === 'processing' ? 'Elaborazione PNG...' : 
                        item.status === 'error' ? (item.errorMessage || 'ERRORE ELABORAZIONE') : 
-                       item.status === 'completed' ? 'Planimetria arredata pronta' : 'In coda'}
+                       item.status === 'completed' ? 'AI completata' : 'In coda'}
                     </span>
                   </div>
                   
@@ -266,12 +266,12 @@ export default function PlanimetrieTool() {
                   <p className="text-[9px] text-white/30 uppercase tracking-[0.2em]">{activeItem.fileName}</p>
                   {activeItem.meta && (
                     <p className="text-[9px] text-white/30 uppercase tracking-[0.2em] mt-1">
-                      PNG {activeItem.meta.outputWidth}x{activeItem.meta.outputHeight} | Arredi {activeItem.meta.furnitureCount ?? 0}
+                      PNG {activeItem.meta.outputWidth}x{activeItem.meta.outputHeight} | {activeItem.meta.model || 'AI'}
                     </p>
                   )}
                 </div>
                 <div className="bg-red-500/10 text-red-500 border border-red-500/20 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest">
-                  Arredo locale
+                  Generazione AI
                 </div>
               </div>
 
