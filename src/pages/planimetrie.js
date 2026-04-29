@@ -4,7 +4,6 @@ import Head from 'next/head';
 export default function PlanimetrieTool() {
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('INIZIALIZZAZIONE...');
-  const [serverStatus, setServerStatus] = useState('checking');
   const [queue, setQueue] = useState([]);
   const [activeViewId, setActiveViewId] = useState(null); 
   const containerRef = useRef(null);
@@ -13,10 +12,10 @@ export default function PlanimetrieTool() {
     if (!loading) return;
     const phrases = [
       'PREPARAZIONE PNG...',
-      'TENTATIVO RENDER AI M4...',
-      'ESTRAZIONE LINEE CANNY...',
-      'PULIZIA PLANIMETRIA...',
-      'APPLICAZIONE WATERMARK FENIX...'
+      'LETTURA FOTO...',
+      'PULIZIA LINEE...',
+      'POSIZIONAMENTO ARREDI...',
+      'RENDER ISOMETRICO 3D...'
     ];
     let i = 0;
     setLoadingText(phrases[0]);
@@ -26,16 +25,6 @@ export default function PlanimetrieTool() {
     }, 4000);
     return () => clearInterval(interval);
   }, [loading]);
-
-  const checkServerStatus = async () => {
-    try {
-      const res = await fetch('/api/check-server');
-      const data = await res.json();
-      setServerStatus(data.isOnline ? 'online' : 'offline');
-    } catch { setServerStatus('offline'); }
-  };
-
-  useEffect(() => { checkServerStatus(); }, []);
 
   const processFiles = (fileList) => {
     const files = Array.from(fileList);
@@ -78,7 +67,6 @@ export default function PlanimetrieTool() {
         try {
           const formData = new FormData();
           formData.append('file', nextTask.file);
-          formData.append('style', 'modern_luxury');
 
           const sdRes = await fetch('/api/planimetrie', {
             method: "POST",
@@ -101,7 +89,7 @@ export default function PlanimetrieTool() {
       }
     };
     processQueue();
-  }, [queue, loading, serverStatus]);
+  }, [queue, loading]);
 
   const updateItemStatus = (id, status, imageUrl = null, errorMessage = '', meta = null) => {
     setQueue(prev => prev.map(item => 
@@ -137,7 +125,7 @@ export default function PlanimetrieTool() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${item.fileName.split('.')[0]}_FenixRender.png`;
+      link.download = `${item.fileName.split('.')[0]}_FenixPlanimetria.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -154,7 +142,7 @@ export default function PlanimetrieTool() {
          style={{ background: 'linear-gradient(180deg, #4b1414 0%, #000000 40%, #000000 100%)', backgroundAttachment: 'fixed' }}>
       
       <Head>
-        <title>FENIX GROUP | INTERIOR DESIGNER</title>
+        <title>FENIX GROUP | FOTO PLANIMETRIE</title>
       </Head>
 
       <div className="w-full max-w-6xl flex justify-between items-center mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
@@ -187,14 +175,14 @@ export default function PlanimetrieTool() {
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
             
             <div className="flex items-center justify-between mb-4 mt-2">
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">ARREDATORE D'INTERNI - AI</h2>
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">FOTO PLANIMETRIE 3D</h2>
             </div>
             
             <div className="flex items-center justify-between bg-black/50 p-3 rounded-xl border border-white/5 mb-6">
               <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">
-                {serverStatus === 'online' ? 'AI M4 ONLINE' : 'MODALITA PNG LOCALE'}
+                RENDER 3D LOCALE
               </span>
-              <div className={`w-2.5 h-2.5 rounded-full ${serverStatus === 'online' ? 'bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse' : 'bg-yellow-400 shadow-[0_0_10px_#facc15]'}`}></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse"></div>
             </div>
 
             <h3 className="text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-3">Caricamento Planimetria:</h3>
@@ -206,7 +194,7 @@ export default function PlanimetrieTool() {
               <span className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-500">📥</span>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center leading-relaxed">
                 Clicca o trascina qui lo schizzo<br/>
-                <span className="opacity-40 font-bold text-[8px]">PNG CON PROPORZIONI CONSERVATE</span>
+                <span className="opacity-40 font-bold text-[8px]">ARREDO + ISOMETRIA 3D</span>
               </span>
               <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
             </label>
@@ -232,9 +220,9 @@ export default function PlanimetrieTool() {
                       item.status === 'error' ? 'text-red-600' :
                       item.status === 'completed' ? 'text-green-500' : 'text-white/30'
                     }`}>
-                      {item.status === 'processing' ? 'Elaborazione M4...' : 
-                       item.status === 'error' ? (item.errorMessage || 'ERRORE M4/NGROK') : 
-                       item.status === 'completed' ? (item.meta?.mode === 'local' ? 'PNG locale pronto' : 'Render AI pronto') : 'In coda'}
+                      {item.status === 'processing' ? 'Elaborazione PNG...' : 
+                       item.status === 'error' ? (item.errorMessage || 'ERRORE ELABORAZIONE') : 
+                       item.status === 'completed' ? '3D arredato pronto' : 'In coda'}
                     </span>
                   </div>
                   
@@ -243,7 +231,7 @@ export default function PlanimetrieTool() {
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleDownload(item); }} 
                         className="flex items-center justify-center p-2 bg-green-500/20 hover:bg-green-500 text-green-400 hover:text-white rounded-xl transition-all border border-green-500/30"
-                        title="Scarica Render"
+                        title="Scarica PNG"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                       </button>
@@ -273,17 +261,17 @@ export default function PlanimetrieTool() {
               <div className="flex items-center justify-between mb-8">
                 <div className="flex flex-col">
                   <h2 className="text-xl font-black uppercase tracking-tighter">
-                    {activeItem.meta?.mode === 'local' ? 'PNG Planimetria Pulita' : 'Render AI Finale'}
+                    Planimetria Arredata 3D
                   </h2>
                   <p className="text-[9px] text-white/30 uppercase tracking-[0.2em]">{activeItem.fileName}</p>
                   {activeItem.meta && (
                     <p className="text-[9px] text-white/30 uppercase tracking-[0.2em] mt-1">
-                      PNG {activeItem.meta.outputWidth}x{activeItem.meta.outputHeight} | {activeItem.meta.mode === 'local' ? 'Fallback locale' : 'M4 AI'}
+                      PNG {activeItem.meta.outputWidth}x{activeItem.meta.outputHeight} | Arredi {activeItem.meta.furnitureCount ?? 0}
                     </p>
                   )}
                 </div>
                 <div className="bg-red-500/10 text-red-500 border border-red-500/20 px-4 py-2 rounded-2xl text-[9px] font-black uppercase tracking-widest">
-                  {activeItem.meta?.mode === 'local' ? 'Sempre scaricabile' : 'Fenix M4 Engine'}
+                  3D locale
                 </div>
               </div>
 
@@ -292,7 +280,7 @@ export default function PlanimetrieTool() {
                 className="relative mb-8 rounded-[30px] overflow-hidden border border-white/10 shadow-2xl bg-black cursor-default"
                 style={{ width: '100%', minHeight: '450px' }}
               >
-                <img src={activeItem.resultImage} alt="Render Finale" className="w-full h-auto block" />
+                <img src={activeItem.resultImage} alt="PNG finale" className="w-full h-auto block" />
               </div>
 
               <button onClick={() => handleDownload(activeItem)} className="relative group w-full py-6 bg-red-600 hover:bg-red-500 text-white font-black rounded-[25px] shadow-2xl uppercase tracking-[0.3em] transition-all overflow-hidden active:scale-[0.98]">
@@ -310,7 +298,7 @@ export default function PlanimetrieTool() {
       </main>
 
       <footer className="mt-24 opacity-20 text-[9px] tracking-[1em] uppercase font-black text-center border-t border-white/5 w-full pt-10 pb-6">
-        FENIX GROUP ® REAL ESTATE AI | SYSTEM 2026 | DIRECT M4 PIPELINE
+        FENIX GROUP ® REAL ESTATE | FOTO PLANIMETRIE
       </footer>
 
       <style jsx global>{`
