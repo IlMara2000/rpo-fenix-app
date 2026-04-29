@@ -75,39 +75,6 @@ const makeTitleOverlay = (size, originalName) => {
   `);
 };
 
-const getIsoGeometry = (size) => {
-  const matrix = { a: 0.86, b: 0.5, c: -0.86, d: 0.5 };
-  const corners = [
-    [0, 0],
-    [size.width, 0],
-    [size.width, size.height],
-    [0, size.height],
-  ].map(([x, y]) => ({
-    x: matrix.a * x + matrix.c * y,
-    y: matrix.b * x + matrix.d * y,
-  }));
-
-  const minX = Math.min(...corners.map(point => point.x));
-  const maxX = Math.max(...corners.map(point => point.x));
-  const minY = Math.min(...corners.map(point => point.y));
-  const maxY = Math.max(...corners.map(point => point.y));
-  const stage = {
-    width: Math.ceil(maxX - minX + 180),
-    height: Math.ceil(maxY - minY + 230),
-  };
-
-  return {
-    matrix,
-    offsetX: 90 - minX,
-    offsetY: 58 - minY,
-    stage,
-    corners: corners.map(point => ({
-      x: point.x + 90 - minX,
-      y: point.y + 58 - minY,
-    })),
-  };
-};
-
 const addWatermark = async (buffer, size) => {
   const logoPath = path.join(process.cwd(), 'public', 'logo.png');
   const overlays = [{
@@ -145,8 +112,8 @@ const findFurniturePlacements = async (lineBuffer, size) => {
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  const cols = 5;
-  const rows = 3;
+  const cols = 6;
+  const rows = 4;
   const cellW = size.width / cols;
   const cellH = size.height / rows;
   const candidates = [];
@@ -168,12 +135,12 @@ const findFurniturePlacements = async (lineBuffer, size) => {
       }
 
       const density = total ? dark / total : 1;
-      if (density < 0.1) {
+      if (density < 0.08) {
         candidates.push({
           x: col * cellW + cellW / 2,
           y: row * cellH + cellH / 2,
-          width: cellW * 0.48,
-          height: cellH * 0.34,
+          width: cellW * 0.56,
+          height: cellH * 0.42,
           density,
         });
       }
@@ -182,10 +149,10 @@ const findFurniturePlacements = async (lineBuffer, size) => {
 
   return candidates
     .sort((a, b) => a.density - b.density)
-    .slice(0, 8)
+    .slice(0, 10)
     .map((candidate, index) => ({
       ...candidate,
-      type: ['bed', 'sofa', 'table', 'desk', 'plant', 'rug', 'sofa', 'table'][index],
+      type: ['bed', 'sofa', 'table', 'desk', 'plant', 'rug', 'wardrobe', 'kitchen', 'sofa', 'table'][index],
     }));
 };
 
@@ -244,6 +211,26 @@ const makeFurnitureOverlay = (size, placements) => {
         </g>`;
     }
 
+    if (item.type === 'wardrobe') {
+      return `
+        <g>
+          <rect x="${x}" y="${y}" width="${w}" height="${h * 0.45}" rx="7" fill="#bfa98d" stroke="#6b5a47" stroke-width="5"/>
+          <line x1="${item.x}" y1="${y + 8}" x2="${item.x}" y2="${y + h * 0.45 - 8}" stroke="#6b5a47" stroke-width="4"/>
+          <circle cx="${item.x - w * 0.08}" cy="${y + h * 0.24}" r="4" fill="#3f3329"/>
+          <circle cx="${item.x + w * 0.08}" cy="${y + h * 0.24}" r="4" fill="#3f3329"/>
+        </g>`;
+    }
+
+    if (item.type === 'kitchen') {
+      return `
+        <g>
+          <rect x="${x}" y="${y}" width="${w}" height="${h * 0.36}" rx="8" fill="#d8d2c6" stroke="#5f625d" stroke-width="5"/>
+          <rect x="${x + w * 0.08}" y="${y + h * 0.08}" width="${w * 0.22}" height="${h * 0.2}" rx="5" fill="#8ea2a7" stroke="#5f625d" stroke-width="3"/>
+          <circle cx="${x + w * 0.55}" cy="${y + h * 0.18}" r="${h * 0.08}" fill="none" stroke="#5f625d" stroke-width="3"/>
+          <circle cx="${x + w * 0.72}" cy="${y + h * 0.18}" r="${h * 0.08}" fill="none" stroke="#5f625d" stroke-width="3"/>
+        </g>`;
+    }
+
     return `
       <g>
         <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="18" fill="#c9bca6" stroke="#81725e" stroke-width="4" opacity="0.9"/>
@@ -263,7 +250,23 @@ const makeFurnitureOverlay = (size, placements) => {
   `);
 };
 
-const createFurnished3DPlan = async (input, size) => {
+const makeFloorOverlay = (size, placements) => Buffer.from(`
+  <svg width="${size.width}" height="${size.height}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="wood" width="96" height="28" patternUnits="userSpaceOnUse">
+        <rect width="96" height="28" fill="#eadcc6"/>
+        <path d="M 0 27 L 96 27" stroke="#d5bea0" stroke-width="1" opacity="0.55"/>
+        <path d="M 28 2 C 36 10, 48 8, 62 4" stroke="#c9aa82" stroke-width="1" opacity="0.25" fill="none"/>
+      </pattern>
+    </defs>
+    <rect x="34" y="34" width="${size.width - 68}" height="${size.height - 68}" rx="12" fill="url(#wood)" opacity="0.65"/>
+    ${placements.slice(0, 4).map((item, index) => `
+      <rect x="${item.x - item.width * 0.55}" y="${item.y - item.height * 0.52}" width="${item.width * 1.1}" height="${item.height * 1.04}" rx="18" fill="${['#d9c8b4', '#c8d2cf', '#dcc6a2', '#c9c2b5'][index]}" opacity="0.38"/>
+    `).join('')}
+  </svg>
+`);
+
+const createFurnishedPlan = async (input, size) => {
   const lineLayer = await sharp(input)
     .rotate()
     .resize({ width: size.width, height: size.height, fit: 'inside', background: '#ffffff' })
@@ -285,9 +288,10 @@ const createFurnished3DPlan = async (input, size) => {
 
   const placements = await findFurniturePlacements(lineLayer, size);
   const paper = await makePaper(size);
-  const topDownPlan = await sharp(paper)
+  const plan = await sharp(paper)
     .composite([
       { input: makeGridOverlay(size), top: 0, left: 0 },
+      { input: makeFloorOverlay(size, placements), top: 0, left: 0 },
       { input: makeFurnitureOverlay(size, placements), top: 0, left: 0 },
       { input: lineLayer, top: 0, left: 0, blend: 'multiply' },
     ])
@@ -296,44 +300,9 @@ const createFurnished3DPlan = async (input, size) => {
     .png()
     .toBuffer();
 
-  const iso = getIsoGeometry(size);
-  const topDownBase64 = topDownPlan.toString('base64');
-  const points = iso.corners.map(point => `${point.x},${point.y}`).join(' ');
-  const sidePoints = iso.corners
-    .slice(1, 3)
-    .concat(iso.corners.slice(2, 4).map(point => ({ x: point.x, y: point.y + 64 })).reverse())
-    .map(point => `${point.x},${point.y}`)
-    .join(' ');
-
-  const isoSvg = Buffer.from(`
-    <svg width="${iso.stage.width}" height="${iso.stage.height}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stop-color="#201414"/>
-          <stop offset="48%" stop-color="#080808"/>
-          <stop offset="100%" stop-color="#000000"/>
-        </linearGradient>
-        <filter id="stageShadow" x="-30%" y="-30%" width="160%" height="160%">
-          <feDropShadow dx="0" dy="34" stdDeviation="28" flood-color="#000000" flood-opacity="0.55"/>
-        </filter>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#bg)"/>
-      <ellipse cx="${iso.stage.width / 2}" cy="${iso.stage.height - 92}" rx="${iso.stage.width * 0.34}" ry="56" fill="#000000" opacity="0.42"/>
-      <polygon points="${sidePoints}" fill="#9f8f78" opacity="0.88"/>
-      <polygon points="${points}" fill="#e8decc" opacity="0.98" filter="url(#stageShadow)"/>
-      <image href="data:image/png;base64,${topDownBase64}" width="${size.width}" height="${size.height}"
-        transform="matrix(${iso.matrix.a} ${iso.matrix.b} ${iso.matrix.c} ${iso.matrix.d} ${iso.offsetX} ${iso.offsetY})"/>
-      <polygon points="${points}" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.18"/>
-    </svg>
-  `);
-
-  const isoBuffer = await sharp(isoSvg)
-    .png()
-    .toBuffer();
-
   return {
-    buffer: await addWatermark(isoBuffer, iso.stage),
-    size: iso.stage,
+    buffer: await addWatermark(plan, size),
+    size,
     furnitureCount: placements.length,
   };
 };
@@ -362,7 +331,7 @@ export default async function handler(req, res) {
       const fileData = fs.readFileSync(uploadedFile.filepath);
       const metadata = await sharp(fileData).metadata();
       const outputSize = getOutputSize(metadata.width, metadata.height);
-      const result = await createFurnished3DPlan(fileData, outputSize);
+      const result = await createFurnishedPlan(fileData, outputSize);
 
       return res.status(200).json({
         success: true,
@@ -372,7 +341,7 @@ export default async function handler(req, res) {
           originalHeight: metadata.height,
           outputWidth: result.size.width,
           outputHeight: result.size.height,
-          mode: 'local-furnished-3d',
+          mode: 'local-furnished-2d',
           furnitureCount: result.furnitureCount,
         },
       });
