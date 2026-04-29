@@ -106,24 +106,24 @@ const addWatermark = async (buffer, size) => {
     .toBuffer();
 };
 
-const findFurniturePlacements = async (lineBuffer, size) => {
+const findRoomZones = async (lineBuffer, size) => {
   const { data } = await sharp(lineBuffer)
     .greyscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  const cols = 6;
-  const rows = 4;
+  const cols = 4;
+  const rows = 3;
   const cellW = size.width / cols;
   const cellH = size.height / rows;
   const candidates = [];
 
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
-      const x0 = Math.round(col * cellW + cellW * 0.18);
-      const y0 = Math.round(row * cellH + cellH * 0.18);
-      const x1 = Math.round((col + 1) * cellW - cellW * 0.18);
-      const y1 = Math.round((row + 1) * cellH - cellH * 0.18);
+      const x0 = Math.round(col * cellW + cellW * 0.14);
+      const y0 = Math.round(row * cellH + cellH * 0.14);
+      const x1 = Math.round((col + 1) * cellW - cellW * 0.14);
+      const y1 = Math.round((row + 1) * cellH - cellH * 0.14);
       let dark = 0;
       let total = 0;
 
@@ -135,106 +135,113 @@ const findFurniturePlacements = async (lineBuffer, size) => {
       }
 
       const density = total ? dark / total : 1;
-      if (density < 0.08) {
+      if (density < 0.12) {
         candidates.push({
           x: col * cellW + cellW / 2,
           y: row * cellH + cellH / 2,
-          width: cellW * 0.56,
-          height: cellH * 0.42,
+          width: cellW * 0.72,
+          height: cellH * 0.62,
           density,
         });
       }
     }
   }
 
-  return candidates
-    .sort((a, b) => a.density - b.density)
-    .slice(0, 10)
-    .map((candidate, index) => ({
-      ...candidate,
-      type: ['bed', 'sofa', 'table', 'desk', 'plant', 'rug', 'wardrobe', 'kitchen', 'sofa', 'table'][index],
-    }));
+  const ordered = candidates.sort((a, b) => a.density - b.density);
+  const selected = [];
+
+  ordered.forEach((candidate) => {
+    const tooClose = selected.some(item => {
+      const dx = item.x - candidate.x;
+      const dy = item.y - candidate.y;
+      return Math.sqrt((dx * dx) + (dy * dy)) < Math.min(cellW, cellH) * 0.85;
+    });
+    if (!tooClose && selected.length < 6) selected.push(candidate);
+  });
+
+  const fallback = [
+    { x: size.width * 0.25, y: size.height * 0.28, width: size.width * 0.28, height: size.height * 0.22, density: 0 },
+    { x: size.width * 0.72, y: size.height * 0.30, width: size.width * 0.30, height: size.height * 0.22, density: 0 },
+    { x: size.width * 0.28, y: size.height * 0.70, width: size.width * 0.28, height: size.height * 0.22, density: 0 },
+    { x: size.width * 0.72, y: size.height * 0.70, width: size.width * 0.30, height: size.height * 0.22, density: 0 },
+  ];
+
+  return (selected.length ? selected : fallback).map((candidate, index) => ({
+    ...candidate,
+    type: ['bedroom', 'living', 'kitchen', 'dining', 'office', 'green'][index],
+  }));
 };
 
-const makeFurnitureOverlay = (size, placements) => {
-  const draw = (item) => {
-    const x = item.x - item.width / 2;
-    const y = item.y - item.height / 2;
-    const w = item.width;
-    const h = item.height;
+const makeFurnitureOverlay = (size, zones) => {
+  const draw = (zone) => {
+    const x = zone.x - zone.width / 2;
+    const y = zone.y - zone.height / 2;
+    const w = zone.width;
+    const h = zone.height;
 
-    if (item.type === 'bed') {
+    if (zone.type === 'bedroom') {
       return `
         <g>
-          <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="#d7b98c" stroke="#6b4b2f" stroke-width="5"/>
-          <rect x="${x + w * 0.08}" y="${y + h * 0.12}" width="${w * 0.34}" height="${h * 0.28}" rx="7" fill="#f4ead8" stroke="#8b735b" stroke-width="3"/>
-          <rect x="${x + w * 0.5}" y="${y + h * 0.12}" width="${w * 0.34}" height="${h * 0.28}" rx="7" fill="#f4ead8" stroke="#8b735b" stroke-width="3"/>
+          <rect x="${x + w * 0.08}" y="${y + h * 0.12}" width="${w * 0.5}" height="${h * 0.66}" rx="18" fill="#d5ad78" stroke="#654326" stroke-width="6"/>
+          <rect x="${x + w * 0.15}" y="${y + h * 0.18}" width="${w * 0.16}" height="${h * 0.18}" rx="8" fill="#f6ead8" stroke="#8a725b" stroke-width="3"/>
+          <rect x="${x + w * 0.35}" y="${y + h * 0.18}" width="${w * 0.16}" height="${h * 0.18}" rx="8" fill="#f6ead8" stroke="#8a725b" stroke-width="3"/>
+          <rect x="${x + w * 0.66}" y="${y + h * 0.16}" width="${w * 0.22}" height="${h * 0.55}" rx="10" fill="#bda98b" stroke="#6b5945" stroke-width="5"/>
+          <line x1="${x + w * 0.77}" y1="${y + h * 0.18}" x2="${x + w * 0.77}" y2="${y + h * 0.68}" stroke="#6b5945" stroke-width="4"/>
+          <circle cx="${x + w * 0.06}" cy="${y + h * 0.73}" r="${Math.min(w, h) * 0.08}" fill="#6c8b58"/>
         </g>`;
     }
 
-    if (item.type === 'sofa') {
+    if (zone.type === 'living') {
       return `
         <g>
-          <rect x="${x}" y="${y + h * 0.2}" width="${w}" height="${h * 0.62}" rx="14" fill="#78908c" stroke="#304743" stroke-width="5"/>
-          <rect x="${x + w * 0.08}" y="${y}" width="${w * 0.84}" height="${h * 0.32}" rx="12" fill="#91aaa6" stroke="#304743" stroke-width="4"/>
-          <line x1="${x + w * 0.5}" y1="${y + h * 0.22}" x2="${x + w * 0.5}" y2="${y + h * 0.78}" stroke="#304743" stroke-width="4"/>
+          <rect x="${x + w * 0.12}" y="${y + h * 0.18}" width="${w * 0.62}" height="${h * 0.58}" rx="22" fill="#d9d0bd" opacity="0.65"/>
+          <rect x="${x + w * 0.12}" y="${y + h * 0.30}" width="${w * 0.48}" height="${h * 0.28}" rx="18" fill="#78908c" stroke="#304743" stroke-width="6"/>
+          <rect x="${x + w * 0.12}" y="${y + h * 0.12}" width="${w * 0.48}" height="${h * 0.22}" rx="16" fill="#91aaa6" stroke="#304743" stroke-width="5"/>
+          <rect x="${x + w * 0.68}" y="${y + h * 0.24}" width="${w * 0.08}" height="${h * 0.46}" rx="7" fill="#665446"/>
+          <ellipse cx="${x + w * 0.43}" cy="${y + h * 0.68}" rx="${w * 0.18}" ry="${h * 0.11}" fill="#c99d63" stroke="#5f4124" stroke-width="5"/>
         </g>`;
     }
 
-    if (item.type === 'table') {
+    if (zone.type === 'kitchen') {
       return `
         <g>
-          <ellipse cx="${item.x}" cy="${item.y}" rx="${w * 0.34}" ry="${h * 0.34}" fill="#c99d63" stroke="#5f4124" stroke-width="5"/>
-          <circle cx="${item.x - w * 0.42}" cy="${item.y}" r="${Math.min(w, h) * 0.12}" fill="#6f7f8b"/>
-          <circle cx="${item.x + w * 0.42}" cy="${item.y}" r="${Math.min(w, h) * 0.12}" fill="#6f7f8b"/>
-          <circle cx="${item.x}" cy="${item.y - h * 0.44}" r="${Math.min(w, h) * 0.12}" fill="#6f7f8b"/>
-          <circle cx="${item.x}" cy="${item.y + h * 0.44}" r="${Math.min(w, h) * 0.12}" fill="#6f7f8b"/>
+          <rect x="${x + w * 0.08}" y="${y + h * 0.12}" width="${w * 0.78}" height="${h * 0.20}" rx="10" fill="#d8d2c6" stroke="#5f625d" stroke-width="6"/>
+          <rect x="${x + w * 0.08}" y="${y + h * 0.32}" width="${w * 0.22}" height="${h * 0.42}" rx="10" fill="#d8d2c6" stroke="#5f625d" stroke-width="6"/>
+          <rect x="${x + w * 0.14}" y="${y + h * 0.17}" width="${w * 0.18}" height="${h * 0.10}" rx="5" fill="#8ea2a7" stroke="#5f625d" stroke-width="3"/>
+          <circle cx="${x + w * 0.55}" cy="${y + h * 0.22}" r="${h * 0.055}" fill="none" stroke="#5f625d" stroke-width="4"/>
+          <circle cx="${x + w * 0.68}" cy="${y + h * 0.22}" r="${h * 0.055}" fill="none" stroke="#5f625d" stroke-width="4"/>
+          <rect x="${x + w * 0.44}" y="${y + h * 0.46}" width="${w * 0.32}" height="${h * 0.18}" rx="9" fill="#b88d59" stroke="#604025" stroke-width="5"/>
         </g>`;
     }
 
-    if (item.type === 'desk') {
+    if (zone.type === 'dining') {
       return `
         <g>
-          <rect x="${x}" y="${y}" width="${w}" height="${h * 0.55}" rx="8" fill="#9e7654" stroke="#4d3325" stroke-width="5"/>
-          <rect x="${x + w * 0.16}" y="${y + h * 0.12}" width="${w * 0.32}" height="${h * 0.18}" fill="#2d3540" opacity="0.9"/>
-          <rect x="${x + w * 0.58}" y="${y + h * 0.66}" width="${w * 0.28}" height="${h * 0.24}" rx="8" fill="#54636c"/>
+          <rect x="${x + w * 0.22}" y="${y + h * 0.18}" width="${w * 0.56}" height="${h * 0.58}" rx="20" fill="#dcc6a2" opacity="0.55"/>
+          <ellipse cx="${zone.x}" cy="${zone.y}" rx="${w * 0.26}" ry="${h * 0.20}" fill="#c99d63" stroke="#5f4124" stroke-width="6"/>
+          <circle cx="${zone.x - w * 0.33}" cy="${zone.y}" r="${Math.min(w, h) * 0.075}" fill="#6f7f8b"/>
+          <circle cx="${zone.x + w * 0.33}" cy="${zone.y}" r="${Math.min(w, h) * 0.075}" fill="#6f7f8b"/>
+          <circle cx="${zone.x}" cy="${zone.y - h * 0.30}" r="${Math.min(w, h) * 0.075}" fill="#6f7f8b"/>
+          <circle cx="${zone.x}" cy="${zone.y + h * 0.30}" r="${Math.min(w, h) * 0.075}" fill="#6f7f8b"/>
         </g>`;
     }
 
-    if (item.type === 'plant') {
+    if (zone.type === 'office') {
       return `
         <g>
-          <circle cx="${item.x}" cy="${item.y}" r="${Math.min(w, h) * 0.26}" fill="#7f5b3a" stroke="#3a2517" stroke-width="4"/>
-          <circle cx="${item.x - w * 0.1}" cy="${item.y - h * 0.08}" r="${Math.min(w, h) * 0.18}" fill="#5b8f5a"/>
-          <circle cx="${item.x + w * 0.12}" cy="${item.y - h * 0.04}" r="${Math.min(w, h) * 0.18}" fill="#427a43"/>
-          <circle cx="${item.x}" cy="${item.y + h * 0.1}" r="${Math.min(w, h) * 0.16}" fill="#6aa566"/>
-        </g>`;
-    }
-
-    if (item.type === 'wardrobe') {
-      return `
-        <g>
-          <rect x="${x}" y="${y}" width="${w}" height="${h * 0.45}" rx="7" fill="#bfa98d" stroke="#6b5a47" stroke-width="5"/>
-          <line x1="${item.x}" y1="${y + 8}" x2="${item.x}" y2="${y + h * 0.45 - 8}" stroke="#6b5a47" stroke-width="4"/>
-          <circle cx="${item.x - w * 0.08}" cy="${y + h * 0.24}" r="4" fill="#3f3329"/>
-          <circle cx="${item.x + w * 0.08}" cy="${y + h * 0.24}" r="4" fill="#3f3329"/>
-        </g>`;
-    }
-
-    if (item.type === 'kitchen') {
-      return `
-        <g>
-          <rect x="${x}" y="${y}" width="${w}" height="${h * 0.36}" rx="8" fill="#d8d2c6" stroke="#5f625d" stroke-width="5"/>
-          <rect x="${x + w * 0.08}" y="${y + h * 0.08}" width="${w * 0.22}" height="${h * 0.2}" rx="5" fill="#8ea2a7" stroke="#5f625d" stroke-width="3"/>
-          <circle cx="${x + w * 0.55}" cy="${y + h * 0.18}" r="${h * 0.08}" fill="none" stroke="#5f625d" stroke-width="3"/>
-          <circle cx="${x + w * 0.72}" cy="${y + h * 0.18}" r="${h * 0.08}" fill="none" stroke="#5f625d" stroke-width="3"/>
+          <rect x="${x + w * 0.10}" y="${y + h * 0.16}" width="${w * 0.58}" height="${h * 0.26}" rx="10" fill="#9e7654" stroke="#4d3325" stroke-width="6"/>
+          <rect x="${x + w * 0.20}" y="${y + h * 0.22}" width="${w * 0.20}" height="${h * 0.09}" fill="#2d3540" opacity="0.92"/>
+          <rect x="${x + w * 0.34}" y="${y + h * 0.52}" width="${w * 0.20}" height="${h * 0.18}" rx="9" fill="#54636c"/>
+          <rect x="${x + w * 0.74}" y="${y + h * 0.15}" width="${w * 0.12}" height="${h * 0.54}" rx="7" fill="#bfa98d" stroke="#6b5a47" stroke-width="5"/>
         </g>`;
     }
 
     return `
       <g>
-        <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="18" fill="#c9bca6" stroke="#81725e" stroke-width="4" opacity="0.9"/>
-        <path d="M ${x + 12} ${item.y} L ${x + w - 12} ${item.y}" stroke="#81725e" stroke-width="3" opacity="0.6"/>
+        <circle cx="${zone.x - w * 0.1}" cy="${zone.y}" r="${Math.min(w, h) * 0.16}" fill="#7f5b3a" stroke="#3a2517" stroke-width="5"/>
+        <circle cx="${zone.x - w * 0.18}" cy="${zone.y - h * 0.06}" r="${Math.min(w, h) * 0.13}" fill="#5b8f5a"/>
+        <circle cx="${zone.x}" cy="${zone.y - h * 0.05}" r="${Math.min(w, h) * 0.13}" fill="#427a43"/>
+        <circle cx="${zone.x - w * 0.08}" cy="${zone.y + h * 0.12}" r="${Math.min(w, h) * 0.12}" fill="#6aa566"/>
       </g>`;
   };
 
@@ -244,13 +251,13 @@ const makeFurnitureOverlay = (size, placements) => {
         <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000000" flood-opacity="0.18"/>
       </filter>
       <g filter="url(#softShadow)">
-        ${placements.map(draw).join('')}
+        ${zones.map(draw).join('')}
       </g>
     </svg>
   `);
 };
 
-const makeFloorOverlay = (size, placements) => Buffer.from(`
+const makeFloorOverlay = (size, zones) => Buffer.from(`
   <svg width="${size.width}" height="${size.height}" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <pattern id="wood" width="96" height="28" patternUnits="userSpaceOnUse">
@@ -260,8 +267,8 @@ const makeFloorOverlay = (size, placements) => Buffer.from(`
       </pattern>
     </defs>
     <rect x="34" y="34" width="${size.width - 68}" height="${size.height - 68}" rx="12" fill="url(#wood)" opacity="0.65"/>
-    ${placements.slice(0, 4).map((item, index) => `
-      <rect x="${item.x - item.width * 0.55}" y="${item.y - item.height * 0.52}" width="${item.width * 1.1}" height="${item.height * 1.04}" rx="18" fill="${['#d9c8b4', '#c8d2cf', '#dcc6a2', '#c9c2b5'][index]}" opacity="0.38"/>
+    ${zones.map((zone, index) => `
+      <rect x="${zone.x - zone.width * 0.58}" y="${zone.y - zone.height * 0.58}" width="${zone.width * 1.16}" height="${zone.height * 1.16}" rx="22" fill="${['#e3c6a4', '#c8d7d2', '#dec8a5', '#d6c7b9', '#cbc4b8', '#cdddbf'][index]}" opacity="0.44"/>
     `).join('')}
   </svg>
 `);
@@ -286,13 +293,13 @@ const createFurnishedPlan = async (input, size) => {
     .png()
     .toBuffer();
 
-  const placements = await findFurniturePlacements(lineLayer, size);
+  const zones = await findRoomZones(lineLayer, size);
   const paper = await makePaper(size);
   const plan = await sharp(paper)
     .composite([
       { input: makeGridOverlay(size), top: 0, left: 0 },
-      { input: makeFloorOverlay(size, placements), top: 0, left: 0 },
-      { input: makeFurnitureOverlay(size, placements), top: 0, left: 0 },
+      { input: makeFloorOverlay(size, zones), top: 0, left: 0 },
+      { input: makeFurnitureOverlay(size, zones), top: 0, left: 0 },
       { input: lineLayer, top: 0, left: 0, blend: 'multiply' },
     ])
     .modulate({ brightness: 1.02, saturation: 0.85 })
@@ -303,7 +310,7 @@ const createFurnishedPlan = async (input, size) => {
   return {
     buffer: await addWatermark(plan, size),
     size,
-    furnitureCount: placements.length,
+    furnitureCount: zones.length,
   };
 };
 

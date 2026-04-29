@@ -14,8 +14,8 @@ export default function PlanimetrieTool() {
       'PREPARAZIONE PNG...',
       'LETTURA FOTO...',
       'PULIZIA LINEE...',
-      'POSIZIONAMENTO ARREDI...',
-      'IMPAGINAZIONE PLANIMETRIA...'
+      'COMPOSIZIONE STANZE...',
+      'INSERIMENTO ARREDI 2D...'
     ];
     let i = 0;
     setLoadingText(phrases[0]);
@@ -175,12 +175,12 @@ export default function PlanimetrieTool() {
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
             
             <div className="flex items-center justify-between mb-4 mt-2">
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">FOTO PLANIMETRIE ARREDATE</h2>
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-red-500">PLANIMETRIE ARREDATE 2D</h2>
             </div>
             
             <div className="flex items-center justify-between bg-black/50 p-3 rounded-xl border border-white/5 mb-6">
               <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">
-                ARREDO LOCALE PNG
+                ARREDO 2D V2 LOCALE
               </span>
               <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e] animate-pulse"></div>
             </div>
@@ -194,7 +194,7 @@ export default function PlanimetrieTool() {
               <span className="text-4xl mb-3 group-hover:scale-110 transition-transform duration-500">📥</span>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center leading-relaxed">
                 Clicca o trascina qui lo schizzo<br/>
-                <span className="opacity-40 font-bold text-[8px]">ARREDO 2D AUTOMATICO</span>
+                <span className="opacity-40 font-bold text-[8px]">STANZE + ARREDI 2D</span>
               </span>
               <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
             </label>
