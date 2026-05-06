@@ -33,19 +33,31 @@ type RpoToolProps = {
 const tutorialCopy = [
   {
     title: "Excel Converter",
-    text: "Carica l'Excel originale: il sistema estrae le numerazioni valide e genera lo ZIP compatibile con il portale RPO.",
+    before:
+      "Prima: parti dall'Excel originale, controlla che i numeri siano nella colonna corretta e che il file non sia aperto in altri programmi.",
+    after:
+      "Dopo: scarica lo ZIP generato e caricalo sul portale RPO. Se il portale rifiuta il file per dimensione o crediti, passa al divisore TXT.",
   },
   {
     title: "TXT Divider",
-    text: "Taglia un TXT in due parti partendo dalla riga indicata, utile quando devi gestire crediti o blocchi di caricamento.",
+    before:
+      "Prima: usa il TXT da inviare al Registro e decidi la riga di taglio in base ai crediti disponibili o al limite del caricamento.",
+    after:
+      "Dopo: scarica Parte 1 e Parte 2, poi caricale separatamente sul portale RPO mantenendo l'ordine dei lotti.",
   },
   {
     title: "TXT Cleaner",
-    text: "Separa l'esito RPO in lista nera e numeri chiamabili, partendo dal file restituito dal Registro.",
+    before:
+      "Prima: recupera dal portale RPO il TXT di esito elaborato e assicurati che sia il risultato corretto della lista caricata.",
+    after:
+      "Dopo: conserva la Lista nera per la bonifica finale dell'Excel e usa la Lista OK solo come elenco dei numeri chiamabili.",
   },
   {
     title: "Excel Scanner",
-    text: "Confronta lista nera e Excel originale, poi restituisce il foglio bonificato con le righe corrispondenti oscurate.",
+    before:
+      "Prima: carica la Lista nera appena generata e lo stesso Excel originale usato all'inizio, senza cambiarne struttura o righe.",
+    after:
+      "Dopo: scarica l'Excel bonificato, verifica il numero di righe oscurate e usa solo quel file per lavorazione, chiamate o archivio.",
   },
 ];
 
@@ -229,7 +241,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             Icon={FileSpreadsheet}
             kicker="Fase 1"
             title="Convertitore Excel"
-            text="Estrae i numeri dall'Excel e genera automaticamente la cartella compressa .ZIP pronta per il portale RPO."
+            text="Serve a trasformare un Excel o CSV con numeri in uno ZIP pronto da caricare sul portale RPO."
           />
           {tutorialStep === 0 ? (
             <TutorialNote
@@ -271,7 +283,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             Icon={Scissors}
             kicker="Fase 2"
             title="Divisore file RPO"
-            text="Taglia il file TXT dalla riga desiderata per evitare blocchi e gestire meglio i crediti disponibili."
+            text="Serve a dividere un TXT in due file separati dalla riga scelta, cosi gestisci lotti e crediti."
           />
           {tutorialStep === 1 ? (
             <TutorialNote
@@ -325,7 +337,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             Icon={FileText}
             kicker="Fase 3"
             title="Lista nera"
-            text="Separa i numeri in OK chiamabili e RPO iscritti caricando il file restituito dal Registro."
+            text="Serve a leggere l'esito del Registro e produrre due TXT: numeri iscritti RPO e numeri chiamabili."
           />
           {tutorialStep === 2 ? (
             <TutorialNote
@@ -373,7 +385,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             Icon={UploadCloud}
             kicker="Fase 4"
             title="Pulizia finale Excel"
-            text="Confronta l'Excel originale con la lista nera: le righe corrispondenti vengono annerite."
+            text="Serve a oscurare nell'Excel originale le righe presenti in lista nera e scaricare il file bonificato."
           />
           {tutorialStep === 3 ? (
             <TutorialNote
@@ -455,7 +467,10 @@ function TutorialNote({
   return (
     <aside className="rpo-tour-note" data-step={step} aria-label={`Tutorial ${item.title}`}>
       <strong>{item.title}</strong>
-      <small>{item.text}</small>
+      <span>Prima</span>
+      <small>{item.before}</small>
+      <span>Dopo</span>
+      <small>{item.after}</small>
       <div className="rpo-tour-actions">
         <button type="button" disabled={step === 1} onClick={onPrevious}>
           Indietro

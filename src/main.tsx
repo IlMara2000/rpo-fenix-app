@@ -703,191 +703,17 @@ const features: Feature[] = [
   },
 ];
 
-const leadRows = [
-  { name: "Rossi Immobiliare", tag: "Vendita", score: "94%" },
-  { name: "Attico Centro", tag: "Acquisizione", score: "87%" },
-  { name: "Villa Mare", tag: "Locazione", score: "81%" },
-];
-
-const properties = [
-  {
-    code: "FS-248",
-    title: "Trilocale Centro",
-    zone: "Milano Centro",
-    status: "In pubblicazione",
-    price: "418.000",
-    owner: "Proprietario Demo",
-    portals: "6/7",
-  },
-  {
-    code: "FS-192",
-    title: "Villa con giardino",
-    zone: "Brianza",
-    status: "In acquisizione",
-    price: "690.000",
-    owner: "Studio Fenix",
-    portals: "Bozza",
-  },
-  {
-    code: "FS-176",
-    title: "Bilocale locazione",
-    zone: "Porta Romana",
-    status: "Visite attive",
-    price: "1.450/mese",
-    owner: "Cliente Demo",
-    portals: "5/7",
-  },
-  {
-    code: "FS-151",
-    title: "Ufficio direzionale",
-    zone: "City Life",
-    status: "Trattativa",
-    price: "820.000",
-    owner: "Societa Demo",
-    portals: "Privato",
-  },
-];
-
-const requests = [
-  {
-    client: "Cliente Acquisto A",
-    target: "3 locali entro 450k",
-    area: "Centro / Porta Venezia",
-    match: "94%",
-    proposal: "Trilocale Centro",
-  },
-  {
-    client: "Cliente Locazione B",
-    target: "Bilocale arredato",
-    area: "Sud Milano",
-    match: "88%",
-    proposal: "Bilocale locazione",
-  },
-  {
-    client: "Investitore Demo",
-    target: "Rendimento sopra 5%",
-    area: "Area metropolitana",
-    match: "76%",
-    proposal: "Ufficio direzionale",
-  },
-];
-
-const contacts = [
-  {
-    name: "Cliente Demo A",
-    type: "Acquirente",
-    status: "Da ricontattare oggi",
-    source: "Portale",
-    owner: "Daniele",
-  },
-  {
-    name: "Proprietario Demo B",
-    type: "Venditore",
-    status: "Valutazione inviata",
-    source: "Censimento",
-    owner: "Team",
-  },
-  {
-    name: "Cliente Demo C",
-    type: "Locazione",
-    status: "Visita pianificata",
-    source: "Sito",
-    owner: "Back office",
-  },
-];
-
-const agendaItems = [
-  {
-    time: "09:30",
-    title: "Visita appartamento centro",
-    type: "Visita",
-    owner: "Daniele",
-  },
-  {
-    time: "12:00",
-    title: "Acquisizione nuova villa",
-    type: "Incarico",
-    owner: "Team",
-  },
-  {
-    time: "16:15",
-    title: "Follow-up cliente premium",
-    type: "Telefonata",
-    owner: "Daniele",
-  },
-];
-
-const marketingChannels = [
-  { name: "Sito agenzia", status: "Aggiornato", progress: 100 },
-  { name: "Portali immobiliari", status: "6 pubblicazioni attive", progress: 86 },
-  { name: "Vetrina QR", status: "12 cartelli pronti", progress: 72 },
-  { name: "Campagne lead", status: "3 campagne in verifica", progress: 61 },
-];
-
-const censusAreas = [
-  { zone: "Centro", buildings: 148, contacts: 632, priority: "Alta" },
-  { zone: "Navigli", buildings: 96, contacts: 318, priority: "Media" },
-  { zone: "Isola", buildings: 74, contacts: 276, priority: "Alta" },
-  { zone: "Sud", buildings: 122, contacts: 447, priority: "Normale" },
-];
-
-const goals = [
-  { label: "Nuove acquisizioni", current: 18, target: 25 },
-  { label: "Visite programmate", current: 42, target: 50 },
-  { label: "Richieste qualificate", current: 96, target: 120 },
-  { label: "Schede pubblicate", current: 34, target: 40 },
-];
-
-const crmStorageKey = "fenix-suite-crm-data-v1";
+const crmStorageKey = "fenix-suite-crm-data-v2";
 
 const initialCrmData: CrmData = {
-  properties: properties.map((property, index) => ({
-    ...property,
-    id: `property-${index + 1}`,
-    kind: property.price.includes("/mese") ? "affitto" : "vendita",
-    updatedAt: "Demo iniziale",
-  })),
-  requests: requests.map((request, index) => ({
-    ...request,
-    id: `request-${index + 1}`,
-    status: index === 0 ? "Qualificata" : index === 1 ? "Visita" : "Nuova",
-    updatedAt: "Demo iniziale",
-  })),
-  contacts: contacts.map((contact, index) => ({
-    ...contact,
-    id: `contact-${index + 1}`,
-    phone: index === 0 ? "+39 333 000 1001" : index === 1 ? "+39 333 000 1002" : "+39 333 000 1003",
-    note: "Contatto demo importato all'avvio.",
-    nextStep: contact.status,
-    updatedAt: "Demo iniziale",
-  })),
-  activities: agendaItems.map((item, index) => ({
-    ...item,
-    id: `activity-${index + 1}`,
-    contact: index === 0 ? "Cliente Demo A" : index === 1 ? "Proprietario Demo B" : "Cliente Demo C",
-    property: index === 0 ? "Trilocale Centro" : index === 1 ? "Villa con giardino" : "",
-    status: "Aperta",
-    note: "Attivita demo pianificata.",
-    day: "Oggi",
-    updatedAt: "Demo iniziale",
-  })),
-  marketingChannels: marketingChannels.map((channel, index) => ({
-    ...channel,
-    id: `channel-${index + 1}`,
-    updatedAt: "Demo iniziale",
-  })),
-  censusAreas: censusAreas.map((area, index) => ({
-    ...area,
-    id: `area-${index + 1}`,
-    updatedAt: "Demo iniziale",
-  })),
-  goals: goals.map((goal, index) => ({
-    ...goal,
-    id: `goal-${index + 1}`,
-    owner: "Team Fenix",
-    updatedAt: "Demo iniziale",
-  })),
-  activityLog: ["Demo CRM inizializzata."],
+  properties: [],
+  requests: [],
+  contacts: [],
+  activities: [],
+  marketingChannels: [],
+  censusAreas: [],
+  goals: [],
+  activityLog: [],
 };
 
 function AppRouter() {
@@ -1064,6 +890,17 @@ function Hero({ onLogin }: { onLogin: () => void }) {
 }
 
 function DashboardPreview() {
+  const previewSteps = [
+    { time: "1", title: "Inserisci nominativo" },
+    { time: "2", title: "Crea richiesta" },
+    { time: "3", title: "Pianifica ricontatto" },
+  ];
+  const previewActions = [
+    { name: "Immobili", tag: "Schede e portali", score: "Pronto" },
+    { name: "Richieste", tag: "Matching clienti", score: "Pronto" },
+    { name: "Agenda", tag: "Attivita e visite", score: "Pronto" },
+  ];
+
   return (
     <div className="dashboard-preview" aria-label="Anteprima dashboard gestionale">
       <div className="dash-head">
@@ -1076,24 +913,24 @@ function DashboardPreview() {
       <div className="dash-metrics">
         <div>
           <small>Immobili</small>
-          <strong>248</strong>
+          <strong>0</strong>
         </div>
         <div>
-          <small>Lead attivi</small>
-          <strong>1.420</strong>
+          <small>Nominativi</small>
+          <strong>0</strong>
         </div>
         <div>
-          <small>Matching</small>
-          <strong>86%</strong>
+          <small>Richieste</small>
+          <strong>0</strong>
         </div>
       </div>
       <div className="dash-grid">
         <div className="timeline-panel">
           <div className="panel-title">
             <CalendarDays size={18} />
-            Agenda di oggi
+            Flusso iniziale
           </div>
-          {agendaItems.map((item) => (
+          {previewSteps.map((item) => (
             <div className="timeline-item" key={item.time}>
               <span>{item.time}</span>
               <p>{item.title}</p>
@@ -1103,9 +940,9 @@ function DashboardPreview() {
         <div className="lead-panel">
           <div className="panel-title">
             <Sparkles size={18} />
-            Incroci automatici
+            Moduli pronti
           </div>
-          {leadRows.map((row) => (
+          {previewActions.map((row) => (
             <div className="lead-row" key={row.name}>
               <span>
                 <strong>{row.name}</strong>
@@ -1230,7 +1067,7 @@ function ContactSection() {
         <span className="system-label">Richiedi informazioni</span>
         <h2>Parla con un consulente Fenix Suite</h2>
         <p>
-          Compila il modulo per ricevere dettagli, assistenza o una demo del gestionale
+          Compila il modulo per ricevere dettagli, assistenza o una presentazione del gestionale
           e valutare come adattarlo al flusso operativo della tua agenzia.
         </p>
         <div className="contact-strip">
@@ -1249,7 +1086,7 @@ function ContactSection() {
         <div className="form-row">
           <label>
             Nome e cognome
-            <input required type="text" placeholder="Mario Rossi" />
+            <input required type="text" placeholder="Nome cognome" />
           </label>
           <label>
             Email
@@ -1262,7 +1099,7 @@ function ContactSection() {
             <option value="" disabled>
               Seleziona una richiesta
             </option>
-            <option>Demo gestionale</option>
+            <option>Presentazione gestionale</option>
             <option>Informazioni commerciali</option>
             <option>Assistenza tecnica</option>
           </select>
@@ -1279,7 +1116,7 @@ function ContactSection() {
           Invia
         </button>
         <p className="form-success" role="status">
-          Richiesta pronta. Nel sito reale questo invierebbe il contatto al CRM.
+          Richiesta registrata.
         </p>
       </form>
     </section>
@@ -1348,11 +1185,11 @@ function LoginScreen({
           <div className="login-highlights">
             <span>
               <ShieldCheck size={18} />
-              Sessione demo locale
+              Sessione locale protetta
             </span>
             <span>
               <DatabaseBackup size={18} />
-              Dati prototipo non reali
+              Dati salvati nel browser
             </span>
           </div>
         </div>
@@ -1386,8 +1223,8 @@ function LoginScreen({
             {loading ? "Verifica..." : "Accedi a Fenix Suite"}
           </button>
           <p className="login-note">
-            Account registrato per l'accesso demo. La password non e' salvata in chiaro
-            nel frontend.
+            Account registrato per l'accesso. La password non e' salvata in chiaro
+            nell'interfaccia.
           </p>
         </form>
       </section>
@@ -1604,25 +1441,25 @@ function ModuleView({
     return <ContactsView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
   }
   if (moduleKey === "agenda") {
-    return <AgendaView pageKey={pageKey} data={data} onCommit={onCommit} onAction={onAction} />;
+    return <AgendaView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
   }
   if (moduleKey === "pubblicita") {
     return <MarketingView data={data} onCommit={onCommit} onAction={onAction} />;
   }
   if (moduleKey === "contattiPubblicita") {
-    return <AdvertisingContactsView pageKey={pageKey} data={data} onCommit={onCommit} onAction={onAction} />;
+    return <AdvertisingContactsView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
   }
   if (moduleKey === "censimento") {
-    return <CensusView pageKey={pageKey} data={data} onCommit={onCommit} onAction={onAction} />;
+    return <CensusView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
   }
   if (moduleKey === "obiettivi") {
-    return <GoalsView data={data} onCommit={onCommit} />;
+    return <GoalsView query={query} data={data} onCommit={onCommit} />;
   }
   if (moduleKey === "utilita") {
-    return <UtilitiesView pageKey={pageKey} data={data} onCommit={onCommit} onAction={onAction} />;
+    return <UtilitiesView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
   }
   if (moduleKey === "impostazioni") {
-    return <SettingsView pageKey={pageKey} onCommit={onCommit} />;
+    return <SettingsView pageKey={pageKey} query={query} onCommit={onCommit} />;
   }
   return <StartView data={data} onCommit={onCommit} />;
 }
@@ -1679,18 +1516,22 @@ function StartView({ data, onCommit }: { data: CrmData; onCommit: CrmCommit }) {
 
       <Panel className="span-5" title="Da chiamare ora" action="Priorita">
         <div className="call-queue">
-          {fallbackQueue.map((contact, index) => (
-            <article key={contact.name}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              <div>
-                <strong>{contact.name}</strong>
-                <small>{contact.status} - {contact.source}</small>
-              </div>
-              <button type="button" onClick={() => registerCall(contact)}>
-                Chiama
-              </button>
-            </article>
-          ))}
+          {fallbackQueue.length ? (
+            fallbackQueue.map((contact, index) => (
+              <article key={contact.name}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <div>
+                  <strong>{contact.name}</strong>
+                  <small>{contact.status} - {contact.source}</small>
+                </div>
+                <button type="button" onClick={() => registerCall(contact)}>
+                  Chiama
+                </button>
+              </article>
+            ))
+          ) : (
+            <EmptyState title="Nessun ricontatto" text="Aggiungi un nominativo o salva un appunto veloce per creare la prima attivita." />
+          )}
         </div>
       </Panel>
 
@@ -1755,13 +1596,17 @@ function StartView({ data, onCommit }: { data: CrmData; onCommit: CrmCommit }) {
 
       <Panel className="span-3" title="Agenda di oggi">
         <div className="compact-list">
-          {data.activities.filter((item) => item.day === "Oggi").slice(0, 5).map((item) => (
-            <div key={item.id}>
-              <span>{item.time}</span>
-              <strong>{item.title}</strong>
-              <small>{item.type}</small>
-            </div>
-          ))}
+          {data.activities.filter((item) => item.day === "Oggi").length ? (
+            data.activities.filter((item) => item.day === "Oggi").slice(0, 5).map((item) => (
+              <div key={item.id}>
+                <span>{item.time}</span>
+                <strong>{item.title}</strong>
+                <small>{item.type}</small>
+              </div>
+            ))
+          ) : (
+            <EmptyState title="Agenda libera" text="Crea una nuova attivita dal modulo Attivita o dal flusso richieste." />
+          )}
         </div>
       </Panel>
 
@@ -1800,13 +1645,17 @@ function StartView({ data, onCommit }: { data: CrmData; onCommit: CrmCommit }) {
 
       <Panel className="span-12" title="Storico operazioni">
         <div className="compact-list">
-          {data.activityLog.slice(0, 6).map((item) => (
-            <div key={item}>
-              <span>Log</span>
-              <strong>{item}</strong>
-              <small>Persistito in locale</small>
-            </div>
-          ))}
+          {data.activityLog.length ? (
+            data.activityLog.slice(0, 6).map((item) => (
+              <div key={item}>
+                <span>Log</span>
+                <strong>{item}</strong>
+                <small>Persistito in locale</small>
+              </div>
+            ))
+          ) : (
+            <EmptyState title="Storico vuoto" text="Le operazioni salvate nel CRM compariranno qui in ordine cronologico." />
+          )}
         </div>
       </Panel>
     </div>
@@ -1854,8 +1703,9 @@ function PropertiesView({
           <QuickForm
             button="Cerca"
             fields={pageKey === "immobili-ricerca-op" ? ["Proprietario", "Zona", "Tipo incarico"] : ["Cliente", "Budget", "Caratteristiche"]}
+            required={false}
             onSubmit={(values) =>
-              onAction(`Ricerca immobili eseguita per ${Object.values(values).filter(Boolean).join(" / ") || "tutti i dati"}.`)
+              onAction(`Ricerca immobili eseguita per ${valuesSummary(values)}.`)
             }
           />
         </Panel>
@@ -1899,9 +1749,10 @@ function PropertiesView({
         <QuickForm
           button={newMode ? "Crea scheda" : "Salva filtro"}
           fields={newMode ? ["Titolo immobile", "Zona", "Prezzo richiesto", "Proprietario"] : ["Codice o titolo", "Zona", "Stato"]}
+          required={newMode}
           onSubmit={(values) => {
             if (!newMode) {
-              onAction(`Filtro immobili salvato: ${Object.values(values).filter(Boolean).join(" / ")}.`);
+              onAction(`Filtro immobili salvato: ${valuesSummary(values)}.`);
               return;
             }
             const title = fieldValue(values, "Titolo immobile", "Nuovo immobile");
@@ -2091,9 +1942,10 @@ function RequestsView({
         <QuickForm
           button={pageKey === "richieste-nuova" ? "Salva richiesta" : "Applica filtro"}
           fields={["Cliente", "Budget", "Zone preferite", "Tipologia"]}
+          required={pageKey === "richieste-nuova"}
           onSubmit={(values) => {
             if (pageKey !== "richieste-nuova") {
-              onAction(`Filtro richieste applicato: ${Object.values(values).filter(Boolean).join(" / ")}.`);
+              onAction(`Filtro richieste applicato: ${valuesSummary(values)}.`);
               return;
             }
             const proposal = data.properties[0]?.title || "Da abbinare";
@@ -2236,9 +2088,10 @@ function ContactsView({
         <QuickForm
           button={pageKey === "nominativi-nuovo" ? "Aggiungi contatto" : "Filtra"}
           fields={["Nome", "Tipo richiesta", "Provenienza", "Telefono"]}
+          required={pageKey === "nominativi-nuovo"}
           onSubmit={(values) => {
             if (pageKey !== "nominativi-nuovo") {
-              onAction(`Filtro nominativi applicato: ${Object.values(values).filter(Boolean).join(" / ")}.`);
+              onAction(`Filtro nominativi applicato: ${valuesSummary(values)}.`);
               return;
             }
             const newContact: ContactRecord = {
@@ -2342,15 +2195,21 @@ function ContactsView({
 
 function AgendaView({
   pageKey,
+  query,
   data,
   onCommit,
   onAction,
 }: {
   pageKey: string;
+  query: string;
   data: CrmData;
   onCommit: CrmCommit;
   onAction: (message: string) => void;
 }) {
+  const rows = useFilteredRows(data.activities, query, (item) =>
+    [item.time, item.title, item.type, item.owner, item.contact, item.property, item.status, item.note, item.day].join(" "),
+  );
+
   return (
     <div className="workspace-grid">
       <RouteSummary
@@ -2363,7 +2222,7 @@ function AgendaView({
         {pageKey === "agenda-storico" ? (
           <DataTable
             columns={["Ora", "Titolo", "Tipo", "Contatto", "Stato"]}
-            rows={data.activities.map((item) => [
+            rows={rows.map((item) => [
               item.time,
               item.title,
               item.type,
@@ -2374,7 +2233,7 @@ function AgendaView({
               {
                 label: "Chiudi",
                 onClick: (rowIndex) => {
-                  const activity = data.activities[rowIndex];
+                  const activity = rows[rowIndex];
                   if (!activity) {
                     return;
                   }
@@ -2398,13 +2257,17 @@ function AgendaView({
             {(["Oggi", "Domani", "Settimana"] as ActivityRecord["day"][]).map((column) => (
               <div key={column}>
                 <h3>{column}</h3>
-                {data.activities.filter((item) => item.day === column).slice(0, 6).map((item) => (
-                  <article key={`${column}-${item.id}`}>
-                    <span>{item.time}</span>
-                    <strong>{item.title}</strong>
-                    <small>{item.owner} - {item.type} - {item.status}</small>
-                  </article>
-                ))}
+                {rows.filter((item) => item.day === column).length ? (
+                  rows.filter((item) => item.day === column).slice(0, 6).map((item) => (
+                    <article key={`${column}-${item.id}`}>
+                      <span>{item.time}</span>
+                      <strong>{item.title}</strong>
+                      <small>{item.owner} - {item.type} - {item.status}</small>
+                    </article>
+                  ))
+                ) : (
+                  <EmptyState title="Nessuna attivita" />
+                )}
               </div>
             ))}
           </div>
@@ -2414,9 +2277,10 @@ function AgendaView({
         <QuickForm
           button={pageKey === "attivita-nuova" ? "Pianifica" : "Cerca"}
           fields={["Cliente", "Data e ora", "Luogo", "Immobile"]}
+          required={pageKey === "attivita-nuova"}
           onSubmit={(values) => {
             if (pageKey !== "attivita-nuova") {
-              onAction(`Ricerca agenda eseguita: ${Object.values(values).filter(Boolean).join(" / ")}.`);
+              onAction(`Ricerca agenda eseguita: ${valuesSummary(values)}.`);
               return;
             }
             const client = fieldValue(values, "Cliente", "Cliente da definire");
@@ -2490,17 +2354,21 @@ function MarketingView({
         }
       >
         <div className="channel-list">
-          {data.marketingChannels.map((channel) => (
-            <div key={channel.name}>
-              <span>
-                <strong>{channel.name}</strong>
-                <small>{channel.status} - {channel.updatedAt}</small>
-              </span>
-              <i>
-                <b style={{ width: `${channel.progress}%` }} />
-              </i>
-            </div>
-          ))}
+          {data.marketingChannels.length ? (
+            data.marketingChannels.map((channel) => (
+              <div key={channel.name}>
+                <span>
+                  <strong>{channel.name}</strong>
+                  <small>{channel.status} - {channel.updatedAt}</small>
+                </span>
+                <i>
+                  <b style={{ width: `${channel.progress}%` }} />
+                </i>
+              </div>
+            ))
+          ) : (
+            <EmptyState title="Nessuna pubblicazione" text="Prepara una campagna o crea una scheda immobile per iniziare." />
+          )}
         </div>
       </Panel>
       <Panel className="span-5" title="Campagna rapida">
@@ -2589,16 +2457,21 @@ function MarketingView({
 
 function AdvertisingContactsView({
   pageKey,
+  query,
   data,
   onCommit,
 }: {
   pageKey: string;
+  query: string;
   data: CrmData;
   onCommit: CrmCommit;
   onAction: (message: string) => void;
 }) {
   const leadContacts = data.contacts.filter((contact) =>
     /portale|sito|campagna/i.test(contact.source) || /lead pubblicitario/i.test(contact.status),
+  );
+  const rows = useFilteredRows(leadContacts, query, (contact) =>
+    [contact.name, contact.type, contact.status, contact.source, contact.note, contact.nextStep].join(" "),
   );
 
   return (
@@ -2612,7 +2485,7 @@ function AdvertisingContactsView({
       <Panel className="span-8" title="Contatti pubblicitari">
         <DataTable
           columns={["Contatto", "Interesse", "Stato", "Provenienza"]}
-          rows={leadContacts.map((contact) => [
+          rows={rows.map((contact) => [
             contact.name,
             contact.note || contact.type,
             contact.status,
@@ -2622,7 +2495,7 @@ function AdvertisingContactsView({
             {
               label: "Converti",
               onClick: (rowIndex) => {
-                const contact = leadContacts[rowIndex];
+                const contact = rows[rowIndex];
                 if (!contact) {
                   return;
                 }
@@ -2704,16 +2577,25 @@ function AdvertisingContactsView({
 
 function CensusView({
   pageKey,
+  query,
   data,
   onCommit,
   onAction,
 }: {
   pageKey: string;
+  query: string;
   data: CrmData;
   onCommit: CrmCommit;
   onAction: (message: string) => void;
 }) {
-  const censusContacts = data.contacts.filter((contact) => contact.source === "Censimento");
+  const censusContacts = useFilteredRows(
+    data.contacts.filter((contact) => contact.source === "Censimento"),
+    query,
+    (contact) => [contact.name, contact.status, contact.note, contact.nextStep, contact.owner].join(" "),
+  );
+  const censusAreas = useFilteredRows(data.censusAreas, query, (area) =>
+    [area.zone, String(area.buildings), String(area.contacts), area.priority].join(" "),
+  );
 
   return (
     <div className="workspace-grid">
@@ -2733,7 +2615,7 @@ function CensusView({
           columns={pageKey === "censimento-contatti" ? ["Nome", "Zona", "Stato", "Ricontatto"] : ["Zona", "Stabili", "Contatti", "Priorita"]}
           rows={(pageKey === "censimento-contatti"
             ? censusContacts.map((item) => [item.name, item.note || item.source, item.status, item.nextStep])
-            : data.censusAreas.map((area) => [
+            : censusAreas.map((area) => [
             area.zone,
             String(area.buildings),
             String(area.contacts),
@@ -2771,7 +2653,7 @@ function CensusView({
                   );
                   return;
                 }
-                const area = data.censusAreas[rowIndex];
+                const area = censusAreas[rowIndex];
                 if (area) {
                   onAction(`Zona ${area.zone} selezionata: ${area.contacts} contatti censiti.`);
                 }
@@ -2848,25 +2730,33 @@ function CensusView({
         />
       </Panel>
       <Panel className="span-12" title="Ricontatti territoriali">
-        <div className="map-strip">
-          {data.censusAreas.map((area) => (
-            <button
-              key={area.zone}
-              type="button"
-              onClick={() => onAction(`Zona ${area.zone} filtrata.`)}
-            >
-              <MapPinned size={18} />
-              <strong>{area.zone}</strong>
-              <span>{area.contacts} contatti</span>
-            </button>
-          ))}
-        </div>
+        {censusAreas.length ? (
+          <div className="map-strip">
+            {censusAreas.map((area) => (
+              <button
+                key={area.zone}
+                type="button"
+                onClick={() => onAction(`Zona ${area.zone} filtrata.`)}
+              >
+                <MapPinned size={18} />
+                <strong>{area.zone}</strong>
+                <span>{area.contacts} contatti</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Nessuna zona censita" text="Crea una zona o un contatto censimento per alimentare la mappa operativa." />
+        )}
       </Panel>
     </div>
   );
 }
 
-function GoalsView({ data, onCommit }: { data: CrmData; onCommit: CrmCommit }) {
+function GoalsView({ query, data, onCommit }: { query: string; data: CrmData; onCommit: CrmCommit }) {
+  const rows = useFilteredRows(data.goals, query, (goal) =>
+    [goal.label, goal.owner, String(goal.current), String(goal.target), goal.updatedAt].join(" "),
+  );
+
   return (
     <div className="workspace-grid">
       <RouteSummary
@@ -2877,14 +2767,18 @@ function GoalsView({ data, onCommit }: { data: CrmData; onCommit: CrmCommit }) {
       />
       <Panel className="span-8" title="Obiettivi agenzia" action="Mese corrente">
         <div className="goal-stack">
-          {data.goals.map((goal) => (
-            <ProgressLine
-              current={goal.current}
-              key={goal.label}
-              label={goal.label}
-              target={goal.target}
-            />
-          ))}
+          {rows.length ? (
+            rows.map((goal) => (
+              <ProgressLine
+                current={goal.current}
+                key={goal.label}
+                label={goal.label}
+                target={goal.target}
+              />
+            ))
+          ) : (
+            <EmptyState title="Nessun obiettivo" text="Crea il primo target operativo per iniziare a misurare il lavoro." />
+          )}
         </div>
       </Panel>
       <Panel className="span-4" title="Nuovo obiettivo">
@@ -2912,15 +2806,19 @@ function GoalsView({ data, onCommit }: { data: CrmData; onCommit: CrmCommit }) {
         />
       </Panel>
       <Panel className="span-12" title="Classifica operativa">
-        <div className="pipeline">
-          {data.goals.slice(0, 4).map((goal) => (
-            <div key={goal.id}>
-              <span>{goal.label}</span>
-              <strong>{goal.current}</strong>
-              <small>{goal.owner} / target {goal.target}</small>
-            </div>
-          ))}
-        </div>
+        {rows.length ? (
+          <div className="pipeline">
+            {rows.slice(0, 4).map((goal) => (
+              <div key={goal.id}>
+                <span>{goal.label}</span>
+                <strong>{goal.current}</strong>
+                <small>{goal.owner} / target {goal.target}</small>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Classifica vuota" text="Gli obiettivi creati compariranno qui con avanzamento e responsabile." />
+        )}
       </Panel>
     </div>
   );
@@ -2928,15 +2826,19 @@ function GoalsView({ data, onCommit }: { data: CrmData; onCommit: CrmCommit }) {
 
 function UtilitiesView({
   pageKey,
+  query,
   data,
   onCommit,
   onAction,
 }: {
   pageKey: string;
+  query: string;
   data: CrmData;
   onCommit: CrmCommit;
   onAction: (message: string) => void;
 }) {
+  const logRows = useFilteredRows(data.activityLog, query, (item) => item);
+
   return (
     <div className="workspace-grid">
       <RouteSummary
@@ -2998,26 +2900,31 @@ function UtilitiesView({
       </Panel>
       <Panel className="span-12" title="Log attivita">
         <div className="compact-list">
-          {data.activityLog.slice(0, 10).map((item) => (
-            <div key={item}>
-              <span>Operazione</span>
-              <strong>{item}</strong>
-              <small>Archivio locale Fenix Suite</small>
-            </div>
-          ))}
+          {logRows.length ? (
+            logRows.slice(0, 10).map((item) => (
+              <div key={item}>
+                <span>Operazione</span>
+                <strong>{item}</strong>
+                <small>Archivio locale Fenix Suite</small>
+              </div>
+            ))
+          ) : (
+            <EmptyState title="Nessuna operazione" text="Salvataggi, esportazioni e aggiornamenti verranno registrati qui." />
+          )}
         </div>
       </Panel>
     </div>
   );
 }
 
-function SettingsView({ pageKey, onCommit }: { pageKey: string; onCommit: CrmCommit }) {
+function SettingsView({ pageKey, query, onCommit }: { pageKey: string; query: string; onCommit: CrmCommit }) {
   const settingLabel = labelForPage("impostazioni", pageKey);
   const settingRows = [
     [settingLabel, "Attivo", "Globale", "Modificabile"],
     [`${settingLabel} vendita`, "Attivo", "Vendite", "Modificabile"],
     [`${settingLabel} locazione`, "In verifica", "Affitti", "Bloccato"],
   ];
+  const rows = useFilteredRows(settingRows, query, (row) => row.join(" "));
 
   return (
     <div className="workspace-grid">
@@ -3040,7 +2947,7 @@ function SettingsView({ pageKey, onCommit }: { pageKey: string; onCommit: CrmCom
         </div>
       </Panel>
       <Panel className="span-7" title={settingLabel}>
-        <DataTable columns={["Voce", "Stato", "Ambito", "Permesso"]} rows={settingRows} />
+        <DataTable columns={["Voce", "Stato", "Ambito", "Permesso"]} rows={rows} />
       </Panel>
       <Panel className="span-12" title="Automazioni">
         <div className="tool-grid">
@@ -3194,7 +3101,7 @@ function DataTable({
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length + (actions.length ? 1 : 0)}>Nessun risultato per la ricerca corrente.</td>
+              <td colSpan={columns.length + (actions.length ? 1 : 0)}>Nessun dato disponibile per questa vista.</td>
             </tr>
           )}
         </tbody>
@@ -3203,14 +3110,25 @@ function DataTable({
   );
 }
 
+function EmptyState({ title, text }: { title: string; text?: string }) {
+  return (
+    <div className="empty-state">
+      <strong>{title}</strong>
+      {text ? <small>{text}</small> : null}
+    </div>
+  );
+}
+
 function QuickForm({
   fields,
   button,
   onSubmit,
+  required = true,
 }: {
   fields: string[];
   button: string;
   onSubmit: (values: Record<string, string>) => void;
+  required?: boolean;
 }) {
   return (
     <form
@@ -3229,7 +3147,7 @@ function QuickForm({
       {fields.map((field) => (
         <label key={field}>
           {field}
-          <input name={field} required placeholder={field} />
+          <input name={field} required={required} placeholder={field} />
         </label>
       ))}
       <button type="submit">{button}</button>
@@ -3354,6 +3272,10 @@ function makeId(prefix: string) {
 
 function fieldValue(values: Record<string, string>, field: string, fallback = "") {
   return String(values[field] || "").trim() || fallback;
+}
+
+function valuesSummary(values: Record<string, string>, fallback = "tutti i dati") {
+  return Object.values(values).filter(Boolean).join(" / ") || fallback;
 }
 
 function createActivity(input: Partial<ActivityRecord> & Pick<ActivityRecord, "title" | "type">): ActivityRecord {
