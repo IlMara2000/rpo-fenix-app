@@ -119,14 +119,8 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
     setTutorialStep(null);
   }
 
-  function goToTutorialStep(direction: 1 | -1) {
-    setTutorialStep((step) => {
-      if (step === null) {
-        return 0;
-      }
-
-      return Math.min(Math.max(step + direction, 0), tutorialCopy.length - 1);
-    });
+  function toggleTutorial(step: number) {
+    setTutorialStep((currentStep) => (currentStep === step ? null : step));
   }
 
   async function runWithStatus(message: string, action: () => Promise<void>) {
@@ -276,6 +270,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
 
       <section className="rpo-grid" aria-label="Strumenti RPO">
         <article className="rpo-card" data-tour-active={tutorialStep === 0 ? "true" : "false"} data-tour-card="1">
+          <TutorialButton active={tutorialStep === 0} label="Apri tutorial fase 1" onClick={() => toggleTutorial(0)} />
           <ToolCardHeader
             Icon={FileSpreadsheet}
             kicker="Fase 1"
@@ -286,10 +281,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             <TutorialNote
               item={tutorialCopy[0]}
               onClose={closeTutorial}
-              onNext={() => goToTutorialStep(1)}
-              onPrevious={() => goToTutorialStep(-1)}
               step={1}
-              total={tutorialCopy.length}
             />
           ) : null}
           <FilePicker
@@ -318,6 +310,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
         </article>
 
         <article className="rpo-card" data-tour-active={tutorialStep === 1 ? "true" : "false"} data-tour-card="2">
+          <TutorialButton active={tutorialStep === 1} label="Apri tutorial fase 2" onClick={() => toggleTutorial(1)} />
           <ToolCardHeader
             Icon={Scissors}
             kicker="Fase 2"
@@ -328,10 +321,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             <TutorialNote
               item={tutorialCopy[1]}
               onClose={closeTutorial}
-              onNext={() => goToTutorialStep(1)}
-              onPrevious={() => goToTutorialStep(-1)}
               step={2}
-              total={tutorialCopy.length}
             />
           ) : null}
           <form className="rpo-form" onSubmit={handleDividerSubmit}>
@@ -372,6 +362,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
         </article>
 
         <article className="rpo-card" data-tour-active={tutorialStep === 2 ? "true" : "false"} data-tour-card="3">
+          <TutorialButton active={tutorialStep === 2} label="Apri tutorial fase 3" onClick={() => toggleTutorial(2)} />
           <ToolCardHeader
             Icon={FileArchive}
             kicker="Fase 3"
@@ -382,10 +373,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             <TutorialNote
               item={tutorialCopy[2]}
               onClose={closeTutorial}
-              onNext={() => goToTutorialStep(1)}
-              onPrevious={() => goToTutorialStep(-1)}
               step={3}
-              total={tutorialCopy.length}
             />
           ) : null}
           <FilePicker
@@ -414,6 +402,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
         </article>
 
         <article className="rpo-card" data-tour-active={tutorialStep === 3 ? "true" : "false"} data-tour-card="4">
+          <TutorialButton active={tutorialStep === 3} label="Apri tutorial fase 4" onClick={() => toggleTutorial(3)} />
           <ToolCardHeader
             Icon={FileText}
             kicker="Fase 4"
@@ -424,10 +413,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             <TutorialNote
               item={tutorialCopy[3]}
               onClose={closeTutorial}
-              onNext={() => goToTutorialStep(1)}
-              onPrevious={() => goToTutorialStep(-1)}
               step={4}
-              total={tutorialCopy.length}
             />
           ) : null}
           <form className="rpo-form" onSubmit={handleSplitterSubmit}>
@@ -462,6 +448,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
           data-tour-active={tutorialStep === 4 ? "true" : "false"}
           data-tour-card="5"
         >
+          <TutorialButton active={tutorialStep === 4} label="Apri tutorial fase 5" onClick={() => toggleTutorial(4)} />
           <ToolCardHeader
             Icon={UploadCloud}
             kicker="Fase 5"
@@ -472,10 +459,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             <TutorialNote
               item={tutorialCopy[4]}
               onClose={closeTutorial}
-              onNext={() => goToTutorialStep(1)}
-              onPrevious={() => goToTutorialStep(-1)}
               step={5}
-              total={tutorialCopy.length}
             />
           ) : null}
           <form className="rpo-form" onSubmit={handleScannerSubmit}>
@@ -515,35 +499,35 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
         </article>
       </section>
 
-      <button
-        className="rpo-tutorial-float"
-        type="button"
-        aria-pressed={tutorialOpen}
-        onClick={() => setTutorialStep((step) => (step === null ? 0 : null))}
-      >
-        <span>{tutorialOpen ? "Chiudi" : "Tutorial"}</span>
-        <HelpCircle size={28} />
-      </button>
-
       <footer className="rpo-footer">REALINDI DEN SYSTEMS © 2026</footer>
     </main>
+  );
+}
+
+function TutorialButton({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button className="rpo-card-help" type="button" aria-label={label} aria-pressed={active} onClick={onClick}>
+      <HelpCircle size={20} />
+    </button>
   );
 }
 
 function TutorialNote({
   item,
   onClose,
-  onNext,
-  onPrevious,
   step,
-  total,
 }: {
   item: (typeof tutorialCopy)[number];
   onClose: () => void;
-  onNext: () => void;
-  onPrevious: () => void;
   step: number;
-  total: number;
 }) {
   return (
     <aside className="rpo-tour-note" data-step={step} aria-label={`Tutorial ${item.title}`}>
@@ -553,11 +537,8 @@ function TutorialNote({
       <span>Dopo</span>
       <small>{item.after}</small>
       <div className="rpo-tour-actions">
-        <button type="button" disabled={step === 1} onClick={onPrevious}>
-          Indietro
-        </button>
-        <button type="button" onClick={step === total ? onClose : onNext}>
-          {step === total ? "Fine" : "Avanti"}
+        <button type="button" onClick={onClose}>
+          Chiudi
         </button>
       </div>
     </aside>
