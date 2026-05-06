@@ -366,7 +366,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
           <ToolCardHeader
             Icon={FileArchive}
             kicker="Fase 3"
-            title="ZIP da TXT"
+            title="CONVERTITORE da TXT a ZIP"
             text="Serve a comprimere un TXT gia' pronto nello ZIP richiesto dal portale RPO, senza filtrare o modificare il file."
           />
           {tutorialStep === 2 ? (
