@@ -39,7 +39,7 @@ const tutorialCopy = [
     before:
       "Prima: parti dall'Excel originale, controlla che i numeri siano nella colonna corretta e che il file non sia aperto in altri programmi.",
     after:
-      "Dopo: scarica lo ZIP generato e caricalo sul portale RPO. Se il portale rifiuta il file per dimensione o crediti, passa al divisore TXT.",
+      "Dopo: usa Genera solo file TXT quando vuoi la lista pulita senza compressione. Usa Genera file RPO quando ti serve lo ZIP da caricare sul portale; se il portale rifiuta il file per dimensione o crediti, passa al divisore TXT.",
   },
   {
     title: "TXT Divider",
@@ -81,6 +81,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
 
   const [converterFile, setConverterFile] = useState<File | null>(null);
   const [converterResult, setConverterResult] = useState<{ blob: Blob; fileName: string } | null>(null);
+  const [converterTextResult, setConverterTextResult] = useState<{ blob: Blob; fileName: string } | null>(null);
   const [txtZipFile, setTxtZipFile] = useState<File | null>(null);
   const [txtZipResult, setTxtZipResult] = useState<{ blob: Blob; fileName: string } | null>(null);
 
@@ -157,6 +158,28 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
       const fileName = converterFile.name.split(".")[0].toLowerCase().replace(/\s+/g, "_");
       setConverterResult({ blob, fileName });
       setStatus({ message: "ZIP RPO creato con successo.", tone: "success" });
+    });
+  }
+
+  async function handleConverterTextSubmit() {
+    if (!converterFile) {
+      return;
+    }
+
+    await runWithStatus("CREAZIONE TXT RPO IN CORSO...", async () => {
+      const formData = new FormData();
+      formData.append("excel", converterFile);
+      formData.append("output", "txt");
+      const response = await fetch("/api/converter", { method: "POST", body: formData });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      const blob = await response.blob();
+      const fileName = converterFile.name.split(".")[0].toLowerCase().replace(/\s+/g, "_");
+      setConverterTextResult({ blob, fileName });
+      setStatus({ message: "TXT RPO creato con successo.", tone: "success" });
     });
   }
 
@@ -275,7 +298,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             Icon={FileSpreadsheet}
             kicker="Fase 1"
             title="Convertitore Excel"
-            text="Serve a trasformare un Excel o CSV con numeri in uno ZIP pronto da caricare sul portale RPO."
+            text="Serve a trasformare un Excel o CSV con numeri in un TXT pulito oppure nello ZIP pronto per il portale RPO."
           />
           {tutorialStep === 0 ? (
             <TutorialNote
@@ -291,9 +314,24 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             onChange={(file) => {
               setConverterFile(file);
               setConverterResult(null);
+              setConverterTextResult(null);
             }}
           />
-          <button className="rpo-primary" type="button" disabled={loading || !converterFile} onClick={handleConverterSubmit}>
+          <button className="rpo-primary" type="button" disabled={loading || !converterFile} onClick={handleConverterTextSubmit}>
+            <FileText size={18} />
+            Genera solo file TXT
+          </button>
+          {converterTextResult ? (
+            <button
+              className="rpo-secondary"
+              type="button"
+              onClick={() => downloadBlob(converterTextResult.blob, `lista_${converterTextResult.fileName}.txt`)}
+            >
+              <Download size={18} />
+              Scarica TXT
+            </button>
+          ) : null}
+          <button className="rpo-secondary" type="button" disabled={loading || !converterFile} onClick={handleConverterSubmit}>
             <FileArchive size={18} />
             Genera file RPO
           </button>
@@ -481,7 +519,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
                 setScannerResult(null);
               }}
             />
-            <button className="rpo-primary" type="submit" disabled={loading || !scannerTxt || !scannerExcel}>
+            <button className="rpo-secondary" type="submit" disabled={loading || !scannerTxt || !scannerExcel}>
               <ShieldCheck size={18} />
               Avvia bonifica
             </button>

@@ -54,8 +54,11 @@ def text_from_txt(file_data):
 
 
 def zip_numbers(numbers):
-    final_output = "\r\n".join(sorted(numbers)) + "\r\n"
-    return zip_text(final_output)
+    return zip_text(text_from_numbers(numbers))
+
+
+def text_from_numbers(numbers):
+    return "\r\n".join(sorted(numbers)) + "\r\n"
 
 
 def zip_text(text):
@@ -83,9 +86,13 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(b"Errore: File non ricevuto")
                 return
 
+            content_type = "application/zip"
+            disposition = 'attachment; filename="lista.zip"'
+
             if "txt" in form:
                 file_data = form["txt"].file.read()
                 zip_buffer = zip_text(text_from_txt(file_data))
+                body = zip_buffer.read()
             else:
                 file_data = form["excel"].file.read()
                 numbers = numbers_from_excel(file_data)
@@ -93,13 +100,19 @@ class handler(BaseHTTPRequestHandler):
                 if not numbers:
                     raise Exception("Nessuna numerazione valida trovata")
 
-                zip_buffer = zip_numbers(numbers)
+                if form.getfirst("output") == "txt":
+                    body = text_from_numbers(numbers).encode("utf-8")
+                    content_type = "text/plain; charset=utf-8"
+                    disposition = 'attachment; filename="lista.txt"'
+                else:
+                    zip_buffer = zip_numbers(numbers)
+                    body = zip_buffer.read()
 
             self.send_response(200)
-            self.send_header("Content-type", "application/zip")
-            self.send_header("Content-Disposition", 'attachment; filename="lista.zip"')
+            self.send_header("Content-type", content_type)
+            self.send_header("Content-Disposition", disposition)
             self.end_headers()
-            self.wfile.write(zip_buffer.read())
+            self.wfile.write(body)
         except Exception as error:
             self.send_response(500)
             self.end_headers()
