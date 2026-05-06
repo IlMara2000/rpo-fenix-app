@@ -39,14 +39,21 @@ const tutorialCopy = [
     before:
       "Prima: parti dall'Excel originale, controlla che i numeri siano nella colonna corretta e che il file non sia aperto in altri programmi.",
     after:
-      "Dopo: scarica lo ZIP generato e caricalo sul portale RPO. Se hai gia' un TXT pronto, usa Genera ZIP da TXT: non filtra i numeri, crea solo la cartella compressa con lista.txt in UTF-8 e righe CRLF.",
+      "Dopo: scarica lo ZIP generato e caricalo sul portale RPO. Se il portale rifiuta il file per dimensione o crediti, passa al divisore TXT.",
   },
   {
     title: "TXT Divider",
     before:
       "Prima: usa il TXT da inviare al Registro e decidi la riga di taglio in base ai crediti disponibili o al limite del caricamento.",
     after:
-      "Dopo: scarica Parte 1 e Parte 2. Se il portale richiede lo ZIP, torna alla Fase 1 e usa Genera ZIP da TXT su ogni parte: comprime il TXT senza modificarne il contenuto.",
+      "Dopo: scarica Parte 1 e Parte 2, poi prosegui con i lotti separati mantenendo lo stesso ordine di lavoro.",
+  },
+  {
+    title: "TXT Zipper",
+    before:
+      "Prima: usa un TXT gia' pronto per il caricamento RPO, ad esempio una lista gia' preparata o una parte generata dal divisore.",
+    after:
+      "Dopo: scarica lo ZIP generato. Dentro trovi lista.txt in UTF-8 con righe CRLF: e' la cartella compressa richiesta dal portale RPO, senza modifiche al contenuto del TXT.",
   },
   {
     title: "TXT Cleaner",
@@ -273,7 +280,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             Icon={FileSpreadsheet}
             kicker="Fase 1"
             title="Convertitore Excel"
-            text="Serve a creare lo ZIP per il portale RPO: da Excel/CSV estrae i numeri, da TXT comprime il file senza modificarlo."
+            text="Serve a trasformare un Excel o CSV con numeri in uno ZIP pronto da caricare sul portale RPO."
           />
           {tutorialStep === 0 ? (
             <TutorialNote
@@ -306,29 +313,6 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             >
               <Download size={18} />
               Scarica ZIP
-            </button>
-          ) : null}
-          <FilePicker
-            accept=".txt"
-            file={txtZipFile}
-            label="TXT gia pronto"
-            onChange={(file) => {
-              setTxtZipFile(file);
-              setTxtZipResult(null);
-            }}
-          />
-          <button className="rpo-primary" type="button" disabled={loading || !txtZipFile} onClick={handleTxtZipSubmit}>
-            <FileArchive size={18} />
-            Genera ZIP da TXT
-          </button>
-          {txtZipResult ? (
-            <button
-              className="rpo-secondary"
-              type="button"
-              onClick={() => downloadBlob(txtZipResult.blob, `lista_${txtZipResult.fileName}.zip`)}
-            >
-              <Download size={18} />
-              Scarica ZIP TXT
             </button>
           ) : null}
         </article>
@@ -389,10 +373,10 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
 
         <article className="rpo-card" data-tour-active={tutorialStep === 2 ? "true" : "false"} data-tour-card="3">
           <ToolCardHeader
-            Icon={FileText}
+            Icon={FileArchive}
             kicker="Fase 3"
-            title="Lista nera"
-            text="Serve a leggere l'esito del Registro e produrre due TXT: numeri iscritti RPO e numeri chiamabili."
+            title="ZIP da TXT"
+            text="Serve a comprimere un TXT gia' pronto nello ZIP richiesto dal portale RPO, senza filtrare o modificare il file."
           />
           {tutorialStep === 2 ? (
             <TutorialNote
@@ -401,6 +385,48 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
               onNext={() => goToTutorialStep(1)}
               onPrevious={() => goToTutorialStep(-1)}
               step={3}
+              total={tutorialCopy.length}
+            />
+          ) : null}
+          <FilePicker
+            accept=".txt"
+            file={txtZipFile}
+            label="TXT gia pronto"
+            onChange={(file) => {
+              setTxtZipFile(file);
+              setTxtZipResult(null);
+            }}
+          />
+          <button className="rpo-primary" type="button" disabled={loading || !txtZipFile} onClick={handleTxtZipSubmit}>
+            <FileArchive size={18} />
+            Genera ZIP da TXT
+          </button>
+          {txtZipResult ? (
+            <button
+              className="rpo-secondary"
+              type="button"
+              onClick={() => downloadBlob(txtZipResult.blob, `lista_${txtZipResult.fileName}.zip`)}
+            >
+              <Download size={18} />
+              Scarica ZIP TXT
+            </button>
+          ) : null}
+        </article>
+
+        <article className="rpo-card" data-tour-active={tutorialStep === 3 ? "true" : "false"} data-tour-card="4">
+          <ToolCardHeader
+            Icon={FileText}
+            kicker="Fase 4"
+            title="Lista nera"
+            text="Serve a leggere l'esito del Registro e produrre due TXT: numeri iscritti RPO e numeri chiamabili."
+          />
+          {tutorialStep === 3 ? (
+            <TutorialNote
+              item={tutorialCopy[3]}
+              onClose={closeTutorial}
+              onNext={() => goToTutorialStep(1)}
+              onPrevious={() => goToTutorialStep(-1)}
+              step={4}
               total={tutorialCopy.length}
             />
           ) : null}
@@ -433,22 +459,22 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
 
         <article
           className="rpo-card rpo-card-accent"
-          data-tour-active={tutorialStep === 3 ? "true" : "false"}
-          data-tour-card="4"
+          data-tour-active={tutorialStep === 4 ? "true" : "false"}
+          data-tour-card="5"
         >
           <ToolCardHeader
             Icon={UploadCloud}
-            kicker="Fase 4"
+            kicker="Fase 5"
             title="Pulizia finale Excel"
             text="Serve a oscurare nell'Excel originale le righe presenti in lista nera e scaricare il file bonificato."
           />
-          {tutorialStep === 3 ? (
+          {tutorialStep === 4 ? (
             <TutorialNote
-              item={tutorialCopy[3]}
+              item={tutorialCopy[4]}
               onClose={closeTutorial}
               onNext={() => goToTutorialStep(1)}
               onPrevious={() => goToTutorialStep(-1)}
-              step={4}
+              step={5}
               total={tutorialCopy.length}
             />
           ) : null}

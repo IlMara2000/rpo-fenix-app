@@ -3224,10 +3224,10 @@ td {
 
 .rpo-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 32px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(18px, 1.8vw, 28px);
   width: 100%;
-  max-width: 1400px;
+  max-width: 1640px;
   margin: 0 auto;
 }
 
