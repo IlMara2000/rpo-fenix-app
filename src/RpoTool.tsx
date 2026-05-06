@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
+  ArrowLeft,
   ArrowRight,
   CheckCircle2,
   Download,
@@ -29,6 +30,8 @@ type ToolStatus = {
 type RpoToolProps = {
   onNavigate: (path: string) => void;
 };
+
+const showRpoLinkedTools = false;
 
 const tutorialCopy = [
   {
@@ -215,6 +218,10 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
 
   return (
     <main className="rpo-shell" data-tour-open={tutorialOpen ? "true" : "false"}>
+      <button className="rpo-back-button" type="button" onClick={() => onNavigate("/")}>
+        <ArrowLeft size={16} />
+        Torna indietro
+      </button>
       <header className="rpo-header">
         <button className="rpo-logo-button" type="button" onClick={() => onNavigate("/")}>
           <img src="/logo.png" alt="Fenix Group" />
@@ -223,16 +230,18 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
           {loading ? <Loader2 size={18} className="spin" /> : <CheckCircle2 size={18} />}
           <span>{status.message}</span>
         </div>
-        <div className="rpo-header-actions">
-          <button type="button" onClick={() => onNavigate("/planimetrie")}>
-            Planimetrie
-            <ArrowRight size={16} />
-          </button>
-          <button type="button" onClick={() => onNavigate("/crm")}>
-            CRM
-            <ArrowRight size={16} />
-          </button>
-        </div>
+        {showRpoLinkedTools ? (
+          <div className="rpo-header-actions">
+            <button type="button" onClick={() => onNavigate("/planimetrie")}>
+              Planimetrie
+              <ArrowRight size={16} />
+            </button>
+            <button type="button" onClick={() => onNavigate("/crm")}>
+              CRM
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        ) : null}
       </header>
 
       <section className="rpo-grid" aria-label="Strumenti RPO">
