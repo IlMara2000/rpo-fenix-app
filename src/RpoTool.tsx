@@ -39,14 +39,14 @@ const tutorialCopy = [
     before:
       "Prima: parti dall'Excel originale, controlla che i numeri siano nella colonna corretta e che il file non sia aperto in altri programmi.",
     after:
-      "Dopo: scarica lo ZIP generato e caricalo sul portale RPO. Se il portale rifiuta il file per dimensione o crediti, passa al divisore TXT.",
+      "Dopo: scarica lo ZIP generato e caricalo sul portale RPO. Se hai gia' un TXT pronto, usa Genera ZIP da TXT: non filtra i numeri, crea solo la cartella compressa con lista.txt in UTF-8 e righe CRLF.",
   },
   {
     title: "TXT Divider",
     before:
       "Prima: usa il TXT da inviare al Registro e decidi la riga di taglio in base ai crediti disponibili o al limite del caricamento.",
     after:
-      "Dopo: scarica Parte 1 e Parte 2, poi caricale separatamente sul portale RPO mantenendo l'ordine dei lotti.",
+      "Dopo: scarica Parte 1 e Parte 2. Se il portale richiede lo ZIP, torna alla Fase 1 e usa Genera ZIP da TXT su ogni parte: comprime il TXT senza modificarne il contenuto.",
   },
   {
     title: "TXT Cleaner",
@@ -74,6 +74,8 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
 
   const [converterFile, setConverterFile] = useState<File | null>(null);
   const [converterResult, setConverterResult] = useState<{ blob: Blob; fileName: string } | null>(null);
+  const [txtZipFile, setTxtZipFile] = useState<File | null>(null);
+  const [txtZipResult, setTxtZipResult] = useState<{ blob: Blob; fileName: string } | null>(null);
 
   const [dividerFile, setDividerFile] = useState<File | null>(null);
   const [splitPoint, setSplitPoint] = useState("");
@@ -154,6 +156,27 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
       const fileName = converterFile.name.split(".")[0].toLowerCase().replace(/\s+/g, "_");
       setConverterResult({ blob, fileName });
       setStatus({ message: "ZIP RPO creato con successo.", tone: "success" });
+    });
+  }
+
+  async function handleTxtZipSubmit() {
+    if (!txtZipFile) {
+      return;
+    }
+
+    await runWithStatus("CREAZIONE ZIP TXT IN CORSO...", async () => {
+      const formData = new FormData();
+      formData.append("txt", txtZipFile);
+      const response = await fetch("/api/converter", { method: "POST", body: formData });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      const blob = await response.blob();
+      const fileName = txtZipFile.name.replace(/\.txt$/i, "").toLowerCase().replace(/\s+/g, "_");
+      setTxtZipResult({ blob, fileName });
+      setStatus({ message: "ZIP TXT creato senza modificare il contenuto.", tone: "success" });
     });
   }
 
@@ -250,7 +273,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             Icon={FileSpreadsheet}
             kicker="Fase 1"
             title="Convertitore Excel"
-            text="Serve a trasformare un Excel o CSV con numeri in uno ZIP pronto da caricare sul portale RPO."
+            text="Serve a creare lo ZIP per il portale RPO: da Excel/CSV estrae i numeri, da TXT comprime il file senza modificarlo."
           />
           {tutorialStep === 0 ? (
             <TutorialNote
@@ -283,6 +306,29 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             >
               <Download size={18} />
               Scarica ZIP
+            </button>
+          ) : null}
+          <FilePicker
+            accept=".txt"
+            file={txtZipFile}
+            label="TXT gia pronto"
+            onChange={(file) => {
+              setTxtZipFile(file);
+              setTxtZipResult(null);
+            }}
+          />
+          <button className="rpo-primary" type="button" disabled={loading || !txtZipFile} onClick={handleTxtZipSubmit}>
+            <FileArchive size={18} />
+            Genera ZIP da TXT
+          </button>
+          {txtZipResult ? (
+            <button
+              className="rpo-secondary"
+              type="button"
+              onClick={() => downloadBlob(txtZipResult.blob, `lista_${txtZipResult.fileName}.zip`)}
+            >
+              <Download size={18} />
+              Scarica ZIP TXT
             </button>
           ) : null}
         </article>
