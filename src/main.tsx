@@ -97,6 +97,7 @@ type ProgramCard = {
   description: string;
   path: string;
   Icon: LucideIcon;
+  hiddenInSelector?: boolean;
 };
 
 type PropertyRecord = {
@@ -217,6 +218,7 @@ const selectorPrograms: ProgramCard[] = [
       "Gestionale operativo per immobili, nominativi, richieste, agenda, censimento e attivita di agenzia.",
     path: "/crm",
     Icon: Gauge,
+    hiddenInSelector: true,
   },
   {
     title: "PROGRAMMA RPO",
@@ -231,6 +233,7 @@ const selectorPrograms: ProgramCard[] = [
       "Modulo per generare e gestire planimetrie arredate partendo da immagini, schizzi o documentazione grafica.",
     path: "/planimetrie",
     Icon: PanelsTopLeft,
+    hiddenInSelector: true,
   },
 ];
 
@@ -747,6 +750,8 @@ function AppRouter() {
 }
 
 function ProgramSelector({ onNavigate }: { onNavigate: (path: string) => void }) {
+  const visiblePrograms = selectorPrograms.filter((program) => !program.hiddenInSelector);
+
   useEffect(() => {
     document.title = "Fenix Group | Suite";
   }, []);
@@ -756,8 +761,8 @@ function ProgramSelector({ onNavigate }: { onNavigate: (path: string) => void })
       <section className="suite-selector" aria-label="Selezione programma">
         <img className="suite-selector-logo" src="/logo.png" alt="Fenix Group Real Estate" />
         <div className="suite-selector-label">Seleziona un programma</div>
-        <div className="suite-program-grid">
-          {selectorPrograms.map(({ title, description, path, Icon }) => (
+        <div className={`suite-program-grid ${visiblePrograms.length === 1 ? "single" : ""}`}>
+          {visiblePrograms.map(({ title, description, path, Icon }) => (
             <button
               className="suite-program-card"
               key={path}

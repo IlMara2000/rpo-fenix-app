@@ -2920,6 +2920,11 @@ td {
   width: min(100%, 1080px);
 }
 
+.suite-program-grid.single {
+  grid-template-columns: minmax(0, 590px);
+  justify-content: center;
+}
+
 .suite-program-card {
   display: grid;
   justify-items: center;
