@@ -4025,6 +4025,317 @@ td {
   }
 }
 
+.suite-selector-label {
+  font-size: clamp(0.68rem, 1vw, 0.8rem);
+  letter-spacing: 0.3em;
+  line-height: 1.5;
+}
+
+.suite-program-card strong {
+  font-size: clamp(1.16rem, 1.8vw, 1.58rem);
+  letter-spacing: 0.09em;
+  line-height: 1.22;
+}
+
+.suite-program-card small {
+  font-size: clamp(0.86rem, 1vw, 0.96rem);
+  line-height: 1.62;
+}
+
+.suite-selector footer,
+.rpo-footer {
+  font-size: 0.54rem;
+  letter-spacing: 0.44em;
+}
+
+.rpo-status,
+.plan-status {
+  font-size: 0.76rem;
+  letter-spacing: 0.07em;
+  line-height: 1.4;
+}
+
+.rpo-header-actions button,
+.plan-header button {
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+}
+
+.rpo-card-header > span:not(.rpo-card-icon),
+.rpo-form label,
+.rpo-file-picker,
+.plan-list-header,
+.plan-empty {
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+}
+
+.rpo-card-header h2 {
+  font-size: clamp(1.16rem, 1.5vw, 1.34rem);
+  line-height: 1.22;
+}
+
+.rpo-card-header p,
+.rpo-file-picker small {
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.rpo-tour-note strong {
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+}
+
+.rpo-tour-note span {
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+}
+
+.rpo-tour-note small {
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.rpo-primary,
+.rpo-secondary,
+.rpo-success,
+.rpo-download-pair button,
+.plan-download,
+.rpo-tour-actions button,
+.rpo-tutorial-float span {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.rpo-download-pair button {
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+}
+
+.rpo-form input[type="number"],
+.plan-list strong {
+  font-size: 0.86rem;
+}
+
+.rpo-hero h1,
+.plan-hero h1 {
+  font-size: clamp(2.1rem, 4.8vw, 4.2rem);
+  line-height: 1.03;
+}
+
+.rpo-hero p {
+  font-size: 0.96rem;
+  line-height: 1.66;
+}
+
+.plan-dropzone span,
+.plan-placeholder span {
+  font-size: 1rem;
+  line-height: 1.38;
+}
+
+.plan-dropzone small,
+.plan-list small,
+.plan-preview small {
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.plan-list-header button,
+.plan-preview b {
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+}
+
+.plan-preview strong {
+  font-size: 1.02rem;
+  line-height: 1.25;
+}
+
+.module-nav button {
+  font-size: 0.8rem;
+}
+
+.app-brand strong {
+  font-size: 0.9rem;
+}
+
+.app-brand small,
+.crm-version {
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+}
+
+.app-header-actions a,
+.app-header-actions button,
+.module-action,
+.workspace-panel header button,
+.panel-action-label,
+.donut-panel button,
+.profile-card button,
+.command-bar button {
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+}
+
+.workspace-status span {
+  font-size: 0.82rem;
+}
+
+.workspace-status small,
+.route-summary small,
+.kpi-card small,
+.compact-list small,
+.activity-bars span,
+.channel-list small {
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.module-heading h1 {
+  font-size: clamp(1.28rem, 1.8vw, 1.78rem);
+  line-height: 1.12;
+}
+
+.module-heading p {
+  font-size: 0.88rem;
+  line-height: 1.52;
+}
+
+.system-label,
+.submodule-nav button,
+.kpi-card span,
+.compact-list span,
+.agenda-board article span,
+.row-actions button {
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+}
+
+.route-summary strong,
+.progress-line strong,
+.compact-list strong,
+.call-queue strong,
+.workspace-panel h2 {
+  font-size: 0.94rem;
+  line-height: 1.3;
+}
+
+.workflow-steps span,
+.call-queue small,
+.progress-line small {
+  font-size: 0.76rem;
+}
+
+.kpi-card strong {
+  font-size: 1.62rem;
+}
+
+th {
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+}
+
+td,
+.quick-form input,
+.checklist label {
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.quick-form button,
+.tool-button {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+
+.empty-state strong {
+  font-size: 0.9rem;
+}
+
+.empty-state small {
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.pipeline span,
+.map-strip span {
+  font-size: 0.8rem;
+}
+
+.pipeline strong {
+  font-size: 1.38rem;
+}
+
+.agenda-board h3 {
+  font-size: 0.96rem;
+}
+
+.profile-card strong {
+  font-size: 1.04rem;
+}
+
+@media (max-width: 720px) {
+  .suite-program-grid {
+    width: min(100%, 360px);
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .suite-program-card {
+    min-height: 188px;
+    padding: 24px 20px;
+  }
+
+  .suite-program-card small {
+    max-width: 18rem;
+    font-size: 0.84rem;
+    line-height: 1.58;
+  }
+
+  .suite-selector-label {
+    font-size: 0.66rem;
+    letter-spacing: 0.2em;
+  }
+
+  .suite-program-card strong {
+    font-size: 1.1rem;
+    letter-spacing: 0.07em;
+  }
+
+  .suite-selector footer,
+  .rpo-footer {
+    font-size: 0.5rem;
+    letter-spacing: 0.24em;
+    line-height: 1.7;
+  }
+
+  .rpo-status,
+  .plan-status {
+    font-size: 0.7rem;
+  }
+
+  .rpo-hero h1,
+  .plan-hero h1 {
+    font-size: clamp(1.7rem, 8.4vw, 2.35rem);
+    line-height: 1.08;
+  }
+
+  .rpo-card-header h2 {
+    font-size: 1.16rem;
+  }
+
+  .module-heading h1 {
+    font-size: clamp(1.28rem, 7.4vw, 1.9rem);
+  }
+
+  .app-header-actions a,
+  .app-header-actions button,
+  .module-action {
+    font-size: 0.66rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
