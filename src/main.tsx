@@ -92,6 +92,13 @@ type ModuleItem = {
   Icon: LucideIcon;
 };
 
+type QuickFormField =
+  | string
+  | {
+      name: string;
+      options: string[];
+    };
+
 type ProgramCard = {
   title: string;
   description: string;
@@ -164,7 +171,24 @@ type CensusAreaRecord = {
   zone: string;
   buildings: number;
   contacts: number;
-  priority: string;
+  updatedAt: string;
+};
+
+type CensusStreetRecord = {
+  id: string;
+  zone: string;
+  street: string;
+  complexes: number;
+  updatedAt: string;
+};
+
+type CensusComplexRecord = {
+  id: string;
+  zone: string;
+  street: string;
+  name: string;
+  units: number;
+  owners: number;
   updatedAt: string;
 };
 
@@ -177,6 +201,34 @@ type GoalRecord = {
   updatedAt: string;
 };
 
+type UserRole =
+  | "TITOLARE"
+  | "ASSOCIATO"
+  | "COORDINATORE/TRICE"
+  | "AGENTE"
+  | "TELEFONISTA"
+  | "SVILUPPATORE";
+
+type AccountStatus = "Attivo" | "Sospeso";
+
+type AccountRecord = {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: UserRole;
+  status: AccountStatus;
+  managerId?: string;
+  updatedAt: string;
+};
+
+type SessionUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+};
+
 type CrmData = {
   properties: PropertyRecord[];
   requests: RequestRecord[];
@@ -184,6 +236,8 @@ type CrmData = {
   activities: ActivityRecord[];
   marketingChannels: MarketingChannelRecord[];
   censusAreas: CensusAreaRecord[];
+  censusStreets: CensusStreetRecord[];
+  censusComplexes: CensusComplexRecord[];
   goals: GoalRecord[];
   activityLog: string[];
 };
@@ -193,6 +247,55 @@ type CrmCommit = (updater: (data: CrmData) => CrmData, message: string) => void;
 const accountEmail = "daniele.marangoni@grfenix.com";
 const accountPasswordHash =
   "35b47eca325c70ec48ba4d8489301c7ee82b6a50ac330938158dcfe1a5fded11";
+const accountsStorageKey = "fenix-suite-accounts-v1";
+const sessionStorageKey = "fenix-suite-current-user-v1";
+const legacySessionKey = "fenix-suite-session";
+
+const roleOptions: UserRole[] = [
+  "TITOLARE",
+  "ASSOCIATO",
+  "COORDINATORE/TRICE",
+  "AGENTE",
+  "TELEFONISTA",
+  "SVILUPPATORE",
+];
+
+const roleDescriptions: Record<UserRole, string> = {
+  TITOLARE: "Gestisce account, dati, impostazioni e ogni area del CRM.",
+  ASSOCIATO: "Gestisce gli altri account e usa le funzioni operative del CRM.",
+  "COORDINATORE/TRICE": "Usa il CRM e gestisce solo gli account delle telefoniste.",
+  AGENTE: "Usa le funzioni base: clienti, immobili, agenda e attivita operative.",
+  TELEFONISTA: "Usa le funzioni base per chiamate, note, clienti e agenda.",
+  SVILUPPATORE: "Usa il CRM e interviene su problemi tecnici di account e sito.",
+};
+
+const searchFilterFields: QuickFormField[] = [
+  "Nome",
+  "Cognome",
+  "Numero",
+  "Codice fiscale",
+  "Foglio",
+  "Particella",
+  "Subalterno",
+  {
+    name: "Categoria catastale",
+    options: ["", "A/1", "A/2", "A/3", "A/4", "A/5", "A/6", "A/7", "A/8", "A/9", "A/10", "A/11", "C/1", "C/2", "C/6", "C/7"],
+  },
+  {
+    name: "Vani",
+    options: ["", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5", "5.5", "6", "7", "8", "9", "10+"],
+  },
+];
+
+const defaultAccount: AccountRecord = {
+  id: "account-daniele-marangoni",
+  name: "Daniele Marangoni",
+  email: accountEmail,
+  passwordHash: accountPasswordHash,
+  role: "SVILUPPATORE",
+  status: "Attivo",
+  updatedAt: "Account iniziale",
+};
 
 const externalTools = [
   {
@@ -215,7 +318,7 @@ const selectorPrograms: ProgramCard[] = [
   {
     title: "PROGRAMMA CRM",
     description:
-      "Gestionale operativo per immobili, nominativi, richieste, agenda, censimento e attivita di agenzia.",
+      "Gestionale operativo per clienti, immobili, agenda, censimento e attivita di agenzia.",
     path: "/crm",
     Icon: Gauge,
     hiddenInSelector: true,
@@ -240,69 +343,39 @@ const selectorPrograms: ProgramCard[] = [
 const modules: ModuleItem[] = [
   {
     key: "start",
-    label: "Start",
-    description: "Telefonate, ricontatti, appunti e nominativi da sviluppare oggi.",
+    label: "Oggi",
+    description: "Chiamate, appunti e avanzamento della giornata.",
     Icon: Gauge,
   },
   {
-    key: "immobili",
-    label: "Immobili",
-    description: "Schede, incarichi, media, proprietari e pubblicazione.",
-    Icon: Home,
-  },
-  {
-    key: "richieste",
-    label: "Richieste",
-    description: "Domande clienti, matching e proposte compatibili.",
-    Icon: BriefcaseBusiness,
-  },
-  {
     key: "nominativi",
-    label: "Nominativi",
-    description: "Clienti, proprietari, provenienze e storico contatti.",
+    label: "Clienti",
+    description: "Persone, proprietari, telefoni, note e prossimo contatto.",
     Icon: UsersRound,
-  },
-  {
-    key: "agenda",
-    label: "Attivita",
-    description: "Appuntamenti, visite, attivita e follow-up.",
-    Icon: CalendarDays,
-  },
-  {
-    key: "pubblicita",
-    label: "Pubblicita",
-    description: "Portali, vetrina, campagne e sincronizzazioni.",
-    Icon: Globe2,
-  },
-  {
-    key: "contattiPubblicita",
-    label: "Contatti Pubblicita",
-    description: "Lead pubblicitari, richieste da portali, email e presa in carico.",
-    Icon: CircleDot,
   },
   {
     key: "censimento",
     label: "Censimento",
-    description: "Zone, palazzi, contatti territoriali e ricontatti.",
+    description: "Zone, stabili, contatti territoriali e sviluppo censimento.",
     Icon: MapPinned,
   },
   {
-    key: "obiettivi",
-    label: "Obiettivi",
-    description: "Target di agenzia, performance e avanzamento commerciale.",
-    Icon: Target,
+    key: "immobili",
+    label: "Immobili",
+    description: "Schede immobili, proprietari, prezzi e pubblicazione.",
+    Icon: Home,
+  },
+  {
+    key: "agenda",
+    label: "Agenda",
+    description: "Telefonate, visite, appuntamenti e follow-up.",
+    Icon: CalendarDays,
   },
   {
     key: "utilita",
-    label: "Utilita",
-    description: "Backup, importazioni, esportazioni e strumenti collegati.",
+    label: "Strumenti",
+    description: "Backup, portali, pubblicita, censimento e configurazioni.",
     Icon: Wrench,
-  },
-  {
-    key: "impostazioni",
-    label: "Impostazioni",
-    description: "Account, ruoli, permessi, automazioni e preferenze.",
-    Icon: Settings,
   },
 ];
 
@@ -310,23 +383,23 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
   start: [
     {
       key: "start-dashboard",
-      label: "Cruscotto",
-      description: "Telefonate, ricontatti, appunti veloci e nominativi da sviluppare nella giornata.",
+      label: "Progressi",
+      description: "Progressi giornalieri e andamento mensile rispetto agli obiettivi del team collegato.",
       Icon: LayoutDashboard,
     },
   ],
   immobili: [
     {
+      key: "immobili-tutti",
+      label: "Elenco",
+      description: "Archivio completo con filtri, stato pratica, portali e azioni rapide.",
+      Icon: ListChecks,
+    },
+    {
       key: "immobili-nuovo",
       label: "Nuovo",
       description: "Inserimento scheda immobile con proprietario, incarico, prezzi, media e pubblicazione.",
       Icon: Plus,
-    },
-    {
-      key: "immobili-tutti",
-      label: "Tutti",
-      description: "Archivio completo con filtri, stato pratica, portali e azioni rapide.",
-      Icon: ListChecks,
     },
     {
       key: "immobili-vendite",
@@ -340,66 +413,42 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       description: "Gestione locazioni annuali e disponibilita.",
       Icon: CalendarDays,
     },
-    {
-      key: "immobili-ricerca-op",
-      label: "Ricerca Op.",
-      description: "Ricerca per proprietario e opportunita di acquisizione.",
-      Icon: Search,
-    },
-    {
-      key: "immobili-ricerca-cli",
-      label: "Ricerca C.",
-      description: "Ricerca compatibilita clienti rispetto agli immobili.",
-      Icon: UsersRound,
-    },
   ],
   richieste: [
     {
+      key: "richieste-elenco",
+      label: "Elenco",
+      description: "Archivio richieste, stato e proposta collegata.",
+      Icon: BriefcaseBusiness,
+    },
+    {
       key: "richieste-nuova",
-      label: "Nuova Richiesta",
+      label: "Nuova",
       description: "Creazione richiesta cliente con budget, zone, tipologie e matching.",
       Icon: Plus,
     },
     {
-      key: "richieste-elenco",
-      label: "Elenco Richieste",
-      description: "Archivio richieste, stato, proposta collegata e priorita.",
-      Icon: BriefcaseBusiness,
-    },
-    {
       key: "richieste-matching",
-      label: "Incroci",
+      label: "Matching",
       description: "Abbinamento automatico fra richieste e immobili attivi.",
       Icon: RefreshCcwDot,
     },
   ],
   nominativi: [
     {
-      key: "nominativi-nuovo",
-      label: "Nuovo",
-      description: "Inserimento nominativo con privacy, provenienza e categoria commerciale.",
-      Icon: UserRound,
-    },
-    {
       key: "nominativi-elenco",
-      label: "Elenco Nominativi",
-      description: "Rubrica clienti, proprietari e contatti con storico comunicazioni.",
+      label: "Elenco",
+      description: "Database clienti da qualificare e usare per proporre immobili compatibili.",
       Icon: UsersRound,
     },
     {
-      key: "nominativi-richieste",
-      label: "Richieste",
-      description: "Richieste collegate alle anagrafiche e agli immobili compatibili.",
-      Icon: BriefcaseBusiness,
+      key: "nominativi-nuovo",
+      label: "Nuovo",
+      description: "Inserimento cliente con telefono, esigenza, provenienza e prossimo ricontatto.",
+      Icon: UserRound,
     },
   ],
   agenda: [
-    {
-      key: "attivita-nuova",
-      label: "Nuova",
-      description: "Nuova attivita, telefonata, appuntamento o visita collegata a contatto e immobile.",
-      Icon: Plus,
-    },
     {
       key: "agenda-calendario",
       label: "Agenda",
@@ -407,8 +456,14 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       Icon: CalendarDays,
     },
     {
+      key: "attivita-nuova",
+      label: "Nuova",
+      description: "Nuova attivita, telefonata, appuntamento o visita collegata a contatto e immobile.",
+      Icon: Plus,
+    },
+    {
       key: "agenda-storico",
-      label: "Ricerca",
+      label: "Storico",
       description: "Storico attivita e ricerca per operatore, data, cliente o immobile.",
       Icon: Search,
     },
@@ -437,34 +492,28 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
   ],
   censimento: [
     {
-      key: "censimento-contatto-nuovo",
-      label: "Nuovo Contatto",
-      description: "Nuovo contatto territoriale collegato a zona, stabile o complesso.",
-      Icon: Plus,
-    },
-    {
-      key: "censimento-contatti",
-      label: "Contatti",
-      description: "Elenco contatti censiti, ricontatti e stato commerciale.",
-      Icon: UsersRound,
-    },
-    {
       key: "censimento-zone",
-      label: "Elenco Zone",
-      description: "Zone censimento con stabili, priorita e avanzamento.",
+      label: "Zona",
+      description: "Fase 1: creazione o selezione della zona di riferimento.",
       Icon: MapPinned,
     },
     {
-      key: "censimento-zona-nuova",
-      label: "Nuova Zona",
-      description: "Creazione zona con riferimenti territoriali e priorita.",
-      Icon: Plus,
+      key: "censimento-vie",
+      label: "Via",
+      description: "Fase 2: creazione o selezione della via dentro la zona.",
+      Icon: MapPinned,
     },
     {
       key: "censimento-complessi",
-      label: "Complessi",
-      description: "Complessi e stabili collegati a zone, civici e contatti.",
+      label: "Complesso",
+      description: "Fase 3: creazione o selezione del palazzo dentro la via.",
       Icon: Building2,
+    },
+    {
+      key: "censimento-proprietari",
+      label: "Proprietari",
+      description: "Fase 4: creazione, selezione e gestione dei proprietari degli immobili.",
+      Icon: UsersRound,
     },
   ],
   obiettivi: [
@@ -477,34 +526,40 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
   ],
   utilita: [
     {
-      key: "utilita-preferenze",
-      label: "Preferenze",
-      description: "Preferenze utente e comportamento interfaccia.",
-      Icon: Settings,
+      key: "account-ruoli",
+      label: "Account",
+      description: "Utenti, ruoli, permessi e manutenzione degli accessi.",
+      Icon: UsersRound,
     },
     {
       key: "utilita-backup",
-      label: "Copie sicurezza",
+      label: "Backup",
       description: "Backup, esportazioni e archivio operativo.",
       Icon: DatabaseBackup,
     },
     {
       key: "utilita-portali",
-      label: "Esportazioni",
+      label: "Portali",
       description: "Code di esportazione e stato invio ai portali.",
       Icon: UploadCloud,
     },
     {
-      key: "utilita-pubblicita",
+      key: "pubblicita-portali",
       label: "Pubblicita",
-      description: "Accesso rapido alla gestione pubblicitaria.",
+      description: "Pubblicazioni, portali, campagne, vetrina e materiali marketing.",
       Icon: Globe2,
     },
     {
-      key: "utilita-info-territoriali",
-      label: "Info Territoriali",
-      description: "Collegamento a servizi territoriali esterni.",
-      Icon: MapPinned,
+      key: "obiettivi-elenco",
+      label: "Obiettivi",
+      description: "Obiettivi per periodo, operatore e agenzia.",
+      Icon: Target,
+    },
+    {
+      key: "impostazioni-azienda",
+      label: "Impostazioni",
+      description: "Dati aziendali, sedi, utenti e permessi.",
+      Icon: Settings,
     },
   ],
   impostazioni: [
@@ -584,15 +639,201 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
 };
 
 function getInitialModule(): ModuleKey {
-  const savedModule = localStorage.getItem("fenix-suite-active-module") as ModuleKey | null;
-  return savedModule && modules.some((module) => module.key === savedModule) ? savedModule : "start";
+  return "start";
 }
 
 function getInitialPage(moduleKey: ModuleKey) {
-  const savedPage = localStorage.getItem("fenix-suite-active-page");
-  return savedPage && modulePages[moduleKey].some((page) => page.key === savedPage)
-    ? savedPage
-    : modulePages[moduleKey][0].key;
+  return modulePages[moduleKey][0].key;
+}
+
+function isValidRole(role: string): role is UserRole {
+  return roleOptions.includes(role as UserRole);
+}
+
+function isValidAccountStatus(status: string): status is AccountStatus {
+  return status === "Attivo" || status === "Sospeso";
+}
+
+function isFenixEmail(email: string) {
+  return email.toLowerCase().endsWith("@grfenix.com");
+}
+
+function hasOwnerOverride(user: Pick<SessionUser, "email" | "role">) {
+  return user.email.toLowerCase() === accountEmail && user.role === "SVILUPPATORE";
+}
+
+function canUseTools(user: SessionUser) {
+  return hasOwnerOverride(user) || ["TITOLARE", "ASSOCIATO", "COORDINATORE/TRICE", "SVILUPPATORE"].includes(user.role);
+}
+
+function canManageAccounts(user: SessionUser) {
+  return hasOwnerOverride(user) || user.role === "TITOLARE" || user.role === "ASSOCIATO" || user.role === "COORDINATORE/TRICE";
+}
+
+function canUseDeveloperTools(user: SessionUser) {
+  return hasOwnerOverride(user) || user.role === "TITOLARE" || user.role === "SVILUPPATORE";
+}
+
+function canAccessUtilityPage(user: SessionUser, pageKey: string) {
+  if (hasOwnerOverride(user) || user.role === "TITOLARE") {
+    return true;
+  }
+
+  if (user.role === "ASSOCIATO") {
+    return pageKey === "account-ruoli";
+  }
+
+  if (user.role === "COORDINATORE/TRICE") {
+    return pageKey === "account-ruoli";
+  }
+
+  if (user.role === "SVILUPPATORE") {
+    return ["account-ruoli", "utilita-backup", "impostazioni-azienda"].includes(pageKey);
+  }
+
+  return false;
+}
+
+function getVisibleModules(user: SessionUser) {
+  return modules.filter((module) => module.key !== "utilita" || canUseTools(user));
+}
+
+function getVisibleModulePages(moduleKey: ModuleKey, user: SessionUser) {
+  const pages = modulePages[moduleKey];
+  return moduleKey === "utilita"
+    ? pages.filter((page) => canAccessUtilityPage(user, page.key))
+    : pages;
+}
+
+function getAssignableRoles(user: SessionUser) {
+  if (hasOwnerOverride(user) || user.role === "TITOLARE") {
+    return roleOptions;
+  }
+
+  if (user.role === "ASSOCIATO") {
+    return roleOptions.filter((role) => role !== "TITOLARE");
+  }
+
+  if (user.role === "COORDINATORE/TRICE") {
+    return ["TELEFONISTA"] as UserRole[];
+  }
+
+  return [] as UserRole[];
+}
+
+function isManagedByCurrentUser(account: AccountRecord, user: SessionUser) {
+  return account.managerId === user.id;
+}
+
+function getAccountScope(accounts: AccountRecord[], user: SessionUser) {
+  if (hasOwnerOverride(user) || user.role === "TITOLARE") {
+    return {
+      label: "Tutta agenzia",
+      accounts: accounts.filter((account) => account.status === "Attivo"),
+    };
+  }
+
+  if (user.role === "ASSOCIATO" || user.role === "COORDINATORE/TRICE") {
+    return {
+      label: "Account collegati",
+      accounts: accounts.filter((account) => isManagedByCurrentUser(account, user) && account.status === "Attivo"),
+    };
+  }
+
+  return {
+    label: "Personale",
+    accounts: accounts.filter((account) => account.id === user.id && account.status === "Attivo"),
+  };
+}
+
+function toSessionUser(account: AccountRecord): SessionUser {
+  return {
+    id: account.id,
+    name: account.name,
+    email: account.email,
+    role: account.role,
+  };
+}
+
+function normalizeAccount(input: Partial<AccountRecord>, index: number): AccountRecord | null {
+  const email = String(input.email || "").trim().toLowerCase();
+  const passwordHash = String(input.passwordHash || "");
+  const role = String(input.role || "");
+
+  if (!email || !passwordHash || !isValidRole(role)) {
+    return null;
+  }
+
+  return {
+    id: String(input.id || `account-${index}-${email.replace(/[^a-z0-9]/g, "-")}`),
+    name: String(input.name || email),
+    email,
+    passwordHash,
+    role,
+    status: isValidAccountStatus(String(input.status || "")) ? input.status as AccountStatus : "Attivo",
+    managerId: typeof input.managerId === "string" ? input.managerId : undefined,
+    updatedAt: String(input.updatedAt || "Importato"),
+  };
+}
+
+function loadAccounts(): AccountRecord[] {
+  const savedAccounts = localStorage.getItem(accountsStorageKey);
+  const parsedAccounts = savedAccounts ? safeJsonParse(savedAccounts) : null;
+  const normalized = Array.isArray(parsedAccounts)
+    ? parsedAccounts
+        .map((account, index) => normalizeAccount(account as Partial<AccountRecord>, index))
+        .filter((account): account is AccountRecord => Boolean(account))
+    : [];
+  const withoutDefault = normalized.filter((account) => account.email !== defaultAccount.email);
+  return [defaultAccount, ...withoutDefault];
+}
+
+function saveAccounts(accounts: AccountRecord[]) {
+  localStorage.setItem(accountsStorageKey, JSON.stringify(accounts));
+}
+
+function getStoredSessionUser(): SessionUser | null {
+  const savedSession = localStorage.getItem(sessionStorageKey);
+  const parsedSession = savedSession ? safeJsonParse(savedSession) : null;
+
+  if (
+    parsedSession &&
+    typeof parsedSession === "object" &&
+    "email" in parsedSession &&
+    "role" in parsedSession &&
+    isValidRole(String((parsedSession as SessionUser).role))
+  ) {
+    return {
+      id: String((parsedSession as SessionUser).id || defaultAccount.id),
+      name: String((parsedSession as SessionUser).name || defaultAccount.name),
+      email: String((parsedSession as SessionUser).email || defaultAccount.email).toLowerCase(),
+      role: (parsedSession as SessionUser).role,
+    };
+  }
+
+  if (localStorage.getItem(legacySessionKey) === "active") {
+    return toSessionUser(defaultAccount);
+  }
+
+  return null;
+}
+
+function storeSessionUser(user: SessionUser) {
+  localStorage.setItem(legacySessionKey, "active");
+  localStorage.setItem(sessionStorageKey, JSON.stringify(user));
+}
+
+function clearSessionUser() {
+  localStorage.removeItem(legacySessionKey);
+  localStorage.removeItem(sessionStorageKey);
+}
+
+function safeJsonParse(value: string) {
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return null;
+  }
 }
 
 const features: Feature[] = [
@@ -611,7 +852,7 @@ const features: Feature[] = [
   {
     title: "Censimento",
     description:
-      "Mappa zone, contatti e ricontatti per costruire nuove acquisizioni con attivita ordinate per priorita commerciale.",
+      "Mappa zone, contatti e ricontatti per costruire nuove acquisizioni con attivita ordinate per zona e avanzamento.",
     Icon: MapPinned,
   },
   {
@@ -695,7 +936,7 @@ const features: Feature[] = [
   {
     title: "Anagrafiche",
     description:
-      "Schede complete per clienti, proprietari e richieste, con contatti veloci e storico comunicazioni integrato.",
+      "Schede complete per clienti, proprietari ed esigenze, con contatti veloci e storico comunicazioni integrato.",
     Icon: UsersRound,
   },
   {
@@ -715,6 +956,8 @@ const initialCrmData: CrmData = {
   activities: [],
   marketingChannels: [],
   censusAreas: [],
+  censusStreets: [],
+  censusComplexes: [],
   goals: [],
   activityLog: [],
 };
@@ -784,11 +1027,8 @@ function ProgramSelector({ onNavigate }: { onNavigate: (path: string) => void })
 }
 
 function CrmApp() {
-  const [screen, setScreen] = useState<Screen>(() =>
-    localStorage.getItem("fenix-suite-session") === "active"
-      ? "workspace"
-      : "marketing",
-  );
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(() => getStoredSessionUser());
+  const [screen, setScreen] = useState<Screen>(() => (getStoredSessionUser() ? "workspace" : "marketing"));
 
   function openLogin() {
     setScreen("login");
@@ -801,19 +1041,26 @@ function CrmApp() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function openWorkspace() {
-    localStorage.setItem("fenix-suite-session", "active");
+  function openWorkspace(user: SessionUser) {
+    storeSessionUser(user);
+    setSessionUser(user);
     setScreen("workspace");
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
+  function updateSession(user: SessionUser) {
+    storeSessionUser(user);
+    setSessionUser(user);
+  }
+
   function logout() {
-    localStorage.removeItem("fenix-suite-session");
+    clearSessionUser();
+    setSessionUser(null);
     setScreen("marketing");
   }
 
-  if (screen === "workspace") {
-    return <Workspace onLogout={logout} />;
+  if (screen === "workspace" && sessionUser) {
+    return <Workspace currentUser={sessionUser} onLogout={logout} onSessionUpdate={updateSession} />;
   }
 
   if (screen === "login") {
@@ -896,13 +1143,13 @@ function Hero({ onLogin }: { onLogin: () => void }) {
 
 function DashboardPreview() {
   const previewSteps = [
-    { time: "1", title: "Inserisci nominativo" },
-    { time: "2", title: "Crea richiesta" },
+    { time: "1", title: "Inserisci cliente" },
+    { time: "2", title: "Qualifica esigenza" },
     { time: "3", title: "Pianifica ricontatto" },
   ];
   const previewActions = [
     { name: "Immobili", tag: "Schede e portali", score: "Pronto" },
-    { name: "Richieste", tag: "Matching clienti", score: "Pronto" },
+    { name: "Censimento", tag: "Zone e contatti", score: "Pronto" },
     { name: "Agenda", tag: "Attivita e visite", score: "Pronto" },
   ];
 
@@ -921,11 +1168,11 @@ function DashboardPreview() {
           <strong>0</strong>
         </div>
         <div>
-          <small>Nominativi</small>
+          <small>Clienti</small>
           <strong>0</strong>
         </div>
         <div>
-          <small>Richieste</small>
+          <small>Censimento</small>
           <strong>0</strong>
         </div>
       </div>
@@ -1102,7 +1349,7 @@ function ContactSection() {
           Argomento
           <select defaultValue="">
             <option value="" disabled>
-              Seleziona una richiesta
+              Seleziona un argomento
             </option>
             <option>Presentazione gestionale</option>
             <option>Informazioni commerciali</option>
@@ -1111,7 +1358,7 @@ function ContactSection() {
         </label>
         <label>
           Messaggio
-          <textarea placeholder="Scrivi qui la tua richiesta..." rows={5} />
+          <textarea placeholder="Scrivi qui il tuo messaggio..." rows={5} />
         </label>
         <label className="privacy-check">
           <input required type="checkbox" />
@@ -1121,7 +1368,7 @@ function ContactSection() {
           Invia
         </button>
         <p className="form-success" role="status">
-          Richiesta registrata.
+          Messaggio registrato.
         </p>
       </form>
     </section>
@@ -1143,7 +1390,7 @@ function LoginScreen({
   onSuccess,
 }: {
   onBack: () => void;
-  onSuccess: () => void;
+  onSuccess: (user: SessionUser) => void;
 }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1158,8 +1405,12 @@ function LoginScreen({
     const passwordHash = await sha256Hex(password);
     setLoading(false);
 
-    if (email === accountEmail && passwordHash === accountPasswordHash) {
-      onSuccess();
+    const account = loadAccounts().find(
+      (item) => item.email === email && item.passwordHash === passwordHash && item.status === "Attivo",
+    );
+
+    if (account) {
+      onSuccess(toSessionUser(account));
       return;
     }
 
@@ -1184,7 +1435,7 @@ function LoginScreen({
           <span className="system-label">Accesso riservato</span>
           <h1>Entra nel gestionale operativo.</h1>
           <p>
-            La suite interna raccoglie cruscotto, immobili, richieste, anagrafiche,
+            La suite interna raccoglie cruscotto, immobili, clienti, censimento,
             agenda, censimento e strumenti collegati in un unico ambiente.
           </p>
           <div className="login-highlights">
@@ -1206,7 +1457,7 @@ function LoginScreen({
               required
               type="email"
               autoComplete="username"
-              placeholder="email aziendale"
+              placeholder="nome@grfenix.com"
             />
           </label>
           <label>
@@ -1237,18 +1488,32 @@ function LoginScreen({
   );
 }
 
-function Workspace({ onLogout }: { onLogout: () => void }) {
+function Workspace({
+  currentUser,
+  onLogout,
+  onSessionUpdate,
+}: {
+  currentUser: SessionUser;
+  onLogout: () => void;
+  onSessionUpdate: (user: SessionUser) => void;
+}) {
   const [activeModule, setActiveModule] = useState<ModuleKey>(() => getInitialModule());
   const [activePage, setActivePage] = useState(() => getInitialPage(getInitialModule()));
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState("Dashboard aggiornata.");
   const [crmData, setCrmData] = usePersistentCrmData();
-  const currentModule = modules.find((item) => item.key === activeModule) ?? modules[0];
+  const [accounts, setAccounts] = usePersistentAccounts();
+  const [agendaResetVersion, setAgendaResetVersion] = useState(0);
+  const visibleModules = getVisibleModules(currentUser);
+  const safeActiveModule = visibleModules.some((item) => item.key === activeModule)
+    ? activeModule
+    : "start";
+  const currentPages = getVisibleModulePages(safeActiveModule, currentUser);
+  const currentModule = visibleModules.find((item) => item.key === safeActiveModule) ?? visibleModules[0];
   const currentPage =
-    modulePages[activeModule].find((item) => item.key === activePage) ??
-    modulePages[activeModule][0];
-  const currentPath = pathForPage(currentPage.key);
-  const creationPage = modulePages[activeModule].find((page) =>
+    currentPages.find((item) => item.key === activePage) ??
+    currentPages[0];
+  const creationPage = currentPages.find((page) =>
     page.label.toLowerCase().includes("nuov"),
   );
 
@@ -1267,9 +1532,30 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
     setNotice(message);
   }
 
-  function openModule(moduleKey: ModuleKey, pageKey = modulePages[moduleKey][0].key) {
-    const module = modules.find((item) => item.key === moduleKey);
-    const page = modulePages[moduleKey].find((item) => item.key === pageKey) ?? modulePages[moduleKey][0];
+  function updateAccounts(updater: (accountList: AccountRecord[]) => AccountRecord[], message: string) {
+    setAccounts((previousAccounts) => {
+      const nextAccounts = updater(previousAccounts);
+      const updatedCurrentUser = nextAccounts.find((account) => account.id === currentUser.id);
+      if (updatedCurrentUser) {
+        window.queueMicrotask(() => onSessionUpdate(toSessionUser(updatedCurrentUser)));
+      }
+      return nextAccounts;
+    });
+    setNotice(message);
+  }
+
+  function openModule(moduleKey: ModuleKey, pageKey?: string) {
+    if (!getVisibleModules(currentUser).some((item) => item.key === moduleKey)) {
+      setNotice("Il tuo ruolo non consente di aprire questa sezione.");
+      return;
+    }
+
+    const visiblePages = getVisibleModulePages(moduleKey, currentUser);
+    const module = visibleModules.find((item) => item.key === moduleKey);
+    const page = visiblePages.find((item) => item.key === pageKey) ?? visiblePages[0];
+    if (moduleKey === "agenda" && !pageKey) {
+      setAgendaResetVersion((version) => version + 1);
+    }
     setActiveModule(moduleKey);
     setActivePage(page.key);
     localStorage.setItem("fenix-suite-active-module", moduleKey);
@@ -1288,17 +1574,17 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
           <BrandMark />
           <span>
             <strong>Fenix Suite</strong>
-            <small>Gestionale immobiliare</small>
+          <small>Gestionale immobiliare</small>
           </span>
         </button>
         <div className="crm-version">
-          <span>Fenix CRM</span>
-          <b>v. 1.0.0</b>
+          <span>{currentUser.role}</span>
+          <b>CRM</b>
         </div>
         <nav className="module-nav" aria-label="Moduli gestionale">
-          {modules.map(({ key, label, Icon }) => (
+          {visibleModules.map(({ key, label, Icon }) => (
             <button
-              className={key === activeModule ? "active" : ""}
+              className={key === safeActiveModule ? "active" : ""}
               key={key}
               type="button"
               onClick={() => openModule(key)}
@@ -1323,12 +1609,6 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
             />
           </div>
           <div className="app-header-actions">
-            {externalTools.map((tool) => (
-              <a href={tool.href} key={tool.title}>
-                {tool.title}
-                <ArrowUpRight size={15} />
-              </a>
-            ))}
             <button type="button" onClick={onLogout}>
               <LogOut size={16} />
               Esci
@@ -1342,12 +1622,12 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
               <CheckCircle2 size={16} />
               {notice}
             </span>
-            <small>Utente: Daniele Marangoni</small>
+            <small>Utente: {currentUser.name} / {currentUser.role}</small>
           </div>
 
           <section className="module-heading">
             <div>
-              <span className="system-label">{currentPath}</span>
+              <span className="system-label">Fenix CRM / {currentModule.label}</span>
               <h1>{currentPage.label}</h1>
               <p>{currentPage.description}</p>
             </div>
@@ -1355,7 +1635,7 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
               <button
                 className="module-action"
                 type="button"
-                onClick={() => openModule(activeModule, creationPage.key)}
+                onClick={() => openModule(safeActiveModule, creationPage.key)}
               >
                 <Plus size={18} />
                 Nuovo
@@ -1364,24 +1644,29 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
           </section>
 
           <ModuleTabs
-            activeModule={activeModule}
+            pages={currentPages}
             activePage={currentPage.key}
             onSelect={(pageKey) => {
               setActivePage(pageKey);
-              localStorage.setItem("fenix-suite-active-module", activeModule);
+              localStorage.setItem("fenix-suite-active-module", safeActiveModule);
               localStorage.setItem("fenix-suite-active-page", pageKey);
-              const page = modulePages[activeModule].find((item) => item.key === pageKey);
+              const page = currentPages.find((item) => item.key === pageKey);
               setNotice(`${currentModule.label} / ${page?.label ?? "Sezione"}: pronto.`);
             }}
           />
 
           <ModuleView
-            moduleKey={activeModule}
+            moduleKey={safeActiveModule}
             pageKey={currentPage.key}
             query={query}
             data={crmData}
             onCommit={commitData}
             onAction={runAction}
+            onOpenModule={openModule}
+            currentUser={currentUser}
+            accounts={accounts}
+            onAccountsChange={updateAccounts}
+            agendaResetVersion={agendaResetVersion}
           />
         </section>
       </section>
@@ -1390,16 +1675,14 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
 }
 
 function ModuleTabs({
-  activeModule,
+  pages,
   activePage,
   onSelect,
 }: {
-  activeModule: ModuleKey;
+  pages: ModulePage[];
   activePage: string;
   onSelect: (pageKey: string) => void;
 }) {
-  const pages = modulePages[activeModule];
-
   if (pages.length <= 1) {
     return null;
   }
@@ -1428,6 +1711,11 @@ function ModuleView({
   data,
   onCommit,
   onAction,
+  onOpenModule,
+  currentUser,
+  accounts,
+  onAccountsChange,
+  agendaResetVersion,
 }: {
   moduleKey: ModuleKey;
   pageKey: string;
@@ -1435,6 +1723,11 @@ function ModuleView({
   data: CrmData;
   onCommit: CrmCommit;
   onAction: (message: string) => void;
+  onOpenModule: (moduleKey: ModuleKey, pageKey?: string) => void;
+  currentUser: SessionUser;
+  accounts: AccountRecord[];
+  onAccountsChange: (updater: (accountList: AccountRecord[]) => AccountRecord[], message: string) => void;
+  agendaResetVersion: number;
 }) {
   if (moduleKey === "immobili") {
     return <PropertiesView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
@@ -1446,7 +1739,7 @@ function ModuleView({
     return <ContactsView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
   }
   if (moduleKey === "agenda") {
-    return <AgendaView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
+    return <AgendaView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} resetVersion={agendaResetVersion} />;
   }
   if (moduleKey === "pubblicita") {
     return <MarketingView data={data} onCommit={onCommit} onAction={onAction} />;
@@ -1461,26 +1754,82 @@ function ModuleView({
     return <GoalsView query={query} data={data} onCommit={onCommit} />;
   }
   if (moduleKey === "utilita") {
+    if (pageKey === "account-ruoli") {
+      return (
+        <AccountsView
+          accounts={accounts}
+          currentUser={currentUser}
+          onAccountsChange={onAccountsChange}
+          onAction={onAction}
+        />
+      );
+    }
+    if (pageKey === "pubblicita-portali") {
+      return <MarketingView data={data} onCommit={onCommit} onAction={onAction} />;
+    }
+    if (pageKey === "obiettivi-elenco") {
+      return <GoalsView query={query} data={data} onCommit={onCommit} />;
+    }
+    if (pageKey.startsWith("impostazioni-")) {
+      return <SettingsView pageKey={pageKey} query={query} onCommit={onCommit} />;
+    }
     return <UtilitiesView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
   }
   if (moduleKey === "impostazioni") {
     return <SettingsView pageKey={pageKey} query={query} onCommit={onCommit} />;
   }
-  return <StartView data={data} onCommit={onCommit} />;
+  return (
+    <StartView
+      accounts={accounts}
+      currentUser={currentUser}
+      data={data}
+      onCommit={onCommit}
+      onOpenModule={onOpenModule}
+    />
+  );
 }
 
-function StartView({ data, onCommit }: { data: CrmData; onCommit: CrmCommit }) {
-  const callQueue = data.contacts
+function StartView({
+  accounts,
+  currentUser,
+  data,
+  onCommit,
+  onOpenModule,
+}: {
+  accounts: AccountRecord[];
+  currentUser: SessionUser;
+  data: CrmData;
+  onCommit: CrmCommit;
+  onOpenModule: (moduleKey: ModuleKey, pageKey?: string) => void;
+}) {
+  const accountScope = getAccountScope(accounts, currentUser);
+  const scopeOwners = new Set(
+    accountScope.accounts.flatMap((account) => [
+      account.name.toLowerCase(),
+      account.name.split(" ")[0]?.toLowerCase() || "",
+      account.email.split("@")[0]?.split(".")[0]?.toLowerCase() || "",
+    ]),
+  );
+  const isInScope = (owner: string) =>
+    accountScope.label === "Tutta agenzia" || !owner || scopeOwners.has(owner.toLowerCase());
+  const scopedContacts = data.contacts.filter((contact) => isInScope(contact.owner));
+  const scopedActivities = data.activities.filter((activity) => isInScope(activity.owner));
+  const scopedGoals = data.goals.filter((goal) => isInScope(goal.owner));
+  const callQueue = scopedContacts
     .filter((contact) => /ricontattare|lead|valutazione|visita/i.test(contact.status))
     .slice(0, 5);
-  const fallbackQueue = callQueue.length ? callQueue : data.contacts.slice(0, 5);
-  const todayCalls = data.activities.filter(
+  const fallbackQueue = callQueue.length ? callQueue : scopedContacts.slice(0, 5);
+  const todayCalls = scopedActivities.filter(
     (activity) => activity.day === "Oggi" && /telefonata/i.test(activity.type),
   ).length;
-  const urgentFollowUps = data.contacts.filter((contact) => /ricontattare|lead/i.test(contact.status)).length;
-  const openAppointments = data.activities.filter(
+  const urgentFollowUps = scopedContacts.filter((contact) => /ricontattare|lead/i.test(contact.status)).length;
+  const openAppointments = scopedActivities.filter(
     (activity) => activity.day === "Oggi" && /visita|appuntamento|incarico/i.test(activity.type),
   ).length;
+  const monthlyContacts = scopedContacts.length;
+  const monthlyProperties = data.properties.length;
+  const monthlyActivities = scopedActivities.length;
+  const monthlyGoals = scopedGoals.length;
 
   function registerCall(contact: ContactRecord) {
     onCommit(
@@ -1512,14 +1861,77 @@ function StartView({ data, onCommit }: { data: CrmData; onCommit: CrmCommit }) {
 
   return (
     <div className="workspace-grid">
+      <Panel className="span-12 crm-flow-panel" title="Percorso rapido">
+        <div className="crm-flow-grid">
+          <button type="button" onClick={() => onOpenModule("nominativi", "nominativi-nuovo")}>
+            <UsersRound size={20} />
+            <span>
+              <strong>Salva cliente</strong>
+              <small>Nome, telefono, esigenza o nota.</small>
+            </span>
+            <ChevronRight size={16} />
+          </button>
+          <button type="button" onClick={() => onOpenModule("censimento", "censimento-zone")}>
+            <MapPinned size={20} />
+            <span>
+              <strong>Apri censimento</strong>
+              <small>Zone, stabili e contatti territoriali.</small>
+            </span>
+            <ChevronRight size={16} />
+          </button>
+          <button type="button" onClick={() => onOpenModule("immobili", "immobili-nuovo")}>
+            <Home size={20} />
+            <span>
+              <strong>Inserisci immobile</strong>
+              <small>Scheda, proprietario e prezzo.</small>
+            </span>
+            <ChevronRight size={16} />
+          </button>
+          <button type="button" onClick={() => onOpenModule("agenda", "attivita-nuova")}>
+            <CalendarDays size={20} />
+            <span>
+              <strong>Pianifica attivita</strong>
+              <small>Telefonata, visita o ricontatto.</small>
+            </span>
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </Panel>
+
       <div className="kpi-row">
-        <KpiCard label="Chiamate oggi" value={String(todayCalls)} trend="storico aggiornato" Icon={PhoneCall} />
-        <KpiCard label="Ricontatti" value={String(urgentFollowUps)} trend="lead e richiami aperti" Icon={CalendarCheck2} />
-        <KpiCard label="Nominativi" value={String(data.contacts.length)} trend="archivio locale" Icon={UsersRound} />
-        <KpiCard label="Appuntamenti" value={String(openAppointments)} trend="oggi" Icon={CalendarDays} />
+        <KpiCard label="Chiamate oggi" value={String(todayCalls)} trend="giornaliero" Icon={PhoneCall} />
+        <KpiCard label="Da seguire" value={String(urgentFollowUps)} trend="giornaliero" Icon={CalendarCheck2} />
+        <KpiCard label="Clienti mese" value={String(monthlyContacts)} trend={accountScope.label} Icon={UsersRound} />
+        <KpiCard label="Appuntamenti" value={String(openAppointments)} trend="settimana" Icon={CalendarDays} />
       </div>
 
-      <Panel className="span-5" title="Da chiamare ora" action="Priorita">
+      <Panel className="span-12" title="Progressi mensili">
+        <div className="progress-overview">
+          <ProgressLine current={monthlyContacts} label="Clienti censiti nel database" target={Math.max(20, monthlyContacts)} />
+          <ProgressLine current={monthlyProperties} label="Immobili in gestione" target={Math.max(10, monthlyProperties)} />
+          <ProgressLine current={monthlyActivities} label="Attivita registrate" target={Math.max(40, monthlyActivities)} />
+          <ProgressLine current={monthlyGoals} label="Obiettivi configurati" target={Math.max(4, monthlyGoals)} />
+        </div>
+      </Panel>
+
+      <Panel className="span-12" title="Ambito di analisi">
+        <div className="scope-strip">
+          <span>
+            <strong>{accountScope.label}</strong>
+            <small>{accountScope.accounts.length} account attivi inclusi nei progressi</small>
+          </span>
+          <span>
+            <strong>Giornaliero</strong>
+            <small>Telefonate, ricontatti e agenda del giorno</small>
+          </span>
+          <span>
+            <strong>Mensile</strong>
+            <small>Analisi disponibili entrando nelle sezioni operative</small>
+          </span>
+        </div>
+      </Panel>
+
+      <Panel className="span-5" title="Clienti da richiamare" action="Ricontatti">
         <div className="call-queue">
           {fallbackQueue.length ? (
             fallbackQueue.map((contact, index) => (
@@ -1540,7 +1952,7 @@ function StartView({ data, onCommit }: { data: CrmData; onCommit: CrmCommit }) {
         </div>
       </Panel>
 
-      <Panel className="span-4" title="Appunto veloce">
+      <Panel className="span-4" title="Aggiungi nota veloce">
         <QuickForm
           button="Salva nota"
           fields={["Nome o telefono", "Esigenza", "Budget / zona", "Prossimo passo"]}
@@ -1599,7 +2011,7 @@ function StartView({ data, onCommit }: { data: CrmData; onCommit: CrmCommit }) {
         />
       </Panel>
 
-      <Panel className="span-3" title="Agenda di oggi">
+      <Panel className="span-3" title="Prossimi impegni">
         <div className="compact-list">
           {data.activities.filter((item) => item.day === "Oggi").length ? (
             data.activities.filter((item) => item.day === "Oggi").slice(0, 5).map((item) => (
@@ -1610,12 +2022,12 @@ function StartView({ data, onCommit }: { data: CrmData; onCommit: CrmCommit }) {
               </div>
             ))
           ) : (
-            <EmptyState title="Agenda libera" text="Crea una nuova attivita dal modulo Attivita o dal flusso richieste." />
+            <EmptyState title="Agenda libera" text="Crea una nuova attivita dalla sezione Agenda." />
           )}
         </div>
       </Panel>
 
-      <Panel className="span-8" title="Nominativi caldi">
+      <Panel className="span-8" title="Clienti recenti">
         <DataTable
           columns={["Nome", "Tipo", "Situazione", "Fonte", "Responsabile"]}
           rows={data.contacts.slice(0, 8).map((contact) => [
@@ -1628,9 +2040,9 @@ function StartView({ data, onCommit }: { data: CrmData; onCommit: CrmCommit }) {
         />
       </Panel>
 
-      <Panel className="span-4" title="Metodo di lavoro">
+      <Panel className="span-4" title="Schema semplice">
         <Checklist
-          items={["Chiama i ricontatti urgenti", "Aggiorna la scheda nominativo", "Crea richiesta se c'e interesse", "Pianifica prossimo contatto"]}
+          items={["Chiama i ricontatti urgenti", "Aggiorna la scheda cliente", "Collega esigenza e immobile", "Pianifica prossimo contatto"]}
         />
       </Panel>
 
@@ -1701,13 +2113,13 @@ function PropertiesView({
         module="Immobili"
         page={labelForPage("immobili", pageKey)}
         path={pathForPage(pageKey)}
-        items={["Nuovo immobile -> proprietario -> scheda", "Scheda -> richieste compatibili", "Scheda -> portali, cartelli, contratti"]}
+        items={["Nuovo immobile -> proprietario -> scheda", "Scheda -> clienti compatibili", "Scheda -> portali, cartelli, contratti"]}
       />
       {searchMode ? (
         <Panel className="span-5" title={pageKey === "immobili-ricerca-op" ? "Ricerca proprietario" : "Ricerca cliente"}>
           <QuickForm
             button="Cerca"
-            fields={pageKey === "immobili-ricerca-op" ? ["Proprietario", "Zona", "Tipo incarico"] : ["Cliente", "Budget", "Caratteristiche"]}
+            fields={searchFilterFields}
             required={false}
             onSubmit={(values) =>
               onAction(`Ricerca immobili eseguita per ${valuesSummary(values)}.`)
@@ -1750,10 +2162,10 @@ function PropertiesView({
           ]}
         />
       </Panel>
-      <Panel className="span-4" title={newMode ? "Nuovo immobile" : "Azioni scheda"}>
+      <Panel className={newMode ? "span-4 crm-form-panel" : "span-4"} title={newMode ? "Nuovo immobile" : "Azioni scheda"}>
         <QuickForm
           button={newMode ? "Crea scheda" : "Salva filtro"}
-          fields={newMode ? ["Titolo immobile", "Zona", "Prezzo richiesto", "Proprietario"] : ["Codice o titolo", "Zona", "Stato"]}
+          fields={newMode ? ["Titolo immobile", "Zona", "Prezzo richiesto", "Proprietario"] : searchFilterFields}
           required={newMode}
           onSubmit={(values) => {
             if (!newMode) {
@@ -1943,10 +2355,10 @@ function RequestsView({
           ]}
         />
       </Panel>
-      <Panel className="span-4" title={pageKey === "richieste-nuova" ? "Nuova richiesta" : "Filtro richieste"}>
+      <Panel className={pageKey === "richieste-nuova" ? "span-4 crm-form-panel" : "span-4"} title={pageKey === "richieste-nuova" ? "Nuova richiesta" : "Filtro richieste"}>
         <QuickForm
           button={pageKey === "richieste-nuova" ? "Salva richiesta" : "Applica filtro"}
-          fields={["Cliente", "Budget", "Zone preferite", "Tipologia"]}
+          fields={pageKey === "richieste-nuova" ? ["Cliente", "Budget", "Zone preferite", "Tipologia"] : searchFilterFields}
           required={pageKey === "richieste-nuova"}
           onSubmit={(values) => {
             if (pageKey !== "richieste-nuova") {
@@ -2037,16 +2449,16 @@ function ContactsView({
   return (
     <div className="workspace-grid">
       <RouteSummary
-        module="Nominativi"
+        module="Clienti"
         page={labelForPage("nominativi", pageKey)}
         path={pathForPage(pageKey)}
-        items={["Nominativo -> richieste", "Nominativo -> attivita", "Nominativo -> immobili proprietario"]}
+        items={["Cliente -> esigenza", "Cliente -> attivita", "Cliente -> immobili proprietario"]}
       />
       {pageKey === "nominativi-richieste" ? (
         <RequestsView pageKey="richieste-elenco" query={query} data={data} onCommit={onCommit} onAction={onAction} />
       ) : (
         <>
-      <Panel className="span-8" title="Anagrafiche nominativi" action="Segmenti">
+      <Panel className="span-8" title="Database clienti" action="Segmenti">
         <DataTable
           columns={["Nome", "Tipo", "Stato", "Provenienza", "Owner"]}
           rows={rows.map((item) => [
@@ -2089,21 +2501,21 @@ function ContactsView({
           ]}
         />
       </Panel>
-      <Panel className="span-4" title={pageKey === "nominativi-nuovo" ? "Nuovo nominativo" : "Filtro nominativi"}>
+      <Panel className={pageKey === "nominativi-nuovo" ? "span-4 crm-form-panel" : "span-4"} title={pageKey === "nominativi-nuovo" ? "Nuovo cliente" : "Filtro clienti"}>
         <QuickForm
-          button={pageKey === "nominativi-nuovo" ? "Aggiungi contatto" : "Filtra"}
-          fields={["Nome", "Tipo richiesta", "Provenienza", "Telefono"]}
+          button={pageKey === "nominativi-nuovo" ? "Aggiungi cliente" : "Filtra"}
+          fields={pageKey === "nominativi-nuovo" ? ["Nome", "Esigenza", "Provenienza", "Telefono"] : searchFilterFields}
           required={pageKey === "nominativi-nuovo"}
           onSubmit={(values) => {
             if (pageKey !== "nominativi-nuovo") {
-              onAction(`Filtro nominativi applicato: ${valuesSummary(values)}.`);
+              onAction(`Filtro clienti applicato: ${valuesSummary(values)}.`);
               return;
             }
             const newContact: ContactRecord = {
               id: makeId("contact"),
-              name: fieldValue(values, "Nome", "Nuovo nominativo"),
-              type: fieldValue(values, "Tipo richiesta", "Da qualificare"),
-              status: "Nuovo nominativo",
+              name: fieldValue(values, "Nome", "Nuovo cliente"),
+              type: fieldValue(values, "Esigenza", "Da qualificare"),
+              status: "Nuovo cliente",
               source: fieldValue(values, "Provenienza", "Manuale"),
               owner: "Daniele",
               phone: fieldValue(values, "Telefono"),
@@ -2117,7 +2529,7 @@ function ContactsView({
                 contacts: [newContact, ...currentData.contacts],
                 activities: [
                   createActivity({
-                    title: `Nuovo nominativo ${newContact.name}`,
+                    title: `Nuovo cliente ${newContact.name}`,
                     type: "Anagrafica",
                     contact: newContact.name,
                     note: `${newContact.type} da ${newContact.source}.`,
@@ -2125,7 +2537,7 @@ function ContactsView({
                   ...currentData.activities,
                 ],
               }),
-              `Nominativo ${newContact.name} aggiunto.`,
+              `Cliente ${newContact.name} aggiunto.`,
             );
           }}
         />
@@ -2159,7 +2571,7 @@ function ContactsView({
           }), "Messaggio WhatsApp preparato.")} />
           <ToolButton label="Telefonata" Icon={PhoneCall} onClick={() => {
             if (!firstVisibleContact) {
-              onAction("Nessun nominativo disponibile per la telefonata.");
+              onAction("Nessun cliente disponibile per la telefonata.");
               return;
             }
             onCommit((currentData) => ({
@@ -2189,7 +2601,7 @@ function ContactsView({
                     : contact,
                 )
               : currentData.contacts,
-          }), "Consensi privacy verificati sul nominativo selezionato.")} />
+          }), "Consensi privacy verificati sul cliente selezionato.")} />
         </div>
       </Panel>
         </>
@@ -2204,16 +2616,31 @@ function AgendaView({
   data,
   onCommit,
   onAction,
+  resetVersion,
 }: {
   pageKey: string;
   query: string;
   data: CrmData;
   onCommit: CrmCommit;
   onAction: (message: string) => void;
+  resetVersion: number;
 }) {
+  const [calendarMode, setCalendarMode] = useState<"week" | "month">("week");
   const rows = useFilteredRows(data.activities, query, (item) =>
     [item.time, item.title, item.type, item.owner, item.contact, item.property, item.status, item.note, item.day].join(" "),
   );
+  const monthStats = [
+    { label: "Attivita mese", value: rows.length, detail: "tutte le attivita registrate" },
+    { label: "Telefonate", value: rows.filter((item) => /telefonata/i.test(item.type)).length, detail: "contatti telefonici" },
+    { label: "Visite", value: rows.filter((item) => /visita|appuntamento/i.test(item.type)).length, detail: "visite e appuntamenti" },
+    { label: "Completate", value: rows.filter((item) => /completata/i.test(item.status)).length, detail: "attivita chiuse" },
+  ];
+
+  useEffect(() => {
+    if (pageKey === "agenda-calendario") {
+      setCalendarMode("week");
+    }
+  }, [pageKey, resetVersion]);
 
   return (
     <div className="workspace-grid">
@@ -2221,9 +2648,9 @@ function AgendaView({
         module="Attivita"
         page={labelForPage("agenda", pageKey)}
         path={pathForPage(pageKey)}
-        items={["Attivita -> nominativo", "Attivita -> immobile", "Agenda -> storico e promemoria"]}
+        items={["Attivita -> cliente", "Attivita -> immobile", "Agenda -> storico e promemoria"]}
       />
-      <Panel className="span-8" title={pageKey === "agenda-storico" ? "Ricerca storico attivita" : "Agenda operativa"} action="Oggi">
+      <Panel className="span-8" title={pageKey === "agenda-storico" ? "Ricerca storico attivita" : "Agenda operativa"}>
         {pageKey === "agenda-storico" ? (
           <DataTable
             columns={["Ora", "Titolo", "Tipo", "Contatto", "Stato"]}
@@ -2258,30 +2685,60 @@ function AgendaView({
             ]}
           />
         ) : (
-          <div className="agenda-board">
-            {(["Oggi", "Domani", "Settimana"] as ActivityRecord["day"][]).map((column) => (
-              <div key={column}>
-                <h3>{column}</h3>
-                {rows.filter((item) => item.day === column).length ? (
-                  rows.filter((item) => item.day === column).slice(0, 6).map((item) => (
-                    <article key={`${column}-${item.id}`}>
-                      <span>{item.time}</span>
-                      <strong>{item.title}</strong>
-                      <small>{item.owner} - {item.type} - {item.status}</small>
-                    </article>
-                  ))
-                ) : (
-                  <EmptyState title="Nessuna attivita" />
-                )}
+          <>
+            <div className="agenda-modebar" aria-label="Visualizzazione agenda">
+              <button
+                className={calendarMode === "week" ? "active" : ""}
+                type="button"
+                onClick={() => setCalendarMode("week")}
+              >
+                Settimana
+              </button>
+              <button
+                className={calendarMode === "month" ? "active" : ""}
+                type="button"
+                onClick={() => setCalendarMode("month")}
+              >
+                Mese
+              </button>
+            </div>
+            {calendarMode === "week" ? (
+              <div className="agenda-board">
+                {(["Oggi", "Domani", "Settimana"] as ActivityRecord["day"][]).map((column) => (
+                  <div key={column}>
+                    <h3>{column}</h3>
+                    {rows.filter((item) => item.day === column).length ? (
+                      rows.filter((item) => item.day === column).slice(0, 6).map((item) => (
+                        <article key={`${column}-${item.id}`}>
+                          <span>{item.time}</span>
+                          <strong>{item.title}</strong>
+                          <small>{item.owner} - {item.type} - {item.status}</small>
+                        </article>
+                      ))
+                    ) : (
+                      <EmptyState title="Nessuna attivita" />
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            ) : (
+              <div className="month-board">
+                {monthStats.map((item) => (
+                  <article key={item.label}>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                    <small>{item.detail}</small>
+                  </article>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </Panel>
-      <Panel className="span-4" title={pageKey === "attivita-nuova" ? "Nuova attivita" : "Filtro agenda"}>
+      <Panel className={pageKey === "attivita-nuova" ? "span-4 crm-form-panel" : "span-4"} title={pageKey === "attivita-nuova" ? "Nuova attivita" : "Filtro agenda"}>
         <QuickForm
           button={pageKey === "attivita-nuova" ? "Pianifica" : "Cerca"}
-          fields={["Cliente", "Data e ora", "Luogo", "Immobile"]}
+          fields={pageKey === "attivita-nuova" ? ["Cliente", "Data e ora", "Luogo", "Immobile"] : searchFilterFields}
           required={pageKey === "attivita-nuova"}
           onSubmit={(values) => {
             if (pageKey !== "attivita-nuova") {
@@ -2449,7 +2906,7 @@ function MarketingView({
               createActivity({
                 title: "Report lead aggiornato",
                 type: "Report",
-                note: `${currentData.contacts.length} nominativi analizzati.`,
+                note: `${currentData.contacts.length} clienti analizzati.`,
               }),
               ...currentData.activities,
             ],
@@ -2593,14 +3050,357 @@ function CensusView({
   onCommit: CrmCommit;
   onAction: (message: string) => void;
 }) {
-  const censusContacts = useFilteredRows(
-    data.contacts.filter((contact) => contact.source === "Censimento"),
-    query,
-    (contact) => [contact.name, contact.status, contact.note, contact.nextStep, contact.owner].join(" "),
-  );
   const censusAreas = useFilteredRows(data.censusAreas, query, (area) =>
-    [area.zone, String(area.buildings), String(area.contacts), area.priority].join(" "),
+    [area.zone, String(area.buildings), String(area.contacts), area.updatedAt].join(" "),
   );
+  const savedCensusStreets = data.censusStreets ?? [];
+  const savedCensusComplexes = data.censusComplexes ?? [];
+  const censusStreets = useFilteredRows(savedCensusStreets, query, (street) =>
+    [street.zone, street.street, String(street.complexes)].join(" "),
+  );
+  const censusComplexes = useFilteredRows(savedCensusComplexes, query, (complex) =>
+    [complex.zone, complex.street, complex.name, String(complex.units), String(complex.owners)].join(" "),
+  );
+  const censusOwners = useFilteredRows(
+    data.contacts.filter((contact) => /proprietario/i.test(contact.type) || contact.source === "Censimento"),
+    query,
+    (contact) => [contact.name, contact.type, contact.status, contact.note, contact.phone].join(" "),
+  );
+  const ownersTotal = data.contacts.filter((contact) => /proprietario/i.test(contact.type) || contact.source === "Censimento").length;
+  const phaseCards = [
+    {
+      label: "1. Zona",
+      value: data.censusAreas.length,
+      text: "Crea o seleziona il territorio di riferimento.",
+    },
+    {
+      label: "2. Via",
+      value: savedCensusStreets.length,
+      text: "Collega la via alla zona corretta.",
+    },
+    {
+      label: "3. Complesso",
+      value: savedCensusComplexes.length,
+      text: "Inserisci il palazzo dentro la via scelta.",
+    },
+    {
+      label: "4. Proprietari",
+      value: ownersTotal,
+      text: "Gestisci clienti che diventano proprietari degli immobili.",
+    },
+  ];
+  const pageTitle =
+    pageKey === "censimento-vie"
+      ? "Vie censite"
+      : pageKey === "censimento-complessi"
+        ? "Complessi e palazzi"
+        : pageKey === "censimento-proprietari"
+          ? "Proprietari immobili"
+          : "Zone censite";
+  const formTitle =
+    pageKey === "censimento-vie"
+      ? "Crea o seleziona via"
+      : pageKey === "censimento-complessi"
+        ? "Crea o seleziona complesso"
+        : pageKey === "censimento-proprietari"
+          ? "Collega proprietario"
+          : "Crea o seleziona zona";
+  const formFields =
+    pageKey === "censimento-vie"
+      ? ["Zona", "Via"]
+      : pageKey === "censimento-complessi"
+        ? ["Zona", "Via", "Palazzo / Complesso", "Unita"]
+        : pageKey === "censimento-proprietari"
+          ? ["Zona", "Via", "Complesso", "Proprietario", "Telefono", "Immobile collegato"]
+          : ["Zona"];
+  const tableColumns =
+    pageKey === "censimento-vie"
+      ? ["Zona", "Via", "Complessi", "Aggiornato"]
+      : pageKey === "censimento-complessi"
+        ? ["Zona", "Via", "Complesso", "Unita", "Proprietari"]
+        : pageKey === "censimento-proprietari"
+          ? ["Proprietario", "Tipo", "Percorso", "Telefono", "Stato"]
+          : ["Zona", "Vie/Palazzi", "Proprietari", "Aggiornato"];
+  const tableRows =
+    pageKey === "censimento-vie"
+      ? censusStreets.map((street) => [street.zone, street.street, String(street.complexes), street.updatedAt])
+      : pageKey === "censimento-complessi"
+        ? censusComplexes.map((complex) => [
+            complex.zone,
+            complex.street,
+            complex.name,
+            String(complex.units || "-"),
+            String(complex.owners),
+          ])
+        : pageKey === "censimento-proprietari"
+          ? censusOwners.map((owner) => [
+              owner.name,
+              owner.type,
+              owner.note || "-",
+              owner.phone || "-",
+              owner.status,
+            ])
+          : censusAreas.map((area) => [
+              area.zone,
+              String(area.buildings),
+              String(area.contacts),
+              area.updatedAt,
+            ]);
+
+  function ensureArea(
+    areas: CensusAreaRecord[],
+    zone: string,
+    contactDelta = 0,
+    buildingDelta = 0,
+  ) {
+    const existing = areas.some((area) => sameLabel(area.zone, zone));
+    if (!existing) {
+      return [
+        {
+          id: makeId("area"),
+          zone,
+          buildings: Math.max(0, buildingDelta),
+          contacts: Math.max(0, contactDelta),
+          updatedAt: nowLabel(),
+        },
+        ...areas,
+      ];
+    }
+
+    return areas.map((area) =>
+      sameLabel(area.zone, zone)
+        ? {
+            ...area,
+            buildings: Math.max(0, area.buildings + buildingDelta),
+            contacts: Math.max(0, area.contacts + contactDelta),
+            updatedAt: nowLabel(),
+          }
+        : area,
+    );
+  }
+
+  function ensureStreet(streets: CensusStreetRecord[], zone: string, street: string, complexDelta = 0) {
+    const existing = streets.some((item) => sameLabel(item.zone, zone) && sameLabel(item.street, street));
+    if (!existing) {
+      return [
+        {
+          id: makeId("street"),
+          zone,
+          street,
+          complexes: Math.max(0, complexDelta),
+          updatedAt: nowLabel(),
+        },
+        ...streets,
+      ];
+    }
+
+    return streets.map((item) =>
+      sameLabel(item.zone, zone) && sameLabel(item.street, street)
+        ? {
+            ...item,
+            complexes: Math.max(0, item.complexes + complexDelta),
+            updatedAt: nowLabel(),
+          }
+        : item,
+    );
+  }
+
+  function ensureComplex(
+    complexes: CensusComplexRecord[],
+    zone: string,
+    street: string,
+    name: string,
+    units = 0,
+    ownerDelta = 0,
+  ) {
+    const existing = complexes.some(
+      (item) => sameLabel(item.zone, zone) && sameLabel(item.street, street) && sameLabel(item.name, name),
+    );
+    if (!existing) {
+      return [
+        {
+          id: makeId("complex"),
+          zone,
+          street,
+          name,
+          units,
+          owners: Math.max(0, ownerDelta),
+          updatedAt: nowLabel(),
+        },
+        ...complexes,
+      ];
+    }
+
+    return complexes.map((item) =>
+      sameLabel(item.zone, zone) && sameLabel(item.street, street) && sameLabel(item.name, name)
+        ? {
+            ...item,
+            units: units > 0 ? units : item.units,
+            owners: Math.max(0, item.owners + ownerDelta),
+            updatedAt: nowLabel(),
+          }
+        : item,
+    );
+  }
+
+  function linkOwnerToProperty(properties: PropertyRecord[], propertyLabel: string, zone: string, ownerName: string) {
+    if (!propertyLabel) {
+      return properties;
+    }
+
+    const existing = properties.some((property) => sameLabel(property.title, propertyLabel) || sameLabel(property.code, propertyLabel));
+    if (!existing) {
+      return [
+        {
+          id: makeId("property"),
+          code: `FS-${String(250 + properties.length).padStart(3, "0")}`,
+          title: propertyLabel,
+          zone,
+          status: "Censito",
+          price: "Da valutare",
+          owner: ownerName,
+          portals: "Privato",
+          kind: "vendita",
+          updatedAt: nowLabel(),
+        },
+        ...properties,
+      ];
+    }
+
+    return properties.map((property) =>
+      sameLabel(property.title, propertyLabel) || sameLabel(property.code, propertyLabel)
+        ? {
+            ...property,
+            owner: appendOwnerLabel(property.owner, ownerName),
+            status: "Proprietario collegato",
+            updatedAt: nowLabel(),
+          }
+        : property,
+    );
+  }
+
+  function saveCensus(values: Record<string, string>) {
+    const zone = fieldValue(values, "Zona", "Zona da definire");
+    const street = fieldValue(values, "Via", "Via da definire");
+    const complexName = fieldValue(values, "Palazzo / Complesso") || fieldValue(values, "Complesso", "Complesso da definire");
+    const unitsValue = Number.parseInt(fieldValue(values, "Unita", "0"), 10);
+    const units = Number.isFinite(unitsValue) && unitsValue > 0 ? unitsValue : 0;
+
+    if (pageKey === "censimento-zone") {
+      onCommit(
+        (currentData) => ({
+          ...currentData,
+          censusAreas: ensureArea(currentData.censusAreas, zone),
+        }),
+        `Zona ${zone} salvata.`,
+      );
+      return;
+    }
+
+    if (pageKey === "censimento-vie") {
+      onCommit(
+        (currentData) => ({
+          ...currentData,
+          censusAreas: ensureArea(currentData.censusAreas, zone),
+          censusStreets: ensureStreet(currentData.censusStreets ?? [], zone, street),
+        }),
+        `Via ${street} collegata alla zona ${zone}.`,
+      );
+      return;
+    }
+
+    if (pageKey === "censimento-complessi") {
+      onCommit(
+        (currentData) => {
+          const complexExists = (currentData.censusComplexes ?? []).some(
+            (item) => sameLabel(item.zone, zone) && sameLabel(item.street, street) && sameLabel(item.name, complexName),
+          );
+          const complexDelta = complexExists ? 0 : 1;
+          return {
+            ...currentData,
+            censusAreas: ensureArea(currentData.censusAreas, zone, 0, complexDelta),
+            censusStreets: ensureStreet(currentData.censusStreets ?? [], zone, street, complexDelta),
+            censusComplexes: ensureComplex(currentData.censusComplexes ?? [], zone, street, complexName, units),
+          };
+        },
+        `Complesso ${complexName} salvato in ${street}.`,
+      );
+      return;
+    }
+
+    const ownerName = fieldValue(values, "Proprietario", "Proprietario da definire");
+    const phone = fieldValue(values, "Telefono");
+    const propertyLabel = fieldValue(values, "Immobile collegato");
+    const ownerPath = `Zona: ${zone} / Via: ${street} / Complesso: ${complexName}`;
+
+    onCommit(
+      (currentData) => {
+        const linkedAlready = currentData.contacts.some(
+          (contact) =>
+            sameLabel(contact.name, ownerName) &&
+            /proprietario/i.test(contact.type) &&
+            contact.note.toLowerCase().includes(complexName.toLowerCase()),
+        );
+        const ownerDelta = linkedAlready ? 0 : 1;
+        const complexExists = (currentData.censusComplexes ?? []).some(
+          (item) => sameLabel(item.zone, zone) && sameLabel(item.street, street) && sameLabel(item.name, complexName),
+        );
+        const complexDelta = complexExists ? 0 : 1;
+        const contactExists = currentData.contacts.some((contact) => sameLabel(contact.name, ownerName));
+        const updatedContacts = contactExists
+          ? currentData.contacts.map((contact) =>
+              sameLabel(contact.name, ownerName)
+                ? {
+                    ...contact,
+                    type: /proprietario/i.test(contact.type) ? contact.type : `${contact.type} / Proprietario`,
+                    status: "Proprietario collegato",
+                    phone: phone || contact.phone,
+                    note: ownerPath,
+                    nextStep: propertyLabel ? `Collegato a ${propertyLabel}` : "Associare immobile",
+                    updatedAt: nowLabel(),
+                  }
+                : contact,
+            )
+          : [
+              {
+                id: makeId("contact"),
+                name: ownerName,
+                type: "Proprietario",
+                status: "Proprietario censito",
+                source: "Censimento",
+                owner: "Daniele",
+                phone,
+                note: ownerPath,
+                nextStep: propertyLabel ? `Collegato a ${propertyLabel}` : "Associare immobile",
+                updatedAt: nowLabel(),
+              },
+              ...currentData.contacts,
+            ];
+
+        return {
+          ...currentData,
+          contacts: updatedContacts,
+          properties: linkOwnerToProperty(currentData.properties, propertyLabel, zone, ownerName),
+          censusAreas: ensureArea(currentData.censusAreas, zone, ownerDelta, complexDelta),
+          censusStreets: ensureStreet(currentData.censusStreets ?? [], zone, street, complexDelta),
+          censusComplexes: ensureComplex(currentData.censusComplexes ?? [], zone, street, complexName, 0, ownerDelta),
+          activities: [
+            createActivity({
+              title: `Proprietario ${ownerName}`,
+              type: "Censimento",
+              contact: ownerName,
+              property: propertyLabel,
+              note: ownerPath,
+            }),
+            ...currentData.activities,
+          ],
+        };
+      },
+      propertyLabel
+        ? `${ownerName} collegato come proprietario a ${propertyLabel}.`
+        : `${ownerName} salvato come proprietario censito.`,
+    );
+  }
 
   return (
     <div className="workspace-grid">
@@ -2608,149 +3408,86 @@ function CensusView({
         module="Censimento"
         page={labelForPage("censimento", pageKey)}
         path={pathForPage(pageKey)}
-        items={["Zona -> complessi", "Complesso -> contatti", "Contatto -> ricontatto e nominativo"]}
+        items={["Zona -> Via", "Via -> Complesso", "Complesso -> Proprietari", "Cliente collegato a immobile -> Proprietario"]}
       />
+
+      <Panel className="span-12" title="Fasi censimento">
+        <div className="census-phase-grid">
+          {phaseCards.map((phase, index) => (
+            <article className={index === modulePages.censimento.findIndex((page) => page.key === pageKey) ? "active" : ""} key={phase.label}>
+              <span>{phase.label}</span>
+              <strong>{phase.value}</strong>
+              <small>{phase.text}</small>
+            </article>
+          ))}
+        </div>
+      </Panel>
+
       <Panel
         className="span-8"
-        title={pageKey === "censimento-complessi" ? "Complessi censimento" : pageKey === "censimento-contatti" ? "Contatti censiti" : "Zone censimento"}
-        action="Mappa"
-        onPanelAction={() => onAction(`${data.censusAreas.length} zone censimento pronte per la mappa operativa.`)}
+        title={pageTitle}
+        action="Selezione"
+        onPanelAction={() => onAction("Usa la tabella per controllare il livello corrente del censimento.")}
       >
         <DataTable
-          columns={pageKey === "censimento-contatti" ? ["Nome", "Zona", "Stato", "Ricontatto"] : ["Zona", "Stabili", "Contatti", "Priorita"]}
-          rows={(pageKey === "censimento-contatti"
-            ? censusContacts.map((item) => [item.name, item.note || item.source, item.status, item.nextStep])
-            : censusAreas.map((area) => [
-            area.zone,
-            String(area.buildings),
-            String(area.contacts),
-            area.priority,
-          ]))}
+          columns={tableColumns}
+          rows={tableRows}
           actions={[
             {
-              label: "Ricontatto",
+              label: pageKey === "censimento-proprietari" ? "Agenda" : "Apri",
               onClick: (rowIndex) => {
-                if (pageKey === "censimento-contatti") {
-                  const contact = censusContacts[rowIndex];
-                  if (!contact) {
+                if (pageKey === "censimento-proprietari") {
+                  const owner = censusOwners[rowIndex];
+                  if (!owner) {
                     return;
                   }
                   onCommit(
                     (currentData) => ({
                       ...currentData,
-                      contacts: currentData.contacts.map((item) =>
-                        item.id === contact.id
-                          ? { ...item, status: "Ricontatto fissato", nextStep: "Domani", updatedAt: nowLabel() }
-                          : item,
-                      ),
                       activities: [
                         createActivity({
-                          title: `Ricontatto censimento ${contact.name}`,
+                          title: `Ricontatto proprietario ${owner.name}`,
                           type: "Censimento",
-                          contact: contact.name,
-                          note: contact.note,
+                          contact: owner.name,
+                          note: owner.note,
                           day: "Domani",
                         }),
                         ...currentData.activities,
                       ],
                     }),
-                    `Ricontatto fissato per ${contact.name}.`,
+                    `Ricontatto proprietario fissato per ${owner.name}.`,
                   );
                   return;
                 }
-                const area = censusAreas[rowIndex];
-                if (area) {
-                  onAction(`Zona ${area.zone} selezionata: ${area.contacts} contatti censiti.`);
-                }
+                const selected = tableRows[rowIndex]?.slice(0, 3).filter(Boolean).join(" / ");
+                onAction(selected ? `Selezionato: ${selected}.` : "Elemento censimento selezionato.");
               },
             },
           ]}
         />
       </Panel>
-      <Panel className="span-4" title={pageKey === "censimento-zona-nuova" ? "Nuova zona" : pageKey === "censimento-complessi" ? "Nuovo complesso" : "Nuovo contatto censimento"}>
+      <Panel className="span-4 crm-form-panel" title={formTitle}>
         <QuickForm
-          button="Salva censimento"
-          fields={pageKey === "censimento-zona-nuova" ? ["Nome zona", "Comune", "Priorita"] : ["Zona", "Stabile", "Nota ricontatto"]}
-          onSubmit={(values) => {
-            if (pageKey === "censimento-zona-nuova") {
-              const zone = fieldValue(values, "Nome zona", "Nuova zona");
-              const newArea: CensusAreaRecord = {
-                id: makeId("area"),
-                zone,
-                buildings: 0,
-                contacts: 0,
-                priority: fieldValue(values, "Priorita", "Normale"),
-                updatedAt: nowLabel(),
-              };
-              onCommit(
-                (currentData) => ({
-                  ...currentData,
-                  censusAreas: [newArea, ...currentData.censusAreas],
-                }),
-                `Zona censimento ${zone} creata.`,
-              );
-              return;
-            }
-            const zone = fieldValue(values, "Zona", "Zona da definire");
-            const stable = fieldValue(values, "Stabile", "Stabile da censire");
-            const newContact: ContactRecord = {
-              id: makeId("contact"),
-              name: `${stable} - contatto`,
-              type: "Censimento",
-              status: "Da ricontattare",
-              source: "Censimento",
-              owner: "Daniele",
-              phone: "",
-              note: zone,
-              nextStep: fieldValue(values, "Nota ricontatto", "Ricontatto"),
-              updatedAt: nowLabel(),
-            };
-            onCommit(
-              (currentData) => ({
-                ...currentData,
-                contacts: [newContact, ...currentData.contacts],
-                censusAreas: currentData.censusAreas.map((area) =>
-                  area.zone.toLowerCase() === zone.toLowerCase()
-                    ? {
-                        ...area,
-                        contacts: area.contacts + 1,
-                        buildings: pageKey === "censimento-complessi" ? area.buildings + 1 : area.buildings,
-                        updatedAt: nowLabel(),
-                      }
-                    : area,
-                ),
-                activities: [
-                  createActivity({
-                    title: `Censimento ${stable}`,
-                    type: "Censimento",
-                    contact: newContact.name,
-                    note: `${zone} - ${newContact.nextStep}`,
-                  }),
-                  ...currentData.activities,
-                ],
-              }),
-              `Contatto censimento salvato per ${zone}.`,
-            );
-          }}
+          button="Salva"
+          fields={formFields}
+          required
+          onSubmit={saveCensus}
         />
       </Panel>
-      <Panel className="span-12" title="Ricontatti territoriali">
-        {censusAreas.length ? (
+
+      <Panel className="span-12" title="Mappa censimento">
+        {data.censusAreas.length ? (
           <div className="map-strip">
-            {censusAreas.map((area) => (
-              <button
-                key={area.zone}
-                type="button"
-                onClick={() => onAction(`Zona ${area.zone} filtrata.`)}
-              >
+            {data.censusAreas.map((area) => (
+              <button key={area.zone} type="button" onClick={() => onAction(`Zona ${area.zone} selezionata.`)}>
                 <MapPinned size={18} />
                 <strong>{area.zone}</strong>
-                <span>{area.contacts} contatti</span>
+                <span>{area.buildings} palazzi / {area.contacts} proprietari</span>
               </button>
             ))}
           </div>
         ) : (
-          <EmptyState title="Nessuna zona censita" text="Crea una zona o un contatto censimento per alimentare la mappa operativa." />
+          <EmptyState title="Nessuna zona censita" text="Crea la prima zona per iniziare il censimento gerarchico." />
         )}
       </Panel>
     </div>
@@ -2894,7 +3631,7 @@ function UtilitiesView({
               ...currentData,
               contacts: contactsWithoutDuplicates,
             };
-          }, "Pulizia duplicati completata sui nominativi.")} />
+          }, "Pulizia duplicati completata sui clienti.")} />
           <ToolButton label="Log attivita" Icon={ClipboardCheck} onClick={() => onAction(`${data.activityLog.length} operazioni presenti nello storico locale.`)} />
         </div>
       </Panel>
@@ -2916,6 +3653,338 @@ function UtilitiesView({
           ) : (
             <EmptyState title="Nessuna operazione" text="Salvataggi, esportazioni e aggiornamenti verranno registrati qui." />
           )}
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+function AccountsView({
+  accounts,
+  currentUser,
+  onAccountsChange,
+  onAction,
+}: {
+  accounts: AccountRecord[];
+  currentUser: SessionUser;
+  onAccountsChange: (updater: (accountList: AccountRecord[]) => AccountRecord[], message: string) => void;
+  onAction: (message: string) => void;
+}) {
+  const [accountError, setAccountError] = useState("");
+  const manager = canManageAccounts(currentUser);
+  const developer = canUseDeveloperTools(currentUser);
+  const fullOverride = hasOwnerOverride(currentUser);
+  const currentAccount = accounts.find((account) => account.id === currentUser.id);
+  const availableRoles = getAssignableRoles(currentUser);
+  const defaultNewRole = availableRoles.includes("AGENTE") ? "AGENTE" : availableRoles[0] ?? "TELEFONISTA";
+
+  function canManageTarget(account: AccountRecord) {
+    if (!manager) {
+      return false;
+    }
+    if (fullOverride || currentUser.role === "TITOLARE") {
+      return true;
+    }
+    if (currentUser.role === "ASSOCIATO") {
+      return isManagedByCurrentUser(account, currentUser) && account.role !== "TITOLARE" && account.id !== currentUser.id;
+    }
+    if (currentUser.role === "COORDINATORE/TRICE") {
+      return isManagedByCurrentUser(account, currentUser) && account.role === "TELEFONISTA" && account.id !== currentUser.id;
+    }
+    return false;
+  }
+
+  function roleChoicesForAccount(account: AccountRecord) {
+    if (!canManageTarget(account) || account.id === currentUser.id) {
+      return [account.role];
+    }
+
+    return availableRoles.includes(account.role)
+      ? availableRoles
+      : [account.role, ...availableRoles];
+  }
+
+  function canMaintainTarget(account: AccountRecord) {
+    if (!developer) {
+      return false;
+    }
+    return fullOverride || account.role !== "TITOLARE";
+  }
+
+  async function createAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAccountError("");
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") || "").trim().toLowerCase();
+    const name = String(form.get("name") || "").trim();
+    const role = String(form.get("role") || "");
+    const password = String(form.get("password") || "");
+
+    if (!email || !name || !password || !isValidRole(role)) {
+      setAccountError("Completa nome, email, ruolo e password.");
+      return;
+    }
+
+    if (!isFenixEmail(email)) {
+      setAccountError("Usa solo email aziendali che terminano con @grfenix.com.");
+      return;
+    }
+
+    if (!availableRoles.includes(role)) {
+      setAccountError("Il tuo ruolo non consente di assegnare questo permesso.");
+      return;
+    }
+
+    if (accounts.some((account) => account.email === email)) {
+      setAccountError("Esiste gia un account con questa email.");
+      return;
+    }
+
+    const newAccount: AccountRecord = {
+      id: makeId("account"),
+      name,
+      email,
+      passwordHash: await sha256Hex(password),
+      role,
+      status: "Attivo",
+      managerId: currentUser.id,
+      updatedAt: nowLabel(),
+    };
+
+    onAccountsChange(
+      (currentAccounts) => [newAccount, ...currentAccounts],
+      `Account ${name} creato con ruolo ${role}.`,
+    );
+    event.currentTarget.reset();
+  }
+
+  function changeRole(account: AccountRecord, role: UserRole) {
+    if (!canManageTarget(account) || account.id === currentUser.id) {
+      onAction("Non puoi modificare il ruolo di questo account.");
+      return;
+    }
+    onAccountsChange(
+      (currentAccounts) =>
+        currentAccounts.map((item) =>
+          item.id === account.id ? { ...item, role, updatedAt: nowLabel() } : item,
+        ),
+      `Ruolo aggiornato per ${account.name}.`,
+    );
+  }
+
+  function toggleStatus(account: AccountRecord) {
+    if (!canManageTarget(account) && !canMaintainTarget(account)) {
+      onAction("Non puoi modificare lo stato di questo account.");
+      return;
+    }
+    if (account.id === currentUser.id) {
+      onAction("Non puoi sospendere l'account con cui sei collegato.");
+      return;
+    }
+    const nextStatus: AccountStatus = account.status === "Attivo" ? "Sospeso" : "Attivo";
+    onAccountsChange(
+      (currentAccounts) =>
+        currentAccounts.map((item) =>
+          item.id === account.id ? { ...item, status: nextStatus, updatedAt: nowLabel() } : item,
+        ),
+      `Account ${account.name} impostato su ${nextStatus}.`,
+    );
+  }
+
+  async function resetPassword(account: AccountRecord) {
+    if (!canManageTarget(account) && !canMaintainTarget(account)) {
+      onAction("Non puoi resettare la password di questo account.");
+      return;
+    }
+    const temporaryPassword = "Fenix2026!";
+    const passwordHash = await sha256Hex(temporaryPassword);
+    onAccountsChange(
+      (currentAccounts) =>
+        currentAccounts.map((item) =>
+          item.id === account.id ? { ...item, passwordHash, status: "Attivo", updatedAt: nowLabel() } : item,
+        ),
+      `Password provvisoria per ${account.name}: ${temporaryPassword}`,
+    );
+  }
+
+  function deleteAccount(account: AccountRecord) {
+    if (!canManageTarget(account) || account.id === currentUser.id) {
+      onAction("Non puoi eliminare questo account.");
+      return;
+    }
+    onAccountsChange(
+      (currentAccounts) => currentAccounts.filter((item) => item.id !== account.id),
+      `Account ${account.name} eliminato.`,
+    );
+  }
+
+  function repairAccounts() {
+    onAccountsChange(
+      (currentAccounts) => {
+        const knownEmails = new Set<string>();
+        const repaired = currentAccounts
+          .filter((account) => {
+            if (knownEmails.has(account.email)) {
+              return false;
+            }
+            knownEmails.add(account.email);
+            return true;
+          })
+          .map((account) =>
+            account.email === defaultAccount.email
+              ? { ...account, role: "SVILUPPATORE", status: "Attivo", updatedAt: nowLabel() }
+              : account,
+          );
+        return repaired.some((account) => account.email === defaultAccount.email)
+          ? repaired
+          : [defaultAccount, ...repaired];
+      },
+      "Controllo tecnico account completato.",
+    );
+  }
+
+  return (
+    <div className="workspace-grid">
+      <Panel className="span-12 account-permission-banner" title="Profilo account">
+        <div className="permission-list">
+          <span>
+            <ShieldCheck size={18} />
+            Ruolo collegato: <strong>{currentUser.role}</strong>
+          </span>
+          <span>
+            <BadgeCheck size={18} />
+            Stato account: <strong>{currentAccount?.status ?? "Attivo"}</strong>
+          </span>
+          {developer ? (
+            <span>
+              <Wrench size={18} />
+              Manutenzione tecnica: <strong>abilitata</strong>
+            </span>
+          ) : null}
+        </div>
+      </Panel>
+
+      {manager ? (
+        <Panel className="span-5" title="Crea account">
+          <form className="account-form" onSubmit={(event) => void createAccount(event)}>
+            <label>
+              Nome account
+              <input name="name" required placeholder="Nome e cognome" />
+            </label>
+            <label>
+              Email
+              <input name="email" required type="email" placeholder="nome@grfenix.com" />
+            </label>
+            <label>
+              Ruolo
+              <select name="role" defaultValue={defaultNewRole}>
+                {availableRoles.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Password provvisoria
+              <input name="password" required type="password" placeholder="Password iniziale" />
+            </label>
+            {accountError ? <p className="login-error">{accountError}</p> : null}
+            <button type="submit">
+              <Plus size={17} />
+              Crea account
+            </button>
+          </form>
+        </Panel>
+      ) : (
+        <Panel className="span-5" title="Account">
+          <EmptyState
+            title="Gestione non disponibile"
+            text="Il tuo ruolo puo usare il CRM, ma non puo creare o modificare altri account."
+          />
+        </Panel>
+      )}
+
+      <Panel className="span-7" title="Account registrati">
+        <div className="account-list">
+          {accounts.map((account) => {
+            const isSelf = account.id === currentUser.id;
+            const editable = canManageTarget(account);
+            const maintainable = canMaintainTarget(account);
+            const roleDisabled = !editable || isSelf;
+            return (
+              <article className={isSelf ? "account-row current" : "account-row"} key={account.id}>
+                <div>
+                  <strong>{account.name}</strong>
+                  <small>{account.email}</small>
+                  <span>{account.status} / {account.role}</span>
+                </div>
+                <select
+                  aria-label={`Ruolo ${account.name}`}
+                  disabled={roleDisabled}
+                  value={account.role}
+                  onChange={(event) => changeRole(account, event.target.value as UserRole)}
+                >
+                  {roleChoicesForAccount(account).map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
+                <div className="account-actions">
+                  <button type="button" disabled={isSelf || (!editable && !maintainable)} onClick={() => toggleStatus(account)}>
+                    {account.status === "Attivo" ? "Sospendi" : "Riattiva"}
+                  </button>
+                  <button type="button" disabled={isSelf || (!editable && !maintainable)} onClick={() => void resetPassword(account)}>
+                    Reset
+                  </button>
+                  <button type="button" disabled={!editable || isSelf} onClick={() => deleteAccount(account)}>
+                    Elimina
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </Panel>
+
+      {developer ? (
+        <Panel className="span-12" title="Manutenzione tecnica">
+          <div className="tool-grid">
+            <ToolButton label="Ripara account" Icon={RefreshCcwDot} onClick={repairAccounts} />
+            <ToolButton
+              label="Controllo sito"
+              Icon={Wrench}
+              onClick={() => onAction("Controllo sito completato: routing, sessione e ruoli disponibili.")}
+            />
+            <ToolButton
+              label="Backup account"
+              Icon={DatabaseBackup}
+              onClick={() => {
+                const blob = new Blob([JSON.stringify(accounts, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `fenix-suite-account-${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.append(link);
+                link.click();
+                link.remove();
+                URL.revokeObjectURL(url);
+                onAction("Backup account scaricato.");
+              }}
+            />
+          </div>
+        </Panel>
+      ) : null}
+
+      <Panel className="span-12" title="Regole ruoli">
+        <div className="role-grid">
+          {roleOptions.map((role) => (
+            <article key={role}>
+              <strong>{role}</strong>
+              <small>{roleDescriptions[role]}</small>
+            </article>
+          ))}
         </div>
       </Panel>
     </div>
@@ -3130,11 +4199,13 @@ function QuickForm({
   onSubmit,
   required = true,
 }: {
-  fields: string[];
+  fields: QuickFormField[];
   button: string;
   onSubmit: (values: Record<string, string>) => void;
   required?: boolean;
 }) {
+  const fieldName = (field: QuickFormField) => typeof field === "string" ? field : field.name;
+
   return (
     <form
       className="quick-form"
@@ -3142,7 +4213,8 @@ function QuickForm({
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
         const values = fields.reduce<Record<string, string>>((accumulator, field) => {
-          accumulator[field] = String(formData.get(field) || "").trim();
+          const name = fieldName(field);
+          accumulator[name] = String(formData.get(name) || "").trim();
           return accumulator;
         }, {});
         onSubmit(values);
@@ -3150,9 +4222,19 @@ function QuickForm({
       }}
     >
       {fields.map((field) => (
-        <label key={field}>
-          {field}
-          <input name={field} required={required} placeholder={field} />
+        <label key={fieldName(field)}>
+          {fieldName(field)}
+          {typeof field === "string" ? (
+            <input name={field} required={required} placeholder={field} />
+          ) : (
+            <select name={field.name} required={required}>
+              {field.options.map((option) => (
+                <option key={option || "empty"} value={option}>
+                  {option || "Qualsiasi"}
+                </option>
+              ))}
+            </select>
+          )}
         </label>
       ))}
       <button type="submit">{button}</button>
@@ -3242,6 +4324,16 @@ function usePersistentCrmData() {
   return [data, setData] as const;
 }
 
+function usePersistentAccounts() {
+  const [accounts, setAccounts] = useState<AccountRecord[]>(() => loadAccounts());
+
+  useEffect(() => {
+    saveAccounts(accounts);
+  }, [accounts]);
+
+  return [accounts, setAccounts] as const;
+}
+
 function hydrateCrmData(savedData: Partial<CrmData>): CrmData {
   return {
     properties: Array.isArray(savedData.properties) ? savedData.properties : initialCrmData.properties,
@@ -3252,6 +4344,12 @@ function hydrateCrmData(savedData: Partial<CrmData>): CrmData {
       ? savedData.marketingChannels
       : initialCrmData.marketingChannels,
     censusAreas: Array.isArray(savedData.censusAreas) ? savedData.censusAreas : initialCrmData.censusAreas,
+    censusStreets: Array.isArray(savedData.censusStreets)
+      ? savedData.censusStreets
+      : initialCrmData.censusStreets,
+    censusComplexes: Array.isArray(savedData.censusComplexes)
+      ? savedData.censusComplexes
+      : initialCrmData.censusComplexes,
     goals: Array.isArray(savedData.goals) ? savedData.goals : initialCrmData.goals,
     activityLog: Array.isArray(savedData.activityLog) ? savedData.activityLog : initialCrmData.activityLog,
   };
@@ -3281,6 +4379,23 @@ function fieldValue(values: Record<string, string>, field: string, fallback = ""
 
 function valuesSummary(values: Record<string, string>, fallback = "tutti i dati") {
   return Object.values(values).filter(Boolean).join(" / ") || fallback;
+}
+
+function sameLabel(first: string, second: string) {
+  return first.trim().toLowerCase() === second.trim().toLowerCase();
+}
+
+function appendOwnerLabel(currentOwner: string, ownerName: string) {
+  const owners = currentOwner
+    .split(",")
+    .map((owner) => owner.trim())
+    .filter((owner) => owner && !/proprietario da associare/i.test(owner));
+
+  if (!owners.some((owner) => sameLabel(owner, ownerName))) {
+    owners.push(ownerName);
+  }
+
+  return owners.join(", ");
 }
 
 function createActivity(input: Partial<ActivityRecord> & Pick<ActivityRecord, "title" | "type">): ActivityRecord {
@@ -3335,12 +4450,12 @@ function pathForPage(pageKey: string) {
     "pubblicita-portali": "/pubblicita",
     "contatti-p-nuovo": "/contatti-pubblicita/nuovo",
     "contatti-p-elenco": "/contatti-pubblicita",
-    "censimento-contatto-nuovo": "/censimento/nominativi/create",
-    "censimento-contatti": "/censimento/nominativi",
     "censimento-zone": "/censimento/zone",
-    "censimento-zona-nuova": "/censimento/zone/create",
+    "censimento-vie": "/censimento/vie",
     "censimento-complessi": "/censimento/complessi",
+    "censimento-proprietari": "/censimento/proprietari",
     "obiettivi-elenco": "/obiettivi",
+    "account-ruoli": "/account/ruoli",
     "utilita-preferenze": "/preferenze",
     "utilita-backup": "/utilita/copie-sicurezza",
     "utilita-portali": "/utilita/portali/esportazioni",

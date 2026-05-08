@@ -1697,7 +1697,8 @@ tbody tr:hover {
   gap: 14px;
 }
 
-.quick-form input {
+.quick-form input,
+.quick-form select {
   min-height: 48px;
   border-radius: 14px;
 }
@@ -2303,7 +2304,8 @@ td {
   gap: 9px;
 }
 
-.quick-form input {
+.quick-form input,
+.quick-form select {
   min-height: 38px;
   border-radius: 7px;
   font-size: 0.82rem;
@@ -4264,6 +4266,7 @@ th {
 
 td,
 .quick-form input,
+.quick-form select,
 .checklist label {
   font-size: 0.84rem;
   line-height: 1.45;
@@ -4359,6 +4362,654 @@ td,
   .app-header-actions button,
   .module-action {
     font-size: 0.66rem;
+  }
+}
+
+.workspace-shell {
+  grid-template-columns: 236px minmax(0, 1fr);
+  background:
+    linear-gradient(180deg, rgba(38, 13, 15, 0.72), transparent 320px),
+    #090a0d;
+}
+
+.app-sidebar {
+  padding: 16px 12px;
+  background: rgba(10, 11, 14, 0.97);
+}
+
+.app-brand {
+  min-height: 54px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+}
+
+.module-nav {
+  gap: 7px;
+  padding-right: 0;
+}
+
+.module-nav button {
+  min-height: 50px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 780;
+  letter-spacing: 0;
+}
+
+.module-nav button.active {
+  border-color: rgba(239, 68, 68, 0.48);
+  background: rgba(239, 68, 68, 0.17);
+}
+
+.app-main {
+  padding: 0;
+}
+
+.app-header {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 14px;
+  min-height: 68px;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(12, 13, 17, 0.97);
+}
+
+.app-search {
+  width: 100%;
+  max-width: none;
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+.app-header-actions {
+  flex: initial;
+  justify-content: end;
+}
+
+.app-header-actions button {
+  min-height: 40px;
+  border-radius: 10px;
+}
+
+.workspace-content {
+  width: min(100%, 1320px);
+  margin: 0 auto;
+  padding: 18px clamp(14px, 2.6vw, 34px) 40px;
+}
+
+.workspace-status {
+  min-height: 42px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.module-heading {
+  align-items: center;
+  min-height: auto;
+  margin-bottom: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  background: rgba(16, 17, 22, 0.78);
+}
+
+.module-heading h1 {
+  margin-top: 4px;
+  font-size: clamp(1.62rem, 2.5vw, 2.4rem);
+  line-height: 1.12;
+}
+
+.module-heading p {
+  max-width: 64rem;
+  margin-top: 6px;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.workspace-content > .submodule-nav {
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.workspace-content > .submodule-nav button {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 9px;
+  font-size: 0.82rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.workspace-grid {
+  gap: 12px;
+}
+
+.kpi-row {
+  gap: 12px;
+}
+
+.kpi-card,
+.workspace-panel {
+  border-radius: 14px;
+  background: rgba(16, 17, 22, 0.78);
+}
+
+.kpi-card {
+  min-height: 112px;
+  padding: 16px;
+}
+
+.workspace-panel {
+  padding: 16px;
+}
+
+.crm-form-panel {
+  order: -1;
+}
+
+.workspace-panel > header {
+  margin-bottom: 14px;
+}
+
+.workspace-panel h2 {
+  font-size: 1.02rem;
+}
+
+.crm-flow-panel {
+  border-color: rgba(201, 79, 79, 0.2);
+  background: rgba(18, 19, 24, 0.84);
+}
+
+.crm-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.crm-flow-grid button {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 18px;
+  gap: 12px;
+  align-items: center;
+  min-height: 88px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: left;
+}
+
+.crm-flow-grid button:hover {
+  border-color: rgba(201, 79, 79, 0.48);
+  background: rgba(201, 79, 79, 0.12);
+}
+
+.crm-flow-grid svg {
+  color: var(--red);
+}
+
+.crm-flow-grid strong,
+.crm-flow-grid small {
+  display: block;
+  min-width: 0;
+}
+
+.crm-flow-grid strong {
+  font-size: 0.95rem;
+  line-height: 1.25;
+}
+
+.crm-flow-grid small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.progress-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.progress-overview .progress-line {
+  min-height: 112px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.scope-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.scope-strip span {
+  display: grid;
+  gap: 5px;
+  min-height: 76px;
+  padding: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.scope-strip strong {
+  color: #ffffff;
+  font-size: 0.92rem;
+}
+
+.scope-strip small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.agenda-modebar {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.agenda-modebar button {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 0.74rem;
+  font-weight: 850;
+  letter-spacing: 0.03em;
+}
+
+.agenda-modebar button.active {
+  color: #ffffff;
+  background: rgba(201, 79, 79, 0.2);
+}
+
+.month-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.month-board article {
+  display: grid;
+  gap: 8px;
+  min-height: 118px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.month-board span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 820;
+}
+
+.month-board strong {
+  color: #ffffff;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.month-board small {
+  color: var(--muted-2);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.census-phase-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.census-phase-grid article {
+  display: grid;
+  gap: 7px;
+  min-height: 118px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.census-phase-grid article.active {
+  border-color: rgba(201, 79, 79, 0.5);
+  background: rgba(201, 79, 79, 0.12);
+}
+
+.census-phase-grid span {
+  color: var(--red);
+  font-size: 0.72rem;
+  font-weight: 880;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.census-phase-grid strong {
+  color: #ffffff;
+  font-size: 1.9rem;
+  line-height: 1;
+}
+
+.census-phase-grid small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.account-permission-banner {
+  border-color: rgba(34, 197, 94, 0.22);
+}
+
+.permission-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.permission-list span {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 11px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.permission-list svg {
+  flex: 0 0 auto;
+  color: var(--red);
+}
+
+.permission-list strong {
+  color: #ffffff;
+}
+
+.account-form {
+  display: grid;
+  gap: 11px;
+}
+
+.account-form input,
+.account-form select,
+.account-row select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 10px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.055);
+  outline: 0;
+}
+
+.account-form select,
+.account-row select {
+  color-scheme: dark;
+}
+
+.account-form button {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid rgba(201, 79, 79, 0.5);
+  border-radius: 10px;
+  color: #ffffff;
+  background: rgba(201, 79, 79, 0.18);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.account-list {
+  display: grid;
+  gap: 10px;
+}
+
+.account-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(145px, 0.5fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.account-row.current {
+  border-color: rgba(201, 79, 79, 0.42);
+  background: rgba(201, 79, 79, 0.1);
+}
+
+.account-row strong,
+.account-row small,
+.account-row span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-row strong {
+  color: #ffffff;
+  font-size: 0.94rem;
+}
+
+.account-row small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.account-row span {
+  margin-top: 6px;
+  color: var(--red);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.account-actions button {
+  min-height: 32px;
+  padding: 0 9px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 8px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.055);
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.account-actions button:disabled,
+.account-row select:disabled {
+  opacity: 0.46;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.role-grid article {
+  min-height: 116px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.role-grid strong {
+  display: block;
+  color: #ffffff;
+  font-size: 0.82rem;
+  letter-spacing: 0.07em;
+}
+
+.role-grid small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.call-queue article {
+  min-height: 68px;
+  border-radius: 11px;
+}
+
+.quick-form input,
+.quick-form select {
+  min-height: 42px;
+  border-radius: 10px;
+}
+
+.quick-form button,
+.tool-button {
+  min-height: 44px;
+  border-radius: 10px;
+}
+
+@media (max-width: 1100px) {
+  .crm-flow-grid,
+  .kpi-row,
+  .progress-overview,
+  .scope-strip,
+  .month-board,
+  .census-phase-grid,
+  .permission-list,
+  .role-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .account-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 980px) {
+  .workspace-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    height: auto;
+  }
+
+  .app-brand,
+  .crm-version {
+    display: none;
+  }
+
+  .module-nav {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .module-nav button {
+    display: inline-flex;
+    flex: 0 0 auto;
+    min-height: 42px;
+    padding: 0 14px;
+  }
+
+  .app-header {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .app-header-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .workspace-content {
+    padding: 12px 10px 30px;
+  }
+
+  .workspace-status {
+    display: none;
+  }
+
+  .module-heading {
+    padding: 14px;
+  }
+
+  .module-heading h1 {
+    font-size: clamp(1.42rem, 8vw, 1.9rem);
+  }
+
+  .module-heading p {
+    display: block;
+    font-size: 0.86rem;
+  }
+
+  .workspace-content > .submodule-nav button {
+    min-height: 40px;
+    font-size: 0.8rem;
+  }
+
+  .crm-flow-grid,
+  .kpi-row,
+  .progress-overview,
+  .scope-strip,
+  .month-board,
+  .census-phase-grid,
+  .permission-list,
+  .role-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-flow-grid button {
+    min-height: 76px;
   }
 }
 
