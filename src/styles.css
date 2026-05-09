@@ -1055,6 +1055,32 @@ textarea:focus {
   text-align: center;
 }
 
+.access-locked-panel {
+  border-color: rgba(201, 79, 79, 0.26);
+}
+
+.locked-card {
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.locked-card svg {
+  color: var(--red);
+}
+
+.locked-card strong {
+  color: #ffffff;
+  font-size: 1.08rem;
+}
+
+.locked-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .workspace-shell {
   display: grid;
   grid-template-columns: 286px minmax(0, 1fr);
@@ -4753,6 +4779,27 @@ td,
   gap: 11px;
 }
 
+.account-check {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.account-check input {
+  width: auto;
+  min-height: auto;
+  accent-color: var(--red);
+}
+
+.account-time-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .account-form input,
 .account-form select,
 .account-row select {
@@ -4769,6 +4816,13 @@ td,
 .account-form select,
 .account-row select {
   color-scheme: dark;
+}
+
+.account-form .account-check input,
+.account-row .account-check input {
+  width: auto;
+  min-height: auto;
+  padding: 0;
 }
 
 .account-form button {
@@ -4794,7 +4848,7 @@ td,
 
 .account-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(145px, 0.5fr) auto;
+  grid-template-columns: minmax(0, 1.25fr) minmax(135px, 0.42fr) minmax(210px, 0.68fr) auto;
   gap: 10px;
   align-items: center;
   padding: 12px;
@@ -4836,6 +4890,25 @@ td,
   font-weight: 850;
   letter-spacing: 0.07em;
   text-transform: uppercase;
+}
+
+.account-schedule {
+  display: grid;
+  gap: 7px;
+}
+
+.account-schedule .account-check {
+  margin: 0;
+}
+
+.account-schedule .account-time-grid {
+  gap: 6px;
+}
+
+.account-schedule select {
+  min-height: 34px;
+  padding: 0 8px;
+  font-size: 0.72rem;
 }
 
 .account-actions {
@@ -5010,6 +5083,98 @@ td,
 
   .crm-flow-grid button {
     min-height: 76px;
+  }
+
+  .app-sidebar {
+    padding: 8px 10px;
+  }
+
+  .module-nav,
+  .workspace-content > .submodule-nav {
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+
+  .module-nav button,
+  .workspace-content > .submodule-nav button {
+    scroll-snap-align: start;
+    white-space: nowrap;
+  }
+
+  .app-header {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .app-search {
+    min-height: 42px;
+  }
+
+  .module-heading,
+  .workspace-panel,
+  .kpi-card {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .workspace-panel {
+    overflow: hidden;
+  }
+
+  .workspace-panel > header {
+    gap: 10px;
+  }
+
+  .workspace-panel header button,
+  .panel-action-label {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 620px;
+  }
+
+  th,
+  td {
+    padding: 9px 10px;
+    white-space: nowrap;
+  }
+
+  .quick-form {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-form label,
+  .quick-form input,
+  .quick-form select,
+  .quick-form button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .agenda-modebar {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .agenda-modebar button {
+    width: 100%;
+    padding: 0 8px;
+  }
+
+  .account-row strong,
+  .account-row small,
+  .account-row span {
+    white-space: normal;
   }
 }
 

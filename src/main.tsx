@@ -96,7 +96,9 @@ type QuickFormField =
   | string
   | {
       name: string;
-      options: string[];
+      options?: string[];
+      required?: boolean;
+      placeholder?: string;
     };
 
 type ProgramCard = {
@@ -117,6 +119,14 @@ type PropertyRecord = {
   owner: string;
   portals: string;
   kind: "vendita" | "affitto";
+  phone?: string;
+  taxCode?: string;
+  sheet?: string;
+  parcel?: string;
+  subaltern?: string;
+  cadastralCategory?: string;
+  rooms?: string;
+  source?: string;
   updatedAt: string;
 };
 
@@ -134,11 +144,21 @@ type RequestRecord = {
 type ContactRecord = {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   type: string;
   status: string;
   source: string;
   owner: string;
   phone: string;
+  email?: string;
+  taxCode?: string;
+  sheet?: string;
+  parcel?: string;
+  subaltern?: string;
+  cadastralCategory?: string;
+  rooms?: string;
+  property?: string;
   note: string;
   nextStep: string;
   updatedAt: string;
@@ -218,6 +238,9 @@ type AccountRecord = {
   passwordHash: string;
   role: UserRole;
   status: AccountStatus;
+  accessLimitEnabled?: boolean;
+  accessStartHour?: number;
+  accessEndHour?: number;
   managerId?: string;
   updatedAt: string;
 };
@@ -269,6 +292,68 @@ const roleDescriptions: Record<UserRole, string> = {
   SVILUPPATORE: "Usa il CRM e interviene su problemi tecnici di account e sito.",
 };
 
+const defaultAccessStartHour = 9;
+const defaultAccessEndHour = 20;
+const hourOptions = Array.from({ length: 24 }, (_, hour) => hour);
+
+const cadastralCategoryOptions = [
+  "",
+  "A/1",
+  "A/2",
+  "A/3",
+  "A/4",
+  "A/5",
+  "A/6",
+  "A/7",
+  "A/8",
+  "A/9",
+  "A/10",
+  "A/11",
+  "B/1",
+  "B/2",
+  "B/3",
+  "B/4",
+  "B/5",
+  "B/6",
+  "B/7",
+  "B/8",
+  "C/1",
+  "C/2",
+  "C/3",
+  "C/4",
+  "C/5",
+  "C/6",
+  "C/7",
+  "D/1",
+  "D/2",
+  "D/3",
+  "D/4",
+  "D/5",
+  "D/6",
+  "D/7",
+  "D/8",
+  "D/9",
+  "D/10",
+  "E/1",
+  "E/2",
+  "E/3",
+  "E/4",
+  "E/5",
+  "E/6",
+  "E/7",
+  "E/8",
+  "E/9",
+  "F/1",
+  "F/2",
+  "F/3",
+  "F/4",
+  "F/5",
+  "F/6",
+  "F/7",
+];
+
+const roomOptions = ["", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5", "5.5", "6", "7", "8", "9", "10+"];
+
 const searchFilterFields: QuickFormField[] = [
   "Nome",
   "Cognome",
@@ -279,11 +364,11 @@ const searchFilterFields: QuickFormField[] = [
   "Subalterno",
   {
     name: "Categoria catastale",
-    options: ["", "A/1", "A/2", "A/3", "A/4", "A/5", "A/6", "A/7", "A/8", "A/9", "A/10", "A/11", "C/1", "C/2", "C/6", "C/7"],
+    options: cadastralCategoryOptions,
   },
   {
     name: "Vani",
-    options: ["", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5", "5.5", "6", "7", "8", "9", "10+"],
+    options: roomOptions,
   },
 ];
 
@@ -294,6 +379,9 @@ const defaultAccount: AccountRecord = {
   passwordHash: accountPasswordHash,
   role: "SVILUPPATORE",
   status: "Attivo",
+  accessLimitEnabled: true,
+  accessStartHour: defaultAccessStartHour,
+  accessEndHour: defaultAccessEndHour,
   updatedAt: "Account iniziale",
 };
 
@@ -755,6 +843,54 @@ function toSessionUser(account: AccountRecord): SessionUser {
   };
 }
 
+function normalizeAccessHour(value: unknown, fallback: number) {
+  const hour = typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+  return Number.isFinite(hour) && hour >= 0 && hour <= 23 ? hour : fallback;
+}
+
+function getAccountAccessSchedule(account: AccountRecord) {
+  return {
+    enabled: account.accessLimitEnabled !== false,
+    start: normalizeAccessHour(account.accessStartHour, defaultAccessStartHour),
+    end: normalizeAccessHour(account.accessEndHour, defaultAccessEndHour),
+  };
+}
+
+function formatHour(hour: number) {
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+function accountAccessLabel(account: AccountRecord) {
+  const schedule = getAccountAccessSchedule(account);
+  return schedule.enabled ? `${formatHour(schedule.start)}-${formatHour(schedule.end)}` : "Sempre operativo";
+}
+
+function isAccountOnline(account: AccountRecord, date = new Date()) {
+  if (account.status !== "Attivo") {
+    return false;
+  }
+
+  const schedule = getAccountAccessSchedule(account);
+  if (!schedule.enabled || schedule.start === schedule.end) {
+    return true;
+  }
+
+  const currentHour = getRomeTime(date).hour;
+  if (schedule.start < schedule.end) {
+    return currentHour >= schedule.start && currentHour < schedule.end;
+  }
+
+  return currentHour >= schedule.start || currentHour < schedule.end;
+}
+
+function accountOfflineMessage(account: AccountRecord, date = new Date()) {
+  const romeTime = getRomeTime(date).label;
+  if (account.status !== "Attivo") {
+    return "Account sospeso: contatta un responsabile.";
+  }
+  return `Account offline: operativo dalle ${accountAccessLabel(account)}. Ora Roma: ${romeTime}.`;
+}
+
 function normalizeAccount(input: Partial<AccountRecord>, index: number): AccountRecord | null {
   const email = String(input.email || "").trim().toLowerCase();
   const passwordHash = String(input.passwordHash || "");
@@ -771,6 +907,9 @@ function normalizeAccount(input: Partial<AccountRecord>, index: number): Account
     passwordHash,
     role,
     status: isValidAccountStatus(String(input.status || "")) ? input.status as AccountStatus : "Attivo",
+    accessLimitEnabled: input.accessLimitEnabled !== false,
+    accessStartHour: normalizeAccessHour(input.accessStartHour, defaultAccessStartHour),
+    accessEndHour: normalizeAccessHour(input.accessEndHour, defaultAccessEndHour),
     managerId: typeof input.managerId === "string" ? input.managerId : undefined,
     updatedAt: String(input.updatedAt || "Importato"),
   };
@@ -784,8 +923,20 @@ function loadAccounts(): AccountRecord[] {
         .map((account, index) => normalizeAccount(account as Partial<AccountRecord>, index))
         .filter((account): account is AccountRecord => Boolean(account))
     : [];
+  const storedDefault = normalized.find((account) => account.email === defaultAccount.email);
+  const protectedDefault: AccountRecord = storedDefault
+    ? {
+        ...defaultAccount,
+        ...storedDefault,
+        id: defaultAccount.id,
+        email: defaultAccount.email,
+        status: "Attivo",
+        role: "SVILUPPATORE",
+        passwordHash: defaultAccount.passwordHash,
+      }
+    : defaultAccount;
   const withoutDefault = normalized.filter((account) => account.email !== defaultAccount.email);
-  return [defaultAccount, ...withoutDefault];
+  return [protectedDefault, ...withoutDefault];
 }
 
 function saveAccounts(accounts: AccountRecord[]) {
@@ -826,6 +977,22 @@ function storeSessionUser(user: SessionUser) {
 function clearSessionUser() {
   localStorage.removeItem(legacySessionKey);
   localStorage.removeItem(sessionStorageKey);
+}
+
+function getRomeTime(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("it-IT", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Europe/Rome",
+  }).formatToParts(date);
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+  return {
+    hour,
+    minute,
+    label: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+  };
 }
 
 function safeJsonParse(value: string) {
@@ -1029,21 +1196,55 @@ function ProgramSelector({ onNavigate }: { onNavigate: (path: string) => void })
 function CrmApp() {
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(() => getStoredSessionUser());
   const [screen, setScreen] = useState<Screen>(() => (getStoredSessionUser() ? "workspace" : "marketing"));
+  const [clock, setClock] = useState(() => new Date());
+  const [loginNotice, setLoginNotice] = useState("");
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setClock(new Date()), 30000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    if (screen !== "workspace" || !sessionUser) {
+      return;
+    }
+
+    const currentAccount = loadAccounts().find(
+      (account) => account.id === sessionUser.id || account.email === sessionUser.email,
+    );
+    if (!currentAccount || !isAccountOnline(currentAccount, clock)) {
+      clearSessionUser();
+      setSessionUser(null);
+      setLoginNotice(currentAccount ? accountOfflineMessage(currentAccount, clock) : "Account non disponibile.");
+      setScreen("login");
+    }
+  }, [clock, screen, sessionUser]);
 
   function openLogin() {
+    setLoginNotice("");
     setScreen("login");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function openMarketing() {
+    setLoginNotice("");
     setScreen("marketing");
     window.location.hash = "top";
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function openWorkspace(user: SessionUser) {
+    const account = loadAccounts().find((item) => item.id === user.id || item.email === user.email);
+    if (!account || !isAccountOnline(account)) {
+      clearSessionUser();
+      setSessionUser(null);
+      setLoginNotice(account ? accountOfflineMessage(account) : "Account non disponibile.");
+      setScreen("login");
+      return;
+    }
     storeSessionUser(user);
     setSessionUser(user);
+    setLoginNotice("");
     setScreen("workspace");
     window.scrollTo({ top: 0, behavior: "auto" });
   }
@@ -1056,6 +1257,7 @@ function CrmApp() {
   function logout() {
     clearSessionUser();
     setSessionUser(null);
+    setLoginNotice("");
     setScreen("marketing");
   }
 
@@ -1064,7 +1266,13 @@ function CrmApp() {
   }
 
   if (screen === "login") {
-    return <LoginScreen onBack={openMarketing} onSuccess={openWorkspace} />;
+    return (
+      <LoginScreen
+        notice={loginNotice}
+        onBack={openMarketing}
+        onSuccess={openWorkspace}
+      />
+    );
   }
 
   return (
@@ -1386,14 +1594,20 @@ function Footer() {
 }
 
 function LoginScreen({
+  notice,
   onBack,
   onSuccess,
 }: {
+  notice: string;
   onBack: () => void;
   onSuccess: (user: SessionUser) => void;
 }) {
-  const [error, setError] = useState("");
+  const [error, setError] = useState(notice);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setError(notice);
+  }, [notice]);
 
   async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1406,10 +1620,14 @@ function LoginScreen({
     setLoading(false);
 
     const account = loadAccounts().find(
-      (item) => item.email === email && item.passwordHash === passwordHash && item.status === "Attivo",
+      (item) => item.email === email && item.passwordHash === passwordHash,
     );
 
     if (account) {
+      if (!isAccountOnline(account)) {
+        setError(accountOfflineMessage(account));
+        return;
+      }
       onSuccess(toSessionUser(account));
       return;
     }
@@ -1578,7 +1796,7 @@ function Workspace({
           </span>
         </button>
         <div className="crm-version">
-          <span>{currentUser.role}</span>
+          <span>Area riservata</span>
           <b>CRM</b>
         </div>
         <nav className="module-nav" aria-label="Moduli gestionale">
@@ -1622,7 +1840,7 @@ function Workspace({
               <CheckCircle2 size={16} />
               {notice}
             </span>
-            <small>Utente: {currentUser.name} / {currentUser.role}</small>
+            <small>Utente: {currentUser.name}</small>
           </div>
 
           <section className="module-heading">
@@ -2092,6 +2310,7 @@ function PropertiesView({
   onCommit: CrmCommit;
   onAction: (message: string) => void;
 }) {
+  const [filters, setFilters] = useState<Record<string, string>>({});
   const baseRows = data.properties.filter((item) => {
     if (pageKey === "immobili-vendite") {
       return item.kind === "vendita";
@@ -2101,8 +2320,35 @@ function PropertiesView({
     }
     return true;
   });
-  const rows = useFilteredRows(baseRows, query, (item) =>
-    [item.code, item.title, item.zone, item.status, item.owner].join(" "),
+  const filteredBaseRows = baseRows.filter((item) => {
+    const ownerName = splitFullName(item.owner);
+    return matchesStructuredFilters(filters, {
+      Nome: ownerName.firstName || item.owner || item.title,
+      Cognome: ownerName.lastName || item.owner,
+      Numero: item.phone || "",
+      "Codice fiscale": item.taxCode || "",
+      Foglio: item.sheet || "",
+      Particella: item.parcel || "",
+      Subalterno: item.subaltern || "",
+      "Categoria catastale": item.cadastralCategory || "",
+      Vani: item.rooms || "",
+    });
+  });
+  const rows = useFilteredRows(filteredBaseRows, query, (item) =>
+    [
+      item.code,
+      item.title,
+      item.zone,
+      item.status,
+      item.owner,
+      item.phone,
+      item.taxCode,
+      item.sheet,
+      item.parcel,
+      item.subaltern,
+      item.cadastralCategory,
+      item.rooms,
+    ].join(" "),
   );
   const searchMode = pageKey === "immobili-ricerca-op" || pageKey === "immobili-ricerca-cli";
   const newMode = pageKey === "immobili-nuovo";
@@ -2121,21 +2367,31 @@ function PropertiesView({
             button="Cerca"
             fields={searchFilterFields}
             required={false}
-            onSubmit={(values) =>
-              onAction(`Ricerca immobili eseguita per ${valuesSummary(values)}.`)
-            }
+            onSubmit={(values) => {
+              setFilters(values);
+              onAction(`Ricerca immobili eseguita per ${valuesSummary(values)}.`);
+            }}
           />
         </Panel>
       ) : null}
-      <Panel className={searchMode ? "span-7" : "span-8"} title={newMode ? "Schede recenti" : "Archivio immobili"} action="Filtri salvati">
+      <Panel
+        className={searchMode ? "span-7" : "span-8"}
+        title={newMode ? "Schede recenti" : "Archivio immobili"}
+        action={activeFilters(filters).length ? "Azzera filtri" : "Filtri"}
+        onPanelAction={() => {
+          setFilters({});
+          onAction("Filtri immobili azzerati.");
+        }}
+      >
         <DataTable
-          columns={["Codice", "Immobile", "Zona", "Stato", "Prezzo", "Portali"]}
+          columns={["Codice", "Immobile", "Zona", "Stato", "Prezzo", "Catasto", "Portali"]}
           rows={rows.map((item) => [
             item.code,
             item.title,
             item.zone,
             item.status,
             item.price,
+            cadastralLabel(item),
             item.portals,
           ])}
           actions={[
@@ -2165,15 +2421,32 @@ function PropertiesView({
       <Panel className={newMode ? "span-4 crm-form-panel" : "span-4"} title={newMode ? "Nuovo immobile" : "Azioni scheda"}>
         <QuickForm
           button={newMode ? "Crea scheda" : "Salva filtro"}
-          fields={newMode ? ["Titolo immobile", "Zona", "Prezzo richiesto", "Proprietario"] : searchFilterFields}
+          fields={newMode
+            ? [
+                "Titolo immobile",
+                "Zona",
+                { name: "Tipo gestione", options: ["Vendita", "Affitto"] },
+                "Prezzo richiesto",
+                "Proprietario",
+                { name: "Numero", required: false },
+                { name: "Codice fiscale", required: false },
+                { name: "Foglio", required: false },
+                { name: "Particella", required: false },
+                { name: "Subalterno", required: false },
+                { name: "Categoria catastale", options: cadastralCategoryOptions, required: false },
+                { name: "Vani", options: roomOptions, required: false },
+              ]
+            : searchFilterFields}
           required={newMode}
           onSubmit={(values) => {
             if (!newMode) {
-              onAction(`Filtro immobili salvato: ${valuesSummary(values)}.`);
+              setFilters(values);
+              onAction(`Filtro immobili applicato: ${valuesSummary(values)}.`);
               return;
             }
             const title = fieldValue(values, "Titolo immobile", "Nuovo immobile");
             const price = fieldValue(values, "Prezzo richiesto", "Da valutare");
+            const kind = fieldValue(values, "Tipo gestione", "Vendita").toLowerCase().includes("affitto") ? "affitto" : "vendita";
             const newProperty: PropertyRecord = {
               id: makeId("property"),
               code: `FS-${String(250 + data.properties.length).padStart(3, "0")}`,
@@ -2183,7 +2456,15 @@ function PropertiesView({
               price,
               owner: fieldValue(values, "Proprietario", "Proprietario da associare"),
               portals: "Bozza",
-              kind: price.toLowerCase().includes("mese") ? "affitto" : "vendita",
+              kind,
+              phone: fieldValue(values, "Numero"),
+              taxCode: fieldValue(values, "Codice fiscale"),
+              sheet: fieldValue(values, "Foglio"),
+              parcel: fieldValue(values, "Particella"),
+              subaltern: fieldValue(values, "Subalterno"),
+              cadastralCategory: fieldValue(values, "Categoria catastale"),
+              rooms: fieldValue(values, "Vani"),
+              source: "Inserimento manuale",
               updatedAt: nowLabel(),
             };
             onCommit(
@@ -2441,8 +2722,39 @@ function ContactsView({
   onCommit: CrmCommit;
   onAction: (message: string) => void;
 }) {
-  const rows = useFilteredRows(data.contacts, query, (item) =>
-    [item.name, item.type, item.status, item.source, item.owner].join(" "),
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const filteredContacts = data.contacts.filter((item) => {
+    const splitName = splitFullName(item.name);
+    return matchesStructuredFilters(filters, {
+      Nome: item.firstName || splitName.firstName || item.name,
+      Cognome: item.lastName || splitName.lastName || item.name,
+      Numero: item.phone || "",
+      "Codice fiscale": item.taxCode || "",
+      Foglio: item.sheet || "",
+      Particella: item.parcel || "",
+      Subalterno: item.subaltern || "",
+      "Categoria catastale": item.cadastralCategory || "",
+      Vani: item.rooms || "",
+    });
+  });
+  const rows = useFilteredRows(filteredContacts, query, (item) =>
+    [
+      item.name,
+      item.firstName,
+      item.lastName,
+      item.phone,
+      item.email,
+      item.taxCode,
+      item.type,
+      item.status,
+      item.source,
+      item.owner,
+      item.sheet,
+      item.parcel,
+      item.subaltern,
+      item.cadastralCategory,
+      item.rooms,
+    ].join(" "),
   );
   const firstVisibleContact = rows[0];
 
@@ -2458,15 +2770,23 @@ function ContactsView({
         <RequestsView pageKey="richieste-elenco" query={query} data={data} onCommit={onCommit} onAction={onAction} />
       ) : (
         <>
-      <Panel className="span-8" title="Database clienti" action="Segmenti">
+      <Panel
+        className="span-8"
+        title="Database clienti"
+        action={activeFilters(filters).length ? "Azzera filtri" : "Filtri"}
+        onPanelAction={() => {
+          setFilters({});
+          onAction("Filtri clienti azzerati.");
+        }}
+      >
         <DataTable
-          columns={["Nome", "Tipo", "Stato", "Provenienza", "Owner"]}
+          columns={["Nome", "Tipo", "Stato", "Numero", "Catasto"]}
           rows={rows.map((item) => [
             item.name,
             item.type,
             item.status,
-            item.source,
-            item.owner,
+            item.phone || "-",
+            cadastralLabel(item),
           ])}
           actions={[
             {
@@ -2504,23 +2824,40 @@ function ContactsView({
       <Panel className={pageKey === "nominativi-nuovo" ? "span-4 crm-form-panel" : "span-4"} title={pageKey === "nominativi-nuovo" ? "Nuovo cliente" : "Filtro clienti"}>
         <QuickForm
           button={pageKey === "nominativi-nuovo" ? "Aggiungi cliente" : "Filtra"}
-          fields={pageKey === "nominativi-nuovo" ? ["Nome", "Esigenza", "Provenienza", "Telefono"] : searchFilterFields}
+          fields={pageKey === "nominativi-nuovo"
+            ? [
+                "Nome",
+                "Cognome",
+                "Numero",
+                { name: "Codice fiscale", required: false },
+                "Esigenza",
+                "Provenienza",
+                { name: "Prossimo passo", required: false },
+              ]
+            : searchFilterFields}
           required={pageKey === "nominativi-nuovo"}
           onSubmit={(values) => {
             if (pageKey !== "nominativi-nuovo") {
+              setFilters(values);
               onAction(`Filtro clienti applicato: ${valuesSummary(values)}.`);
               return;
             }
+            const firstName = fieldValue(values, "Nome");
+            const lastName = fieldValue(values, "Cognome");
+            const fullName = formatFullName(firstName, lastName);
             const newContact: ContactRecord = {
               id: makeId("contact"),
-              name: fieldValue(values, "Nome", "Nuovo cliente"),
+              name: fullName,
+              firstName,
+              lastName,
               type: fieldValue(values, "Esigenza", "Da qualificare"),
               status: "Nuovo cliente",
               source: fieldValue(values, "Provenienza", "Manuale"),
               owner: "Daniele",
-              phone: fieldValue(values, "Telefono"),
+              phone: fieldValue(values, "Numero"),
+              taxCode: fieldValue(values, "Codice fiscale"),
               note: "Inserito manualmente.",
-              nextStep: "Primo contatto",
+              nextStep: fieldValue(values, "Prossimo passo", "Primo contatto"),
               updatedAt: nowLabel(),
             };
             onCommit(
@@ -2626,7 +2963,24 @@ function AgendaView({
   resetVersion: number;
 }) {
   const [calendarMode, setCalendarMode] = useState<"week" | "month">("week");
-  const rows = useFilteredRows(data.activities, query, (item) =>
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const filteredActivities = data.activities.filter((item) => {
+    const linkedContact = data.contacts.find((contact) => sameLabel(contact.name, item.contact));
+    const splitName = splitFullName(item.contact);
+    const linkedProperty = data.properties.find((property) => sameLabel(property.title, item.property) || sameLabel(property.code, item.property));
+    return matchesStructuredFilters(filters, {
+      Nome: linkedContact?.firstName || splitName.firstName || item.contact,
+      Cognome: linkedContact?.lastName || splitName.lastName || item.contact,
+      Numero: linkedContact?.phone || linkedProperty?.phone || "",
+      "Codice fiscale": linkedContact?.taxCode || linkedProperty?.taxCode || "",
+      Foglio: linkedContact?.sheet || linkedProperty?.sheet || "",
+      Particella: linkedContact?.parcel || linkedProperty?.parcel || "",
+      Subalterno: linkedContact?.subaltern || linkedProperty?.subaltern || "",
+      "Categoria catastale": linkedContact?.cadastralCategory || linkedProperty?.cadastralCategory || "",
+      Vani: linkedContact?.rooms || linkedProperty?.rooms || "",
+    });
+  });
+  const rows = useFilteredRows(filteredActivities, query, (item) =>
     [item.time, item.title, item.type, item.owner, item.contact, item.property, item.status, item.note, item.day].join(" "),
   );
   const monthStats = [
@@ -2650,7 +3004,15 @@ function AgendaView({
         path={pathForPage(pageKey)}
         items={["Attivita -> cliente", "Attivita -> immobile", "Agenda -> storico e promemoria"]}
       />
-      <Panel className="span-8" title={pageKey === "agenda-storico" ? "Ricerca storico attivita" : "Agenda operativa"}>
+      <Panel
+        className="span-8"
+        title={pageKey === "agenda-storico" ? "Ricerca storico attivita" : "Agenda operativa"}
+        action={activeFilters(filters).length ? "Azzera filtri" : undefined}
+        onPanelAction={() => {
+          setFilters({});
+          onAction("Filtri agenda azzerati.");
+        }}
+      >
         {pageKey === "agenda-storico" ? (
           <DataTable
             columns={["Ora", "Titolo", "Tipo", "Contatto", "Stato"]}
@@ -2738,23 +3100,39 @@ function AgendaView({
       <Panel className={pageKey === "attivita-nuova" ? "span-4 crm-form-panel" : "span-4"} title={pageKey === "attivita-nuova" ? "Nuova attivita" : "Filtro agenda"}>
         <QuickForm
           button={pageKey === "attivita-nuova" ? "Pianifica" : "Cerca"}
-          fields={pageKey === "attivita-nuova" ? ["Cliente", "Data e ora", "Luogo", "Immobile"] : searchFilterFields}
+          fields={pageKey === "attivita-nuova"
+            ? [
+                { name: "Tipo attività", options: ["Appuntamento", "Telefonata", "Visita immobile", "E-mail", "WhatsApp", "Promemoria"] },
+                "Cliente",
+                "Data",
+                "Ora",
+                { name: "Luogo", required: false },
+                { name: "Immobile", required: false },
+                { name: "Stato", options: ["Da confermare", "Confermato", "Sospeso", "Annullato"], required: false },
+                { name: "Note", required: false },
+              ]
+            : searchFilterFields}
           required={pageKey === "attivita-nuova"}
           onSubmit={(values) => {
             if (pageKey !== "attivita-nuova") {
+              setFilters(values);
               onAction(`Ricerca agenda eseguita: ${valuesSummary(values)}.`);
               return;
             }
             const client = fieldValue(values, "Cliente", "Cliente da definire");
-            const dateTime = fieldValue(values, "Data e ora", currentTimeLabel());
+            const date = fieldValue(values, "Data");
+            const hour = fieldValue(values, "Ora", currentTimeLabel());
+            const dateTime = [date, hour].filter(Boolean).join(" ");
+            const activityType = fieldValue(values, "Tipo attività", "Appuntamento");
             const newActivity = createActivity({
               time: dateTime,
-              title: `Appuntamento ${client}`,
-              type: "Appuntamento",
+              title: `${activityType} ${client}`,
+              type: activityType,
               contact: client,
               property: fieldValue(values, "Immobile"),
-              note: fieldValue(values, "Luogo", "Luogo da definire"),
-              day: /domani/i.test(dateTime) ? "Domani" : "Oggi",
+              note: [fieldValue(values, "Luogo"), fieldValue(values, "Note")].filter(Boolean).join(" - "),
+              status: fieldValue(values, "Stato", "Da confermare"),
+              day: /domani/i.test(dateTime) ? "Domani" : /settimana/i.test(dateTime) ? "Settimana" : "Oggi",
             });
             onCommit(
               (currentData) => ({
@@ -2933,7 +3311,7 @@ function AdvertisingContactsView({
     /portale|sito|campagna/i.test(contact.source) || /lead pubblicitario/i.test(contact.status),
   );
   const rows = useFilteredRows(leadContacts, query, (contact) =>
-    [contact.name, contact.type, contact.status, contact.source, contact.note, contact.nextStep].join(" "),
+    [contact.name, contact.firstName, contact.lastName, contact.phone, contact.email, contact.type, contact.status, contact.source, contact.note, contact.nextStep].join(" "),
   );
 
   return (
@@ -2946,10 +3324,11 @@ function AdvertisingContactsView({
       />
       <Panel className="span-8" title="Contatti pubblicitari">
         <DataTable
-          columns={["Contatto", "Interesse", "Stato", "Provenienza"]}
+          columns={["Contatto", "Interesse", "Numero", "Stato", "Provenienza"]}
           rows={rows.map((contact) => [
             contact.name,
             contact.note || contact.type,
+            contact.phone || "-",
             contact.status,
             contact.source,
           ])}
@@ -2994,19 +3373,41 @@ function AdvertisingContactsView({
       <Panel className="span-4" title={pageKey === "contatti-p-nuovo" ? "Nuovo contatto pubblicita" : "Qualifica lead"}>
         <QuickForm
           button={pageKey === "contatti-p-nuovo" ? "Salva lead" : "Converti"}
-          fields={["Nome contatto", "Provenienza", "Immobile richiesto", "Nota"]}
+          fields={[
+            "Nome",
+            "Cognome",
+            { name: "Tipo telefono", options: ["Cellulare", "Fisso"], required: false },
+            "Numero",
+            { name: "Email", required: false },
+            "Provenienza",
+            { name: "Esigenza", options: ["Vorrei acquistare", "Cerco affitto", "Vorrei vendere", "Cerco inquilino"], required: false },
+            { name: "Immobile richiesto", required: false },
+            { name: "Mezzo di contatto", options: ["Telefono", "Email", "Persona", "Portale"], required: false },
+            { name: "Qualità contatto", options: ["Da valutare", "Scarso", "Sufficiente", "Buono", "Ottimo"], required: false },
+            { name: "Nota", required: false },
+          ]}
           onSubmit={(values) => {
-            const name = fieldValue(values, "Nome contatto", "Lead pubblicitario");
+            const firstName = fieldValue(values, "Nome");
+            const lastName = fieldValue(values, "Cognome");
+            const name = formatFullName(firstName, lastName, "Lead pubblicitario");
             const property = fieldValue(values, "Immobile richiesto", data.properties[0]?.title || "Da abbinare");
             const newContact: ContactRecord = {
               id: makeId("contact"),
               name,
+              firstName,
+              lastName,
               type: property,
               status: pageKey === "contatti-p-nuovo" ? "Lead pubblicitario" : "Convertito in nominativo",
               source: fieldValue(values, "Provenienza", "Portale"),
               owner: "Daniele",
-              phone: "",
-              note: fieldValue(values, "Nota", "Lead da qualificare"),
+              phone: fieldValue(values, "Numero"),
+              email: fieldValue(values, "Email"),
+              note: [
+                fieldValue(values, "Esigenza", "Lead da qualificare"),
+                fieldValue(values, "Mezzo di contatto"),
+                fieldValue(values, "Qualità contatto"),
+                fieldValue(values, "Nota"),
+              ].filter(Boolean).join(" - "),
               nextStep: "Ricontatto commerciale",
               updatedAt: nowLabel(),
             };
@@ -3050,6 +3451,7 @@ function CensusView({
   onCommit: CrmCommit;
   onAction: (message: string) => void;
 }) {
+  const [filters, setFilters] = useState<Record<string, string>>({});
   const censusAreas = useFilteredRows(data.censusAreas, query, (area) =>
     [area.zone, String(area.buildings), String(area.contacts), area.updatedAt].join(" "),
   );
@@ -3061,12 +3463,43 @@ function CensusView({
   const censusComplexes = useFilteredRows(savedCensusComplexes, query, (complex) =>
     [complex.zone, complex.street, complex.name, String(complex.units), String(complex.owners)].join(" "),
   );
+  const allCensusOwners = data.contacts.filter((contact) => /proprietario/i.test(contact.type) || contact.source === "Censimento");
+  const censusOwnerBase = allCensusOwners
+    .filter((contact) => {
+      const splitName = splitFullName(contact.name);
+      return matchesStructuredFilters(filters, {
+        Nome: contact.firstName || splitName.firstName || contact.name,
+        Cognome: contact.lastName || splitName.lastName || contact.name,
+        Numero: contact.phone || "",
+        "Codice fiscale": contact.taxCode || "",
+        Foglio: contact.sheet || "",
+        Particella: contact.parcel || "",
+        Subalterno: contact.subaltern || "",
+        "Categoria catastale": contact.cadastralCategory || "",
+        Vani: contact.rooms || "",
+      });
+    });
   const censusOwners = useFilteredRows(
-    data.contacts.filter((contact) => /proprietario/i.test(contact.type) || contact.source === "Censimento"),
+    censusOwnerBase,
     query,
-    (contact) => [contact.name, contact.type, contact.status, contact.note, contact.phone].join(" "),
+    (contact) =>
+      [
+        contact.name,
+        contact.firstName,
+        contact.lastName,
+        contact.type,
+        contact.status,
+        contact.note,
+        contact.phone,
+        contact.taxCode,
+        contact.sheet,
+        contact.parcel,
+        contact.subaltern,
+        contact.cadastralCategory,
+        contact.rooms,
+      ].join(" "),
   );
-  const ownersTotal = data.contacts.filter((contact) => /proprietario/i.test(contact.type) || contact.source === "Censimento").length;
+  const ownersTotal = allCensusOwners.length;
   const phaseCards = [
     {
       label: "1. Zona",
@@ -3111,7 +3544,21 @@ function CensusView({
       : pageKey === "censimento-complessi"
         ? ["Zona", "Via", "Palazzo / Complesso", "Unita"]
         : pageKey === "censimento-proprietari"
-          ? ["Zona", "Via", "Complesso", "Proprietario", "Telefono", "Immobile collegato"]
+          ? [
+              "Zona",
+              "Via",
+              "Complesso",
+              "Nome",
+              "Cognome",
+              { name: "Numero", required: false },
+              { name: "Codice fiscale", required: false },
+              { name: "Foglio", required: false },
+              { name: "Particella", required: false },
+              { name: "Subalterno", required: false },
+              { name: "Categoria catastale", options: cadastralCategoryOptions, required: false },
+              { name: "Vani", options: roomOptions, required: false },
+              { name: "Immobile collegato", required: false },
+            ]
           : ["Zona"];
   const tableColumns =
     pageKey === "censimento-vie"
@@ -3119,7 +3566,7 @@ function CensusView({
       : pageKey === "censimento-complessi"
         ? ["Zona", "Via", "Complesso", "Unita", "Proprietari"]
         : pageKey === "censimento-proprietari"
-          ? ["Proprietario", "Tipo", "Percorso", "Telefono", "Stato"]
+          ? ["Proprietario", "Tipo", "Percorso", "Telefono", "Catasto", "Stato"]
           : ["Zona", "Vie/Palazzi", "Proprietari", "Aggiornato"];
   const tableRows =
     pageKey === "censimento-vie"
@@ -3138,6 +3585,7 @@ function CensusView({
               owner.type,
               owner.note || "-",
               owner.phone || "-",
+              cadastralLabel(owner),
               owner.status,
             ])
           : censusAreas.map((area) => [
@@ -3243,7 +3691,13 @@ function CensusView({
     );
   }
 
-  function linkOwnerToProperty(properties: PropertyRecord[], propertyLabel: string, zone: string, ownerName: string) {
+  function linkOwnerToProperty(
+    properties: PropertyRecord[],
+    propertyLabel: string,
+    zone: string,
+    ownerName: string,
+    details: Partial<PropertyRecord> = {},
+  ) {
     if (!propertyLabel) {
       return properties;
     }
@@ -3261,6 +3715,7 @@ function CensusView({
           owner: ownerName,
           portals: "Privato",
           kind: "vendita",
+          ...details,
           updatedAt: nowLabel(),
         },
         ...properties,
@@ -3273,6 +3728,13 @@ function CensusView({
             ...property,
             owner: appendOwnerLabel(property.owner, ownerName),
             status: "Proprietario collegato",
+            phone: details.phone || property.phone,
+            taxCode: details.taxCode || property.taxCode,
+            sheet: details.sheet || property.sheet,
+            parcel: details.parcel || property.parcel,
+            subaltern: details.subaltern || property.subaltern,
+            cadastralCategory: details.cadastralCategory || property.cadastralCategory,
+            rooms: details.rooms || property.rooms,
             updatedAt: nowLabel(),
           }
         : property,
@@ -3328,8 +3790,16 @@ function CensusView({
       return;
     }
 
-    const ownerName = fieldValue(values, "Proprietario", "Proprietario da definire");
-    const phone = fieldValue(values, "Telefono");
+    const firstName = fieldValue(values, "Nome");
+    const lastName = fieldValue(values, "Cognome");
+    const ownerName = formatFullName(firstName, lastName, fieldValue(values, "Proprietario", "Proprietario da definire"));
+    const phone = fieldValue(values, "Numero") || fieldValue(values, "Telefono");
+    const taxCode = fieldValue(values, "Codice fiscale");
+    const sheet = fieldValue(values, "Foglio");
+    const parcel = fieldValue(values, "Particella");
+    const subaltern = fieldValue(values, "Subalterno");
+    const cadastralCategory = fieldValue(values, "Categoria catastale");
+    const rooms = fieldValue(values, "Vani");
     const propertyLabel = fieldValue(values, "Immobile collegato");
     const ownerPath = `Zona: ${zone} / Via: ${street} / Complesso: ${complexName}`;
 
@@ -3352,9 +3822,18 @@ function CensusView({
               sameLabel(contact.name, ownerName)
                 ? {
                     ...contact,
+                    firstName: firstName || contact.firstName,
+                    lastName: lastName || contact.lastName,
                     type: /proprietario/i.test(contact.type) ? contact.type : `${contact.type} / Proprietario`,
                     status: "Proprietario collegato",
                     phone: phone || contact.phone,
+                    taxCode: taxCode || contact.taxCode,
+                    sheet: sheet || contact.sheet,
+                    parcel: parcel || contact.parcel,
+                    subaltern: subaltern || contact.subaltern,
+                    cadastralCategory: cadastralCategory || contact.cadastralCategory,
+                    rooms: rooms || contact.rooms,
+                    property: propertyLabel || contact.property,
                     note: ownerPath,
                     nextStep: propertyLabel ? `Collegato a ${propertyLabel}` : "Associare immobile",
                     updatedAt: nowLabel(),
@@ -3365,11 +3844,20 @@ function CensusView({
               {
                 id: makeId("contact"),
                 name: ownerName,
+                firstName,
+                lastName,
                 type: "Proprietario",
                 status: "Proprietario censito",
                 source: "Censimento",
                 owner: "Daniele",
                 phone,
+                taxCode,
+                sheet,
+                parcel,
+                subaltern,
+                cadastralCategory,
+                rooms,
+                property: propertyLabel,
                 note: ownerPath,
                 nextStep: propertyLabel ? `Collegato a ${propertyLabel}` : "Associare immobile",
                 updatedAt: nowLabel(),
@@ -3380,7 +3868,16 @@ function CensusView({
         return {
           ...currentData,
           contacts: updatedContacts,
-          properties: linkOwnerToProperty(currentData.properties, propertyLabel, zone, ownerName),
+          properties: linkOwnerToProperty(currentData.properties, propertyLabel, zone, ownerName, {
+            phone,
+            taxCode,
+            sheet,
+            parcel,
+            subaltern,
+            cadastralCategory,
+            rooms,
+            source: "Censimento",
+          }),
           censusAreas: ensureArea(currentData.censusAreas, zone, ownerDelta, complexDelta),
           censusStreets: ensureStreet(currentData.censusStreets ?? [], zone, street, complexDelta),
           censusComplexes: ensureComplex(currentData.censusComplexes ?? [], zone, street, complexName, 0, ownerDelta),
@@ -3422,6 +3919,28 @@ function CensusView({
           ))}
         </div>
       </Panel>
+
+      {pageKey === "censimento-proprietari" ? (
+        <Panel
+          className="span-12"
+          title="Filtro proprietari"
+          action={activeFilters(filters).length ? "Azzera filtri" : undefined}
+          onPanelAction={() => {
+            setFilters({});
+            onAction("Filtri proprietari azzerati.");
+          }}
+        >
+          <QuickForm
+            button="Filtra proprietari"
+            fields={searchFilterFields}
+            required={false}
+            onSubmit={(values) => {
+              setFilters(values);
+              onAction(`Filtro proprietari applicato: ${valuesSummary(values)}.`);
+            }}
+          />
+        </Panel>
+      ) : null}
 
       <Panel
         className="span-8"
@@ -3711,6 +4230,10 @@ function AccountsView({
     return fullOverride || account.role !== "TITOLARE";
   }
 
+  function canEditAccessWindow(account: AccountRecord) {
+    return canManageTarget(account) || canMaintainTarget(account) || (fullOverride && account.id === currentUser.id);
+  }
+
   async function createAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setAccountError("");
@@ -3719,6 +4242,9 @@ function AccountsView({
     const name = String(form.get("name") || "").trim();
     const role = String(form.get("role") || "");
     const password = String(form.get("password") || "");
+    const accessLimitEnabled = form.get("accessLimitEnabled") === "on";
+    const accessStartHour = normalizeAccessHour(form.get("accessStartHour"), defaultAccessStartHour);
+    const accessEndHour = normalizeAccessHour(form.get("accessEndHour"), defaultAccessEndHour);
 
     if (!email || !name || !password || !isValidRole(role)) {
       setAccountError("Completa nome, email, ruolo e password.");
@@ -3747,6 +4273,9 @@ function AccountsView({
       passwordHash: await sha256Hex(password),
       role,
       status: "Attivo",
+      accessLimitEnabled,
+      accessStartHour,
+      accessEndHour,
       managerId: currentUser.id,
       updatedAt: nowLabel(),
     };
@@ -3791,6 +4320,38 @@ function AccountsView({
     );
   }
 
+  function toggleAccessLimit(account: AccountRecord, enabled: boolean) {
+    if (!canEditAccessWindow(account)) {
+      onAction("Non puoi modificare l'orario operativo di questo account.");
+      return;
+    }
+    onAccountsChange(
+      (currentAccounts) =>
+        currentAccounts.map((item) =>
+          item.id === account.id ? { ...item, accessLimitEnabled: enabled, updatedAt: nowLabel() } : item,
+        ),
+      enabled
+        ? `Limite orario attivato per ${account.name}: ${accountAccessLabel({ ...account, accessLimitEnabled: true })}.`
+        : `Limite orario disattivato per ${account.name}.`,
+    );
+  }
+
+  function changeAccessHour(account: AccountRecord, field: "accessStartHour" | "accessEndHour", value: string) {
+    if (!canEditAccessWindow(account)) {
+      onAction("Non puoi modificare l'orario operativo di questo account.");
+      return;
+    }
+    const hour = normalizeAccessHour(value, field === "accessStartHour" ? defaultAccessStartHour : defaultAccessEndHour);
+    const nextAccount = { ...account, [field]: hour };
+    onAccountsChange(
+      (currentAccounts) =>
+        currentAccounts.map((item) =>
+          item.id === account.id ? { ...item, [field]: hour, updatedAt: nowLabel() } : item,
+        ),
+      `Orario operativo ${account.name}: ${accountAccessLabel(nextAccount)}.`,
+    );
+  }
+
   async function resetPassword(account: AccountRecord) {
     if (!canManageTarget(account) && !canMaintainTarget(account)) {
       onAction("Non puoi resettare la password di questo account.");
@@ -3832,8 +4393,22 @@ function AccountsView({
           })
           .map((account) =>
             account.email === defaultAccount.email
-              ? { ...account, role: "SVILUPPATORE", status: "Attivo", updatedAt: nowLabel() }
-              : account,
+              ? {
+                  ...account,
+                  role: "SVILUPPATORE",
+                  status: "Attivo",
+                  passwordHash: accountPasswordHash,
+                  accessLimitEnabled: account.accessLimitEnabled !== false,
+                  accessStartHour: normalizeAccessHour(account.accessStartHour, defaultAccessStartHour),
+                  accessEndHour: normalizeAccessHour(account.accessEndHour, defaultAccessEndHour),
+                  updatedAt: nowLabel(),
+                }
+              : {
+                  ...account,
+                  accessLimitEnabled: account.accessLimitEnabled !== false,
+                  accessStartHour: normalizeAccessHour(account.accessStartHour, defaultAccessStartHour),
+                  accessEndHour: normalizeAccessHour(account.accessEndHour, defaultAccessEndHour),
+                },
           );
         return repaired.some((account) => account.email === defaultAccount.email)
           ? repaired
@@ -3849,18 +4424,12 @@ function AccountsView({
         <div className="permission-list">
           <span>
             <ShieldCheck size={18} />
-            Ruolo collegato: <strong>{currentUser.role}</strong>
+            Profilo collegato: <strong>{currentUser.name}</strong>
           </span>
           <span>
             <BadgeCheck size={18} />
             Stato account: <strong>{currentAccount?.status ?? "Attivo"}</strong>
           </span>
-          {developer ? (
-            <span>
-              <Wrench size={18} />
-              Manutenzione tecnica: <strong>abilitata</strong>
-            </span>
-          ) : null}
         </div>
       </Panel>
 
@@ -3889,6 +4458,32 @@ function AccountsView({
               Password provvisoria
               <input name="password" required type="password" placeholder="Password iniziale" />
             </label>
+            <label className="account-check">
+              <input name="accessLimitEnabled" defaultChecked type="checkbox" />
+              <span>Limita accesso all'orario operativo</span>
+            </label>
+            <div className="account-time-grid">
+              <label>
+                Dalle
+                <select name="accessStartHour" defaultValue={defaultAccessStartHour}>
+                  {hourOptions.map((hour) => (
+                    <option key={hour} value={hour}>
+                      {formatHour(hour)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Alle
+                <select name="accessEndHour" defaultValue={defaultAccessEndHour}>
+                  {hourOptions.map((hour) => (
+                    <option key={hour} value={hour}>
+                      {formatHour(hour)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
             {accountError ? <p className="login-error">{accountError}</p> : null}
             <button type="submit">
               <Plus size={17} />
@@ -3912,12 +4507,16 @@ function AccountsView({
             const editable = canManageTarget(account);
             const maintainable = canMaintainTarget(account);
             const roleDisabled = !editable || isSelf;
+            const accessEditable = canEditAccessWindow(account);
+            const accessSchedule = getAccountAccessSchedule(account);
             return (
               <article className={isSelf ? "account-row current" : "account-row"} key={account.id}>
                 <div>
                   <strong>{account.name}</strong>
                   <small>{account.email}</small>
-                  <span>{account.status} / {account.role}</span>
+                  <span>
+                    {account.status} / {isAccountOnline(account) ? "Online" : "Offline"} / {accountAccessLabel(account)}
+                  </span>
                 </div>
                 <select
                   aria-label={`Ruolo ${account.name}`}
@@ -3931,6 +4530,43 @@ function AccountsView({
                     </option>
                   ))}
                 </select>
+                <div className="account-schedule">
+                  <label className="account-check">
+                    <input
+                      checked={accessSchedule.enabled}
+                      disabled={!accessEditable}
+                      type="checkbox"
+                      onChange={(event) => toggleAccessLimit(account, event.currentTarget.checked)}
+                    />
+                    <span>{accessSchedule.enabled ? "Orario limitato" : "Sempre operativo"}</span>
+                  </label>
+                  <div className="account-time-grid">
+                    <select
+                      aria-label={`Accesso da ${account.name}`}
+                      disabled={!accessEditable || !accessSchedule.enabled}
+                      value={accessSchedule.start}
+                      onChange={(event) => changeAccessHour(account, "accessStartHour", event.currentTarget.value)}
+                    >
+                      {hourOptions.map((hour) => (
+                        <option key={hour} value={hour}>
+                          {formatHour(hour)}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label={`Accesso fino ${account.name}`}
+                      disabled={!accessEditable || !accessSchedule.enabled}
+                      value={accessSchedule.end}
+                      onChange={(event) => changeAccessHour(account, "accessEndHour", event.currentTarget.value)}
+                    >
+                      {hourOptions.map((hour) => (
+                        <option key={hour} value={hour}>
+                          {formatHour(hour)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
                 <div className="account-actions">
                   <button type="button" disabled={isSelf || (!editable && !maintainable)} onClick={() => toggleStatus(account)}>
                     {account.status === "Attivo" ? "Sospendi" : "Riattiva"}
@@ -4013,8 +4649,8 @@ function SettingsView({ pageKey, query, onCommit }: { pageKey: string; query: st
           <span>
             <UserRound size={24} />
           </span>
-          <strong>Daniele Marangoni</strong>
-          <small>Amministratore Fenix Suite</small>
+          <strong>Profilo operativo</strong>
+          <small>Configurazione account Fenix Suite</small>
           <button type="button" onClick={() => onCommit((data) => data, "Profilo account aggiornato.")}>
             Aggiorna profilo
           </button>
@@ -4205,6 +4841,10 @@ function QuickForm({
   required?: boolean;
 }) {
   const fieldName = (field: QuickFormField) => typeof field === "string" ? field : field.name;
+  const fieldRequired = (field: QuickFormField) =>
+    typeof field === "string" ? required : field.required ?? required;
+  const fieldPlaceholder = (field: QuickFormField) =>
+    typeof field === "string" ? field : field.placeholder ?? field.name;
 
   return (
     <form
@@ -4224,10 +4864,10 @@ function QuickForm({
       {fields.map((field) => (
         <label key={fieldName(field)}>
           {fieldName(field)}
-          {typeof field === "string" ? (
-            <input name={field} required={required} placeholder={field} />
+          {typeof field === "string" || !field.options ? (
+            <input name={fieldName(field)} required={fieldRequired(field)} placeholder={fieldPlaceholder(field)} />
           ) : (
-            <select name={field.name} required={required}>
+            <select name={field.name} required={fieldRequired(field)}>
               {field.options.map((option) => (
                 <option key={option || "empty"} value={option}>
                   {option || "Qualsiasi"}
@@ -4377,6 +5017,43 @@ function fieldValue(values: Record<string, string>, field: string, fallback = ""
   return String(values[field] || "").trim() || fallback;
 }
 
+function normalizeSearchValue(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function activeFilters(filters: Record<string, string>) {
+  return Object.entries(filters).filter(([, value]) => normalizeSearchValue(value));
+}
+
+function matchesStructuredFilters(filters: Record<string, string>, fields: Record<string, string>) {
+  const selectedFilters = activeFilters(filters);
+
+  if (!selectedFilters.length) {
+    return true;
+  }
+
+  return selectedFilters.every(([key, value]) => {
+    const filterValue = normalizeSearchValue(value);
+    const fieldValue = normalizeSearchValue(fields[key] || "");
+    if (key === "Categoria catastale" || key === "Vani") {
+      return fieldValue === filterValue;
+    }
+    return fieldValue.includes(filterValue);
+  });
+}
+
+function splitFullName(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
+function formatFullName(firstName: string, lastName: string, fallback = "Nuovo cliente") {
+  return [firstName, lastName].filter(Boolean).join(" ").trim() || fallback;
+}
+
 function valuesSummary(values: Record<string, string>, fallback = "tutti i dati") {
   return Object.values(values).filter(Boolean).join(" / ") || fallback;
 }
@@ -4396,6 +5073,22 @@ function appendOwnerLabel(currentOwner: string, ownerName: string) {
   }
 
   return owners.join(", ");
+}
+
+function cadastralLabel(record: {
+  sheet?: string;
+  parcel?: string;
+  subaltern?: string;
+  cadastralCategory?: string;
+  rooms?: string;
+}) {
+  const cadastralParts = [
+    record.sheet ? `F.${record.sheet}` : "",
+    record.parcel ? `P.${record.parcel}` : "",
+    record.subaltern ? `Sub.${record.subaltern}` : "",
+  ].filter(Boolean);
+  const registryParts = [record.cadastralCategory, record.rooms ? `${record.rooms} vani` : ""].filter(Boolean);
+  return [...cadastralParts, ...registryParts].join(" / ") || "-";
 }
 
 function createActivity(input: Partial<ActivityRecord> & Pick<ActivityRecord, "title" | "type">): ActivityRecord {
