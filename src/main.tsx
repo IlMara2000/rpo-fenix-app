@@ -70,7 +70,9 @@ type ModuleKey =
   | "immobili"
   | "richieste"
   | "nominativi"
+  | "proprietari"
   | "agenda"
+  | "attivita"
   | "pubblicita"
   | "contattiPubblicita"
   | "censimento"
@@ -436,16 +438,28 @@ const modules: ModuleItem[] = [
     Icon: Gauge,
   },
   {
-    key: "nominativi",
-    label: "Clienti",
-    description: "Persone, proprietari, telefoni, note e prossimo contatto.",
-    Icon: UsersRound,
+    key: "agenda",
+    label: "Agenda",
+    description: "Settimana operativa, visite, appuntamenti e scadenze.",
+    Icon: CalendarDays,
   },
   {
     key: "censimento",
     label: "Censimento",
-    description: "Zone, stabili, contatti territoriali e sviluppo censimento.",
+    description: "Zone, vie, palazzi, immobili e proprietari collegati.",
     Icon: MapPinned,
+  },
+  {
+    key: "nominativi",
+    label: "Clienti",
+    description: "Database clienti, esigenze, telefoni, note e prossimo contatto.",
+    Icon: UsersRound,
+  },
+  {
+    key: "proprietari",
+    label: "Proprietari",
+    description: "Persone collegate agli immobili e storico sviluppo.",
+    Icon: UserRound,
   },
   {
     key: "immobili",
@@ -454,15 +468,21 @@ const modules: ModuleItem[] = [
     Icon: Home,
   },
   {
-    key: "agenda",
-    label: "Agenda",
-    description: "Telefonate, visite, appuntamenti e follow-up.",
-    Icon: CalendarDays,
+    key: "attivita",
+    label: "Attivita",
+    description: "Telefonate, esiti, follow-up, note e storico operativo.",
+    Icon: ClipboardCheck,
   },
   {
     key: "utilita",
-    label: "Strumenti",
-    description: "Backup, portali, pubblicita, censimento e configurazioni.",
+    label: "Account",
+    description: "Utenti, ruoli, permessi e orari di accesso.",
+    Icon: ShieldCheck,
+  },
+  {
+    key: "impostazioni",
+    label: "Impostazioni",
+    description: "Parametri agenzia, tipologie, provenienze e documenti.",
     Icon: Wrench,
   },
 ];
@@ -536,6 +556,20 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       Icon: UserRound,
     },
   ],
+  proprietari: [
+    {
+      key: "proprietari-elenco",
+      label: "Elenco",
+      description: "Proprietari collegati agli immobili, contatti e prossimo sviluppo.",
+      Icon: UsersRound,
+    },
+    {
+      key: "proprietari-collega",
+      label: "Collega",
+      description: "Trasforma un cliente in proprietario collegandolo a un immobile.",
+      Icon: Home,
+    },
+  ],
   agenda: [
     {
       key: "agenda-calendario",
@@ -543,17 +577,19 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       description: "Calendario operativo per oggi, domani e settimana.",
       Icon: CalendarDays,
     },
+  ],
+  attivita: [
+    {
+      key: "attivita-elenco",
+      label: "Storico",
+      description: "Storico operativo di telefonate, visite, note, esiti e follow-up.",
+      Icon: ListChecks,
+    },
     {
       key: "attivita-nuova",
       label: "Nuova",
-      description: "Nuova attivita, telefonata, appuntamento o visita collegata a contatto e immobile.",
+      description: "Nuova attivita collegata a cliente, proprietario o immobile.",
       Icon: Plus,
-    },
-    {
-      key: "agenda-storico",
-      label: "Storico",
-      description: "Storico attivita e ricerca per operatore, data, cliente o immobile.",
-      Icon: Search,
     },
   ],
   pubblicita: [
@@ -598,9 +634,15 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       Icon: Building2,
     },
     {
+      key: "censimento-immobili",
+      label: "Immobile",
+      description: "Fase 4: creazione o selezione dell'immobile dentro il complesso.",
+      Icon: Home,
+    },
+    {
       key: "censimento-proprietari",
       label: "Proprietari",
-      description: "Fase 4: creazione, selezione e gestione dei proprietari degli immobili.",
+      description: "Fase 5: collega clienti e proprietari agli immobili censiti.",
       Icon: UsersRound,
     },
   ],
@@ -619,55 +661,13 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       description: "Utenti, ruoli, permessi e manutenzione degli accessi.",
       Icon: UsersRound,
     },
-    {
-      key: "utilita-backup",
-      label: "Backup",
-      description: "Backup, esportazioni e archivio operativo.",
-      Icon: DatabaseBackup,
-    },
-    {
-      key: "utilita-portali",
-      label: "Portali",
-      description: "Code di esportazione e stato invio ai portali.",
-      Icon: UploadCloud,
-    },
-    {
-      key: "pubblicita-portali",
-      label: "Pubblicita",
-      description: "Pubblicazioni, portali, campagne, vetrina e materiali marketing.",
-      Icon: Globe2,
-    },
-    {
-      key: "obiettivi-elenco",
-      label: "Obiettivi",
-      description: "Obiettivi per periodo, operatore e agenzia.",
-      Icon: Target,
-    },
-    {
-      key: "impostazioni-azienda",
-      label: "Impostazioni",
-      description: "Dati aziendali, sedi, utenti e permessi.",
-      Icon: Settings,
-    },
   ],
   impostazioni: [
-    {
-      key: "impostazioni-cantieri",
-      label: "Cantieri",
-      description: "Anagrafiche cantieri e immobili collegati.",
-      Icon: Building2,
-    },
     {
       key: "impostazioni-tipologie",
       label: "Tipologie",
       description: "Tipologie immobiliari disponibili nelle schede.",
       Icon: Home,
-    },
-    {
-      key: "impostazioni-tipi-gestione",
-      label: "Tipi gestione",
-      description: "Vendita, locazione e configurazioni commerciali.",
-      Icon: BriefcaseBusiness,
     },
     {
       key: "impostazioni-stati",
@@ -676,28 +676,10 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       Icon: BadgeCheck,
     },
     {
-      key: "impostazioni-accessori",
-      label: "Accessori",
-      description: "Accessori globali, per tipologia e per gestione.",
-      Icon: Blocks,
-    },
-    {
       key: "impostazioni-modulistica",
       label: "Modulistica",
       description: "Contratti, modelli e documenti.",
       Icon: FileBadge,
-    },
-    {
-      key: "impostazioni-cartelli",
-      label: "Setup cartelli",
-      description: "Preset grafici per cartelli e vetrina.",
-      Icon: GalleryVerticalEnd,
-    },
-    {
-      key: "impostazioni-distanze",
-      label: "Distanze",
-      description: "Punti di interesse e distanze standard.",
-      Icon: MapPinned,
     },
     {
       key: "impostazioni-azienda",
@@ -707,7 +689,7 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
     },
     {
       key: "impostazioni-aree",
-      label: "Aree geografiche",
+      label: "Zone",
       description: "Frazioni, localita e zone operative.",
       Icon: Globe2,
     },
@@ -767,23 +749,23 @@ function canAccessUtilityPage(user: SessionUser, pageKey: string) {
     return true;
   }
 
-  if (user.role === "ASSOCIATO") {
-    return pageKey === "account-ruoli";
+  return pageKey === "account-ruoli" && (canManageAccounts(user) || canUseDeveloperTools(user));
+}
+
+function canAccessModule(user: SessionUser, moduleKey: ModuleKey) {
+  if (moduleKey === "utilita") {
+    return canManageAccounts(user) || canUseDeveloperTools(user);
   }
 
-  if (user.role === "COORDINATORE/TRICE") {
-    return pageKey === "account-ruoli";
+  if (moduleKey === "impostazioni") {
+    return hasOwnerOverride(user) || user.role === "TITOLARE" || user.role === "SVILUPPATORE";
   }
 
-  if (user.role === "SVILUPPATORE") {
-    return ["account-ruoli", "utilita-backup", "impostazioni-azienda"].includes(pageKey);
-  }
-
-  return false;
+  return true;
 }
 
 function getVisibleModules(user: SessionUser) {
-  return modules.filter((module) => module.key !== "utilita" || canUseTools(user));
+  return modules.filter((module) => canAccessModule(user, module.key));
 }
 
 function getVisibleModulePages(moduleKey: ModuleKey, user: SessionUser) {
@@ -1956,8 +1938,14 @@ function ModuleView({
   if (moduleKey === "nominativi") {
     return <ContactsView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
   }
+  if (moduleKey === "proprietari") {
+    return <OwnersView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
+  }
   if (moduleKey === "agenda") {
     return <AgendaView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} resetVersion={agendaResetVersion} />;
+  }
+  if (moduleKey === "attivita") {
+    return <ActivityCenterView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
   }
   if (moduleKey === "pubblicita") {
     return <MarketingView data={data} onCommit={onCommit} onAction={onAction} />;
@@ -2105,7 +2093,7 @@ function StartView({
             </span>
             <ChevronRight size={16} />
           </button>
-          <button type="button" onClick={() => onOpenModule("agenda", "attivita-nuova")}>
+          <button type="button" onClick={() => onOpenModule("attivita", "attivita-nuova")}>
             <CalendarDays size={20} />
             <span>
               <strong>Pianifica attivita</strong>
@@ -2947,6 +2935,499 @@ function ContactsView({
   );
 }
 
+function propertyOwnerNames(property: PropertyRecord) {
+  return property.owner
+    .split(",")
+    .map((owner) => owner.trim())
+    .filter(Boolean);
+}
+
+function propertiesForContact(contact: ContactRecord, properties: PropertyRecord[]) {
+  return properties.filter((property) => {
+    const ownerMatch = propertyOwnerNames(property).some((owner) => sameLabel(owner, contact.name));
+    return ownerMatch || sameLabel(contact.property || "", property.title) || sameLabel(contact.property || "", property.code);
+  });
+}
+
+function isOwnerContact(contact: ContactRecord, properties: PropertyRecord[]) {
+  return /proprietario/i.test(contact.type) || contact.source === "Censimento" || propertiesForContact(contact, properties).length > 0;
+}
+
+function OwnersView({
+  pageKey,
+  query,
+  data,
+  onCommit,
+  onAction,
+}: {
+  pageKey: string;
+  query: string;
+  data: CrmData;
+  onCommit: CrmCommit;
+  onAction: (message: string) => void;
+}) {
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const ownerBase = data.contacts
+    .filter((contact) => isOwnerContact(contact, data.properties))
+    .filter((contact) => {
+      const splitName = splitFullName(contact.name);
+      return matchesStructuredFilters(filters, {
+        Nome: contact.firstName || splitName.firstName || contact.name,
+        Cognome: contact.lastName || splitName.lastName || contact.name,
+        Numero: contact.phone || "",
+        "Codice fiscale": contact.taxCode || "",
+        Foglio: contact.sheet || "",
+        Particella: contact.parcel || "",
+        Subalterno: contact.subaltern || "",
+        "Categoria catastale": contact.cadastralCategory || "",
+        Vani: contact.rooms || "",
+      });
+    });
+  const owners = useFilteredRows(ownerBase, query, (contact) =>
+    [
+      contact.name,
+      contact.firstName,
+      contact.lastName,
+      contact.phone,
+      contact.taxCode,
+      contact.type,
+      contact.status,
+      contact.property,
+      contact.note,
+      propertiesForContact(contact, data.properties).map((property) => property.title).join(" "),
+    ].join(" "),
+  );
+  const linkMode = pageKey === "proprietari-collega";
+
+  function upsertOwner(values: Record<string, string>) {
+    const firstName = fieldValue(values, "Nome");
+    const lastName = fieldValue(values, "Cognome");
+    const ownerName = formatFullName(firstName, lastName, fieldValue(values, "Proprietario", "Proprietario da definire"));
+    const propertyLabel = fieldValue(values, "Immobile collegato");
+    const phone = fieldValue(values, "Numero") || fieldValue(values, "Telefono");
+    const taxCode = fieldValue(values, "Codice fiscale");
+    const sheet = fieldValue(values, "Foglio");
+    const parcel = fieldValue(values, "Particella");
+    const subaltern = fieldValue(values, "Subalterno");
+    const cadastralCategory = fieldValue(values, "Categoria catastale");
+    const rooms = fieldValue(values, "Vani");
+    const note = fieldValue(values, "Nota", propertyLabel ? `Collegato a ${propertyLabel}` : "Proprietario da sviluppare");
+
+    onCommit(
+      (currentData) => {
+        const contactExists = currentData.contacts.some(
+          (contact) => sameLabel(contact.name, ownerName) || (!!phone && contact.phone === phone),
+        );
+        const updatedContacts = contactExists
+          ? currentData.contacts.map((contact) =>
+              sameLabel(contact.name, ownerName) || (!!phone && contact.phone === phone)
+                ? {
+                    ...contact,
+                    name: ownerName,
+                    firstName: firstName || contact.firstName,
+                    lastName: lastName || contact.lastName,
+                    type: /proprietario/i.test(contact.type) ? contact.type : `${contact.type} / Proprietario`,
+                    status: propertyLabel ? "Proprietario collegato" : "Proprietario da collegare",
+                    phone: phone || contact.phone,
+                    taxCode: taxCode || contact.taxCode,
+                    sheet: sheet || contact.sheet,
+                    parcel: parcel || contact.parcel,
+                    subaltern: subaltern || contact.subaltern,
+                    cadastralCategory: cadastralCategory || contact.cadastralCategory,
+                    rooms: rooms || contact.rooms,
+                    property: propertyLabel || contact.property,
+                    note,
+                    nextStep: propertyLabel ? "Sviluppare immobile collegato" : "Associare immobile",
+                    updatedAt: nowLabel(),
+                  }
+                : contact,
+            )
+          : [
+              {
+                id: makeId("contact"),
+                name: ownerName,
+                firstName,
+                lastName,
+                type: "Proprietario",
+                status: propertyLabel ? "Proprietario collegato" : "Proprietario da collegare",
+                source: "Proprietari",
+                owner: "Daniele",
+                phone,
+                taxCode,
+                sheet,
+                parcel,
+                subaltern,
+                cadastralCategory,
+                rooms,
+                property: propertyLabel,
+                note,
+                nextStep: propertyLabel ? "Sviluppare immobile collegato" : "Associare immobile",
+                updatedAt: nowLabel(),
+              },
+              ...currentData.contacts,
+            ];
+        const propertyExists = currentData.properties.some(
+          (property) => sameLabel(property.title, propertyLabel) || sameLabel(property.code, propertyLabel),
+        );
+        const updatedProperties = !propertyLabel
+          ? currentData.properties
+          : propertyExists
+            ? currentData.properties.map((property) =>
+                sameLabel(property.title, propertyLabel) || sameLabel(property.code, propertyLabel)
+                  ? {
+                      ...property,
+                      owner: appendOwnerLabel(property.owner, ownerName),
+                      status: "Proprietario collegato",
+                      phone: phone || property.phone,
+                      taxCode: taxCode || property.taxCode,
+                      sheet: sheet || property.sheet,
+                      parcel: parcel || property.parcel,
+                      subaltern: subaltern || property.subaltern,
+                      cadastralCategory: cadastralCategory || property.cadastralCategory,
+                      rooms: rooms || property.rooms,
+                      updatedAt: nowLabel(),
+                    }
+                  : property,
+              )
+            : [
+                {
+                  id: makeId("property"),
+                  code: `FS-${String(250 + currentData.properties.length).padStart(3, "0")}`,
+                  title: propertyLabel,
+                  zone: "Da censire",
+                  status: "Censito",
+                  price: "Da valutare",
+                  owner: ownerName,
+                  portals: "Privato",
+                  kind: "vendita",
+                  phone,
+                  taxCode,
+                  sheet,
+                  parcel,
+                  subaltern,
+                  cadastralCategory,
+                  rooms,
+                  source: "Proprietari",
+                  updatedAt: nowLabel(),
+                },
+                ...currentData.properties,
+              ];
+
+        return {
+          ...currentData,
+          contacts: updatedContacts,
+          properties: updatedProperties,
+          activities: [
+            createActivity({
+              title: `Collegamento proprietario ${ownerName}`,
+              type: "Proprietario",
+              contact: ownerName,
+              property: propertyLabel,
+              note,
+            }),
+            ...currentData.activities,
+          ],
+        };
+      },
+      propertyLabel ? `${ownerName} collegato a ${propertyLabel}.` : `${ownerName} salvato come proprietario.`,
+    );
+  }
+
+  return (
+    <div className="workspace-grid">
+      <RouteSummary
+        module="Proprietari"
+        page={labelForPage("proprietari", pageKey)}
+        path={pathForPage(pageKey)}
+        items={["Cliente -> immobile", "Immobile -> proprietari", "Proprietario -> attivita"]}
+      />
+      <Panel className="span-12" title="Regola operativa">
+        <div className="scope-strip">
+          <span>
+            <strong>Cliente e proprietario</strong>
+            <small>La stessa persona resta in anagrafica clienti e diventa proprietaria quando viene collegata a un immobile.</small>
+          </span>
+          <span>
+            <strong>Immobili collegati</strong>
+            <small>Ogni immobile puo avere uno o piu proprietari, separati nella scheda con storico attivita dedicato.</small>
+          </span>
+          <span>
+            <strong>Sviluppo</strong>
+            <small>Telefonate, esiti e follow-up finiscono sempre nella sezione Attivita.</small>
+          </span>
+        </div>
+      </Panel>
+      <Panel
+        className={linkMode ? "span-8" : "span-12"}
+        title="Archivio proprietari"
+        action={activeFilters(filters).length ? "Azzera filtri" : "Filtri"}
+        onPanelAction={() => {
+          setFilters({});
+          onAction("Filtri proprietari azzerati.");
+        }}
+      >
+        <DataTable
+          columns={["Proprietario", "Numero", "Immobili", "Catasto", "Stato", "Prossimo passo"]}
+          rows={owners.map((owner) => {
+            const linkedProperties = propertiesForContact(owner, data.properties);
+            return [
+              owner.name,
+              owner.phone || "-",
+              linkedProperties.map((property) => property.code || property.title).join(", ") || owner.property || "-",
+              cadastralLabel(owner),
+              owner.status,
+              owner.nextStep,
+            ];
+          })}
+          actions={[
+            {
+              label: "Ricontatto",
+              onClick: (rowIndex) => {
+                const owner = owners[rowIndex];
+                if (!owner) {
+                  return;
+                }
+                onCommit(
+                  (currentData) => ({
+                    ...currentData,
+                    contacts: currentData.contacts.map((contact) =>
+                      contact.id === owner.id
+                        ? { ...contact, status: "Ricontatto fissato", nextStep: "Domani", updatedAt: nowLabel() }
+                        : contact,
+                    ),
+                    activities: [
+                      createActivity({
+                        title: `Ricontatto proprietario ${owner.name}`,
+                        type: "Telefonata",
+                        contact: owner.name,
+                        property: owner.property || propertiesForContact(owner, currentData.properties)[0]?.title || "",
+                        note: owner.note,
+                        day: "Domani",
+                      }),
+                      ...currentData.activities,
+                    ],
+                  }),
+                  `Ricontatto proprietario fissato per ${owner.name}.`,
+                );
+              },
+            },
+          ]}
+        />
+      </Panel>
+      <Panel className={linkMode ? "span-4 crm-form-panel" : "span-12"} title={linkMode ? "Collega a immobile" : "Filtro proprietari"}>
+        <QuickForm
+          button={linkMode ? "Collega proprietario" : "Filtra proprietari"}
+          fields={linkMode
+            ? [
+                "Nome",
+                "Cognome",
+                { name: "Numero", required: false },
+                "Immobile collegato",
+                { name: "Codice fiscale", required: false },
+                { name: "Foglio", required: false },
+                { name: "Particella", required: false },
+                { name: "Subalterno", required: false },
+                { name: "Categoria catastale", options: cadastralCategoryOptions, required: false },
+                { name: "Vani", options: roomOptions, required: false },
+                { name: "Nota", required: false },
+              ]
+            : searchFilterFields}
+          required={linkMode}
+          onSubmit={(values) => {
+            if (!linkMode) {
+              setFilters(values);
+              onAction(`Filtro proprietari applicato: ${valuesSummary(values)}.`);
+              return;
+            }
+            upsertOwner(values);
+          }}
+        />
+      </Panel>
+    </div>
+  );
+}
+
+function ActivityCenterView({
+  pageKey,
+  query,
+  data,
+  onCommit,
+  onAction,
+}: {
+  pageKey: string;
+  query: string;
+  data: CrmData;
+  onCommit: CrmCommit;
+  onAction: (message: string) => void;
+}) {
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const filteredActivities = data.activities.filter((item) => {
+    const linkedContact = data.contacts.find((contact) => sameLabel(contact.name, item.contact));
+    const splitName = splitFullName(item.contact);
+    const linkedProperty = data.properties.find((property) => sameLabel(property.title, item.property) || sameLabel(property.code, item.property));
+    return matchesStructuredFilters(filters, {
+      Nome: linkedContact?.firstName || splitName.firstName || item.contact,
+      Cognome: linkedContact?.lastName || splitName.lastName || item.contact,
+      Numero: linkedContact?.phone || linkedProperty?.phone || "",
+      "Codice fiscale": linkedContact?.taxCode || linkedProperty?.taxCode || "",
+      Foglio: linkedContact?.sheet || linkedProperty?.sheet || "",
+      Particella: linkedContact?.parcel || linkedProperty?.parcel || "",
+      Subalterno: linkedContact?.subaltern || linkedProperty?.subaltern || "",
+      "Categoria catastale": linkedContact?.cadastralCategory || linkedProperty?.cadastralCategory || "",
+      Vani: linkedContact?.rooms || linkedProperty?.rooms || "",
+    });
+  });
+  const rows = useFilteredRows(filteredActivities, query, (item) =>
+    [item.time, item.title, item.type, item.owner, item.contact, item.property, item.status, item.note, item.day].join(" "),
+  );
+  const newMode = pageKey === "attivita-nuova";
+  const openRows = rows.filter((activity) => !/completata|annullata/i.test(activity.status));
+  const callRows = rows.filter((activity) => /telefonata|whatsapp|email/i.test(activity.type));
+  const visitRows = rows.filter((activity) => /visita|appuntamento/i.test(activity.type));
+
+  return (
+    <div className="workspace-grid">
+      <RouteSummary
+        module="Attivita"
+        page={labelForPage("attivita", pageKey)}
+        path={pathForPage(pageKey)}
+        items={["Attivita -> esito", "Esito -> storico", "Follow-up -> agenda"]}
+      />
+      <div className="kpi-row">
+        <KpiCard label="Aperte" value={String(openRows.length)} trend="da lavorare" Icon={ClipboardCheck} />
+        <KpiCard label="Telefonate" value={String(callRows.length)} trend="storico" Icon={PhoneCall} />
+        <KpiCard label="Visite" value={String(visitRows.length)} trend="agenda" Icon={CalendarDays} />
+        <KpiCard label="Completate" value={String(rows.length - openRows.length)} trend="chiuse" Icon={CheckCircle2} />
+      </div>
+      <Panel
+        className={newMode ? "span-8" : "span-12"}
+        title="Storico attivita"
+        action={activeFilters(filters).length ? "Azzera filtri" : "Filtri"}
+        onPanelAction={() => {
+          setFilters({});
+          onAction("Filtri attivita azzerati.");
+        }}
+      >
+        <DataTable
+          columns={["Quando", "Titolo", "Tipo", "Contatto", "Immobile", "Stato", "Note"]}
+          rows={rows.map((activity) => [
+            `${activity.day} ${activity.time}`,
+            activity.title,
+            activity.type,
+            activity.contact || "-",
+            activity.property || "-",
+            activity.status,
+            activity.note || "-",
+          ])}
+          actions={[
+            {
+              label: "Chiudi",
+              onClick: (rowIndex) => {
+                const activity = rows[rowIndex];
+                if (!activity) {
+                  return;
+                }
+                onCommit(
+                  (currentData) => ({
+                    ...currentData,
+                    activities: currentData.activities.map((item) =>
+                      item.id === activity.id ? { ...item, status: "Completata", updatedAt: nowLabel() } : item,
+                    ),
+                    contacts: currentData.contacts.map((contact) =>
+                      sameLabel(contact.name, activity.contact)
+                        ? { ...contact, status: "Attivita completata", nextStep: "Valutare prossimo sviluppo", updatedAt: nowLabel() }
+                        : contact,
+                    ),
+                  }),
+                  `Attivita "${activity.title}" completata.`,
+                );
+              },
+            },
+            {
+              label: "Follow-up",
+              onClick: (rowIndex) => {
+                const activity = rows[rowIndex];
+                if (!activity) {
+                  return;
+                }
+                onCommit(
+                  (currentData) => ({
+                    ...currentData,
+                    activities: [
+                      createActivity({
+                        title: `Follow-up ${activity.contact || activity.title}`,
+                        type: activity.type,
+                        contact: activity.contact,
+                        property: activity.property,
+                        note: `Da precedente: ${activity.note || activity.title}`,
+                        day: "Domani",
+                      }),
+                      ...currentData.activities,
+                    ],
+                  }),
+                  `Follow-up creato per ${activity.contact || activity.title}.`,
+                );
+              },
+            },
+          ]}
+        />
+      </Panel>
+      <Panel className={newMode ? "span-4 crm-form-panel" : "span-12"} title={newMode ? "Nuova attivita" : "Filtro attivita"}>
+        <QuickForm
+          button={newMode ? "Salva attivita" : "Filtra attivita"}
+          fields={newMode
+            ? [
+                { name: "Tipo attività", options: ["Telefonata", "WhatsApp", "Email", "Appuntamento", "Visita immobile", "Nota", "Censimento"] },
+                "Cliente / Proprietario",
+                { name: "Immobile", required: false },
+                { name: "Giorno", options: ["Oggi", "Domani", "Settimana"] },
+                "Ora",
+                { name: "Stato", options: ["Aperta", "Da richiamare", "Confermato", "Completata", "Annullata"], required: false },
+                { name: "Esito / Note", required: false },
+                { name: "Prossimo passo", required: false },
+              ]
+            : searchFilterFields}
+          required={newMode}
+          onSubmit={(values) => {
+            if (!newMode) {
+              setFilters(values);
+              onAction(`Filtro attivita applicato: ${valuesSummary(values)}.`);
+              return;
+            }
+            const contactName = fieldValue(values, "Cliente / Proprietario", "Contatto da definire");
+            const activityType = fieldValue(values, "Tipo attività", "Telefonata");
+            const day = fieldValue(values, "Giorno", "Oggi") as ActivityRecord["day"];
+            const note = fieldValue(values, "Esito / Note");
+            const nextStep = fieldValue(values, "Prossimo passo", day === "Oggi" ? "Aggiornare esito" : day);
+            const newActivity = createActivity({
+              time: fieldValue(values, "Ora", currentTimeLabel()),
+              title: `${activityType} ${contactName}`,
+              type: activityType,
+              contact: contactName,
+              property: fieldValue(values, "Immobile"),
+              status: fieldValue(values, "Stato", "Aperta"),
+              note,
+              day,
+            });
+            onCommit(
+              (currentData) => ({
+                ...currentData,
+                activities: [newActivity, ...currentData.activities],
+                contacts: currentData.contacts.map((contact) =>
+                  sameLabel(contact.name, contactName)
+                    ? { ...contact, status: newActivity.status, nextStep, updatedAt: nowLabel() }
+                    : contact,
+                ),
+              }),
+              `Attivita salvata per ${contactName}.`,
+            );
+          }}
+        />
+      </Panel>
+    </div>
+  );
+}
+
 function AgendaView({
   pageKey,
   query,
@@ -3463,6 +3944,23 @@ function CensusView({
   const censusComplexes = useFilteredRows(savedCensusComplexes, query, (complex) =>
     [complex.zone, complex.street, complex.name, String(complex.units), String(complex.owners)].join(" "),
   );
+  const censusPropertyBase = data.properties.filter((property) =>
+    property.source === "Censimento" || /censito|proprietario collegato/i.test(property.status),
+  );
+  const censusProperties = useFilteredRows(censusPropertyBase, query, (property) =>
+    [
+      property.code,
+      property.title,
+      property.zone,
+      property.owner,
+      property.status,
+      property.sheet,
+      property.parcel,
+      property.subaltern,
+      property.cadastralCategory,
+      property.rooms,
+    ].join(" "),
+  );
   const allCensusOwners = data.contacts.filter((contact) => /proprietario/i.test(contact.type) || contact.source === "Censimento");
   const censusOwnerBase = allCensusOwners
     .filter((contact) => {
@@ -3517,9 +4015,14 @@ function CensusView({
       text: "Inserisci il palazzo dentro la via scelta.",
     },
     {
-      label: "4. Proprietari",
+      label: "4. Immobili",
+      value: censusPropertyBase.length,
+      text: "Crea le unita immobiliari dentro il complesso.",
+    },
+    {
+      label: "5. Proprietari",
       value: ownersTotal,
-      text: "Gestisci clienti che diventano proprietari degli immobili.",
+      text: "Collega clienti e proprietari agli immobili censiti.",
     },
   ];
   const pageTitle =
@@ -3527,6 +4030,8 @@ function CensusView({
       ? "Vie censite"
       : pageKey === "censimento-complessi"
         ? "Complessi e palazzi"
+        : pageKey === "censimento-immobili"
+          ? "Immobili censiti"
         : pageKey === "censimento-proprietari"
           ? "Proprietari immobili"
           : "Zone censite";
@@ -3535,6 +4040,8 @@ function CensusView({
       ? "Crea o seleziona via"
       : pageKey === "censimento-complessi"
         ? "Crea o seleziona complesso"
+        : pageKey === "censimento-immobili"
+          ? "Crea o seleziona immobile"
         : pageKey === "censimento-proprietari"
           ? "Collega proprietario"
           : "Crea o seleziona zona";
@@ -3543,6 +4050,18 @@ function CensusView({
       ? ["Zona", "Via"]
       : pageKey === "censimento-complessi"
         ? ["Zona", "Via", "Palazzo / Complesso", "Unita"]
+        : pageKey === "censimento-immobili"
+          ? [
+              "Zona",
+              "Via",
+              "Complesso",
+              "Immobile",
+              { name: "Foglio", required: false },
+              { name: "Particella", required: false },
+              { name: "Subalterno", required: false },
+              { name: "Categoria catastale", options: cadastralCategoryOptions, required: false },
+              { name: "Vani", options: roomOptions, required: false },
+            ]
         : pageKey === "censimento-proprietari"
           ? [
               "Zona",
@@ -3565,6 +4084,8 @@ function CensusView({
       ? ["Zona", "Via", "Complessi", "Aggiornato"]
       : pageKey === "censimento-complessi"
         ? ["Zona", "Via", "Complesso", "Unita", "Proprietari"]
+        : pageKey === "censimento-immobili"
+          ? ["Codice", "Immobile", "Zona", "Proprietario", "Catasto", "Stato"]
         : pageKey === "censimento-proprietari"
           ? ["Proprietario", "Tipo", "Percorso", "Telefono", "Catasto", "Stato"]
           : ["Zona", "Vie/Palazzi", "Proprietari", "Aggiornato"];
@@ -3579,6 +4100,15 @@ function CensusView({
             String(complex.units || "-"),
             String(complex.owners),
           ])
+        : pageKey === "censimento-immobili"
+          ? censusProperties.map((property) => [
+              property.code,
+              property.title,
+              property.zone,
+              property.owner || "-",
+              cadastralLabel(property),
+              property.status,
+            ])
         : pageKey === "censimento-proprietari"
           ? censusOwners.map((owner) => [
               owner.name,
@@ -3790,6 +4320,81 @@ function CensusView({
       return;
     }
 
+    if (pageKey === "censimento-immobili") {
+      const propertyLabel = fieldValue(values, "Immobile", "Immobile da definire");
+      const sheet = fieldValue(values, "Foglio");
+      const parcel = fieldValue(values, "Particella");
+      const subaltern = fieldValue(values, "Subalterno");
+      const cadastralCategory = fieldValue(values, "Categoria catastale");
+      const rooms = fieldValue(values, "Vani");
+      onCommit(
+        (currentData) => {
+          const complexExists = (currentData.censusComplexes ?? []).some(
+            (item) => sameLabel(item.zone, zone) && sameLabel(item.street, street) && sameLabel(item.name, complexName),
+          );
+          const complexDelta = complexExists ? 0 : 1;
+          const propertyExists = currentData.properties.some(
+            (property) => sameLabel(property.title, propertyLabel) || sameLabel(property.code, propertyLabel),
+          );
+          return {
+            ...currentData,
+            properties: propertyExists
+              ? currentData.properties.map((property) =>
+                  sameLabel(property.title, propertyLabel) || sameLabel(property.code, propertyLabel)
+                    ? {
+                        ...property,
+                        zone,
+                        status: "Censito",
+                        sheet: sheet || property.sheet,
+                        parcel: parcel || property.parcel,
+                        subaltern: subaltern || property.subaltern,
+                        cadastralCategory: cadastralCategory || property.cadastralCategory,
+                        rooms: rooms || property.rooms,
+                        source: "Censimento",
+                        updatedAt: nowLabel(),
+                      }
+                    : property,
+                )
+              : [
+                  {
+                    id: makeId("property"),
+                    code: `FS-${String(250 + currentData.properties.length).padStart(3, "0")}`,
+                    title: propertyLabel,
+                    zone,
+                    status: "Censito",
+                    price: "Da valutare",
+                    owner: "Proprietario da associare",
+                    portals: "Privato",
+                    kind: "vendita",
+                    sheet,
+                    parcel,
+                    subaltern,
+                    cadastralCategory,
+                    rooms,
+                    source: "Censimento",
+                    updatedAt: nowLabel(),
+                  },
+                  ...currentData.properties,
+                ],
+            censusAreas: ensureArea(currentData.censusAreas, zone, 0, complexDelta),
+            censusStreets: ensureStreet(currentData.censusStreets ?? [], zone, street, complexDelta),
+            censusComplexes: ensureComplex(currentData.censusComplexes ?? [], zone, street, complexName),
+            activities: [
+              createActivity({
+                title: `Immobile censito ${propertyLabel}`,
+                type: "Censimento",
+                property: propertyLabel,
+                note: `Zona: ${zone} / Via: ${street} / Complesso: ${complexName}`,
+              }),
+              ...currentData.activities,
+            ],
+          };
+        },
+        `Immobile ${propertyLabel} salvato nel censimento.`,
+      );
+      return;
+    }
+
     const firstName = fieldValue(values, "Nome");
     const lastName = fieldValue(values, "Cognome");
     const ownerName = formatFullName(firstName, lastName, fieldValue(values, "Proprietario", "Proprietario da definire"));
@@ -3905,7 +4510,7 @@ function CensusView({
         module="Censimento"
         page={labelForPage("censimento", pageKey)}
         path={pathForPage(pageKey)}
-        items={["Zona -> Via", "Via -> Complesso", "Complesso -> Proprietari", "Cliente collegato a immobile -> Proprietario"]}
+        items={["Zona -> Via", "Via -> Complesso", "Complesso -> Immobili", "Immobile -> Proprietari"]}
       />
 
       <Panel className="span-12" title="Fasi censimento">
@@ -5137,7 +5742,10 @@ function pathForPage(pageKey: string) {
     "nominativi-nuovo": "/nominativi/nuovo",
     "nominativi-elenco": "/nominativi",
     "nominativi-richieste": "/nominativi/richieste",
-    "attivita-nuova": "/agenda/attivita",
+    "proprietari-elenco": "/proprietari",
+    "proprietari-collega": "/proprietari/collega",
+    "attivita-elenco": "/attivita",
+    "attivita-nuova": "/attivita/nuova",
     "agenda-calendario": "/agenda",
     "agenda-storico": "/agenda/storico",
     "pubblicita-portali": "/pubblicita",
@@ -5146,6 +5754,7 @@ function pathForPage(pageKey: string) {
     "censimento-zone": "/censimento/zone",
     "censimento-vie": "/censimento/vie",
     "censimento-complessi": "/censimento/complessi",
+    "censimento-immobili": "/censimento/immobili",
     "censimento-proprietari": "/censimento/proprietari",
     "obiettivi-elenco": "/obiettivi",
     "account-ruoli": "/account/ruoli",
