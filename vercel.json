@@ -1,0 +1,22 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/rpo",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/planimetrie",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/crm",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/crm/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

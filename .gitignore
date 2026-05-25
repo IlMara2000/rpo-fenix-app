@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.vercel/
+.playwright-cli/
+test-results/
+.DS_Store
+*.log

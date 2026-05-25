@@ -1,0 +1,21 @@
+{
+  "name": "fenix-suite",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@huggingface/inference": "^4.13.18",
+    "@vitejs/plugin-react": "^5.0.4",
+    "lucide-react": "^0.468.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "three": "^0.184.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12"
+  }
+}
