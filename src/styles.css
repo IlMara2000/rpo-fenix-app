@@ -3737,6 +3737,46 @@ td {
   color: #ffffff;
 }
 
+.plan-hero-actions {
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+}
+
+.plan-mode-switch {
+  display: inline-flex;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.plan-mode-switch button {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.plan-mode-switch button.active {
+  border-color: rgba(239, 68, 68, 0.42);
+  color: #ffffff;
+  background: rgba(220, 38, 38, 0.22);
+  box-shadow: 0 14px 32px rgba(220, 38, 38, 0.16);
+}
+
 .plan-grid {
   display: grid;
   grid-template-columns: minmax(280px, 0.34fr) minmax(0, 1fr);
@@ -3973,6 +4013,241 @@ td {
   color: var(--red);
 }
 
+.plan-ai-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.32fr) minmax(0, 1fr);
+  gap: 18px;
+  max-width: 1480px;
+  margin: 0 auto;
+}
+
+.plan-ai-loading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  max-width: 1480px;
+  min-height: 360px;
+  margin: 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 24px;
+  color: #ffffff;
+  background: rgba(16, 17, 22, 0.78);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.plan-ai-panel,
+.plan-ai-preview {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 24px;
+  background: rgba(16, 17, 22, 0.78);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+}
+
+.plan-ai-panel-title,
+.plan-ai-preview > header {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.plan-ai-panel-title span,
+.plan-ai-panel-title b,
+.plan-ai-preview b {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.plan-ai-panel-title span {
+  color: #ffffff;
+  background: rgba(239, 68, 68, 0.14);
+}
+
+.plan-ai-panel-title b,
+.plan-ai-preview b {
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.16);
+}
+
+.plan-ai-form {
+  display: grid;
+  gap: 14px;
+}
+
+.plan-ai-form label {
+  display: grid;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.plan-ai-form textarea,
+.plan-ai-form input,
+.plan-ai-form select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.055);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  outline: none;
+  text-transform: none;
+}
+
+.plan-ai-form textarea {
+  min-height: 148px;
+  padding: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.plan-ai-form textarea:focus,
+.plan-ai-form input:focus,
+.plan-ai-form select:focus {
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.plan-ai-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.plan-ai-generate,
+.plan-ai-actions button,
+.plan-3d-snapshot {
+  display: inline-flex;
+  gap: 9px;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0 15px;
+  border: 1px solid rgba(239, 68, 68, 0.38);
+  border-radius: 16px;
+  color: #ffffff;
+  background: rgba(220, 38, 38, 0.7);
+  box-shadow: 0 18px 40px rgba(127, 29, 29, 0.28);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.plan-ai-message {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  color: #d8d9dd;
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.plan-ai-message svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--red);
+}
+
+.plan-ai-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.plan-ai-actions button {
+  min-height: 44px;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+}
+
+.plan-ai-preview {
+  min-height: 690px;
+}
+
+.plan-ai-preview strong,
+.plan-ai-preview small {
+  display: block;
+}
+
+.plan-ai-preview strong {
+  color: #ffffff;
+  font-size: 1.02rem;
+  line-height: 1.25;
+}
+
+.plan-ai-preview small {
+  margin-top: 4px;
+  color: var(--muted-2);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.plan-3d-viewer-shell {
+  position: relative;
+  display: grid;
+  min-height: 600px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 28% 14%, rgba(201, 79, 79, 0.16), transparent 26rem),
+    #050507;
+}
+
+.plan-3d-canvas {
+  min-height: 600px;
+  touch-action: none;
+}
+
+.plan-3d-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.plan-3d-snapshot {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  min-height: 42px;
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.86);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+}
+
 @media (max-width: 1180px) {
   .rpo-header,
   .rpo-hero,
@@ -3989,6 +4264,10 @@ td {
   }
 
   .plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-ai-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -4077,6 +4356,55 @@ td {
   .plan-image-frame,
   .plan-placeholder {
     min-height: 320px;
+  }
+
+  .plan-hero-actions {
+    justify-items: stretch;
+  }
+
+  .plan-mode-switch {
+    width: 100%;
+  }
+
+  .plan-mode-switch button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 9px;
+    font-size: 0.62rem;
+  }
+
+  .plan-ai-panel,
+  .plan-ai-preview {
+    padding: 16px;
+  }
+
+  .plan-ai-panel-title,
+  .plan-ai-preview > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .plan-ai-fields,
+  .plan-ai-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-ai-preview {
+    min-height: auto;
+  }
+
+  .plan-3d-viewer-shell,
+  .plan-3d-canvas {
+    min-height: 410px;
+  }
+
+  .plan-3d-snapshot {
+    right: 10px;
+    bottom: 10px;
+    max-width: calc(100% - 20px);
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 0.6rem;
   }
 }
 
