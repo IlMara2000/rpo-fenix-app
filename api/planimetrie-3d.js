@@ -204,12 +204,43 @@ export default async function handler(req, res) {
 
     try {
       const client = new InferenceClient(token);
-      const completion = await client.chatCompletion({
-        model,
-        messages: buildMessages(body, hasImage),
-        max_tokens: 3200,
-        temperature: 0.05,
-      });
+      let activeModel = model;
+      let completion;
+      let visionRetryError = null;
+
+      try {
+        completion = await client.chatCompletion({
+          model: activeModel,
+          messages: buildMessages(body, hasImage),
+          max_tokens: 3200,
+          temperature: 0.05,
+        });
+      } catch (error) {
+        if (!hasImage) {
+          throw error;
+        }
+
+        visionRetryError = error instanceof Error ? error.message : "Errore modello vision";
+        activeModel = process.env.HF_3D_MODEL || defaultModel;
+        completion = await client.chatCompletion({
+          model: activeModel,
+          messages: buildMessages(
+            {
+              ...body,
+              prompt: [
+                "L'utente ha caricato una planimetria immagine.",
+                `Nome immagine: ${body.imageName || "planimetria"}.`,
+                `Dimensioni immagine: ${body.imageWidth || "?"}x${body.imageHeight || "?"}.`,
+                body.prompt || "Genera un layout residenziale coerente partendo dalle note disponibili.",
+              ].join("\n"),
+            },
+            false,
+          ),
+          max_tokens: 3200,
+          temperature: 0.05,
+        });
+      }
+
       const content = completion?.choices?.[0]?.message?.content || "";
       const plan = extractJson(content);
 
@@ -221,8 +252,10 @@ export default async function handler(req, res) {
         },
         meta: {
           mode: "hugging-face",
-          model,
+          model: activeModel,
           usedImage: hasImage,
+          visionRetry: Boolean(visionRetryError),
+          visionError: visionRetryError,
         },
       });
     } catch (error) {
