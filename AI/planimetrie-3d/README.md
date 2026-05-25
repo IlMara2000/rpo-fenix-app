@@ -1,19 +1,20 @@
-# Fenix Planimetrie 3D AI
+# Fenix Planimetrie AI
 
 Questo modulo contiene la base operativa per la generazione di planimetrie 3D collegata alla sezione `Planimetrie`.
 
 ## Flusso
 
-1. L'utente descrive l'immobile nella sezione `Planimetrie > 3D AI`.
-2. Il frontend invia il prompt a `POST /api/planimetrie-3d`.
-3. Il backend usa Hugging Face, se `HF_TOKEN` e' configurato, per trasformare il testo in un layout JSON strutturato.
+1. L'utente carica una planimetria JPG/PNG/WEBP e, se serve, un file TXT o una descrizione manuale.
+2. Il frontend invia il payload a `POST /api/planimetrie-3d`.
+3. Il backend usa Hugging Face, se `HF_TOKEN` e' configurato, per trasformare immagine e testo in un layout JSON strutturato.
 4. Se Hugging Face non e' disponibile, il backend usa un fallback locale deterministico.
-5. Il frontend normalizza il JSON e lo renderizza in 3D con Three.js.
+5. Il frontend normalizza il JSON, lo renderizza in 3D con Three.js e permette di scaricare il risultato finale in JPG.
 
 ## Variabili ambiente
 
 - `HF_TOKEN`: token Hugging Face, solo lato backend.
-- `HF_3D_MODEL`: modello opzionale. Default: `Qwen/Qwen3-4B-Instruct-2507`.
+- `HF_3D_MODEL`: modello testo opzionale. Default: `Qwen/Qwen3-4B-Instruct-2507`.
+- `HF_3D_VISION_MODEL`: modello immagine opzionale. Default: `Qwen/Qwen3-VL-4B-Instruct`.
 
 Il token non deve mai essere esposto nel browser.
 

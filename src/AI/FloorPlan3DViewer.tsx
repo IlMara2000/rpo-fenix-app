@@ -242,8 +242,8 @@ export function FloorPlan3DViewer({ plan }: FloorPlan3DViewerProps) {
     const renderer = rendererRef.current;
     if (!renderer) return;
     const link = document.createElement("a");
-    link.href = renderer.domElement.toDataURL("image/png");
-    link.download = `${plan.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-3d.png`;
+    link.href = renderer.domElement.toDataURL("image/jpeg", 0.92);
+    link.download = `${plan.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-planimetria.jpg`;
     link.click();
   }
 
@@ -251,7 +251,7 @@ export function FloorPlan3DViewer({ plan }: FloorPlan3DViewerProps) {
     <div className="plan-3d-viewer-shell">
       <div ref={hostRef} className="plan-3d-canvas" aria-label="Anteprima planimetria 3D" />
       <button className="plan-3d-snapshot" type="button" onClick={downloadSnapshot}>
-        Scarica screenshot 3D
+        Scarica JPG finale
       </button>
     </div>
   );

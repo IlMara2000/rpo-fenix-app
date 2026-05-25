@@ -5,6 +5,7 @@ export const config = {
 };
 
 const defaultModel = "Qwen/Qwen3-4B-Instruct-2507";
+const defaultVisionModel = "Qwen/Qwen3-VL-4B-Instruct";
 
 const readJsonBody = async (req) => {
   if (req.body && typeof req.body === "object") {
@@ -125,32 +126,55 @@ const extractJson = (text) => {
   return JSON.parse(cleaned.slice(start, end + 1));
 };
 
-const buildMessages = (body) => [
-  {
-    role: "system",
-    content: [
-      "Return minified valid JSON only. No markdown. No explanation.",
-      "Build a compact 3D real-estate floor-plan layout for a browser renderer.",
-      "Coordinates are meters, centered on x/z 0. Rectangular adjacent rooms only.",
-      "Root keys: title, style, width, depth, wallHeight, wallThickness, rooms, notes, source.",
-      "Room keys: id, name, type, x, z, width, depth, height, color, furniture.",
-      "Furniture keys: id, type, x, z, width, depth, height, color.",
-      "Use short IDs, Italian room names, hex colors, max two furniture items per room.",
-      "Do not include nulls, prose, measurements text, comments, duplicate keys, or trailing commas.",
-    ].join(" "),
-  },
-  {
-    role: "user",
-    content: [
-      `Prompt: ${body.prompt || "appartamento residenziale"}`,
-      `Style: ${body.style || "premium"}`,
-      `Approx area sqm: ${body.areaSqm || 90}`,
-      `Desired room count: ${clamp(Number(body.roomCount) || 6, 4, 10)}`,
-      "Return exactly one JSON object shaped like:",
-      "{\"title\":\"...\",\"style\":\"premium\",\"width\":10,\"depth\":9,\"wallHeight\":2.75,\"wallThickness\":0.14,\"rooms\":[{\"id\":\"r1\",\"name\":\"Soggiorno\",\"type\":\"soggiorno\",\"x\":0,\"z\":0,\"width\":4,\"depth\":4,\"height\":0.08,\"color\":\"#293242\",\"furniture\":[{\"id\":\"f1\",\"type\":\"divano\",\"x\":0,\"z\":0,\"width\":1.8,\"depth\":0.75,\"height\":0.55,\"color\":\"#b94949\"}]}],\"notes\":[\"Layout AI\"],\"source\":\"hugging-face\"}",
-    ].join("\n"),
-  },
-];
+const isImageDataUrl = (value) => /^data:image\/(?:png|jpe?g|webp);base64,/i.test(String(value || ""));
+
+const buildUserPrompt = (body, hasImage) =>
+  [
+    `Prompt: ${body.prompt || "appartamento residenziale"}`,
+    body.textFileName ? `TXT file: ${body.textFileName}` : "",
+    hasImage ? `Uploaded floor-plan image: ${body.imageName || "planimetria"} ${body.imageWidth || ""}x${body.imageHeight || ""}` : "",
+    `Style: ${body.style || "premium"}`,
+    `Approx area sqm: ${body.areaSqm || 90}`,
+    `Desired room count: ${clamp(Number(body.roomCount) || 6, 4, 10)}`,
+    "Task: infer a practical furnished 3D layout from the uploaded image and text notes. The browser will render the JSON and export a final JPG.",
+    "Return exactly one JSON object shaped like:",
+    "{\"title\":\"...\",\"style\":\"premium\",\"width\":10,\"depth\":9,\"wallHeight\":2.75,\"wallThickness\":0.14,\"rooms\":[{\"id\":\"r1\",\"name\":\"Soggiorno\",\"type\":\"soggiorno\",\"x\":0,\"z\":0,\"width\":4,\"depth\":4,\"height\":0.08,\"color\":\"#293242\",\"furniture\":[{\"id\":\"f1\",\"type\":\"divano\",\"x\":0,\"z\":0,\"width\":1.8,\"depth\":0.75,\"height\":0.55,\"color\":\"#b94949\"}]}],\"notes\":[\"Layout AI\"],\"source\":\"hugging-face\"}",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+const buildMessages = (body, hasImage) => {
+  const userPrompt = buildUserPrompt(body, hasImage);
+  return [
+    {
+      role: "system",
+      content: [
+        "Return minified valid JSON only. No markdown. No explanation.",
+        "Build a compact 3D real-estate floor-plan layout for a browser renderer.",
+        "Coordinates are meters, centered on x/z 0. Rectangular adjacent rooms only.",
+        "Root keys: title, style, width, depth, wallHeight, wallThickness, rooms, notes, source.",
+        "Room keys: id, name, type, x, z, width, depth, height, color, furniture.",
+        "Furniture keys: id, type, x, z, width, depth, height, color.",
+        "Use short IDs, Italian room names, hex colors, max two furniture items per room.",
+        "Do not include nulls, prose, measurements text, comments, duplicate keys, or trailing commas.",
+      ].join(" "),
+    },
+    {
+      role: "user",
+      content: hasImage
+        ? [
+            { type: "text", text: userPrompt },
+            {
+              type: "image_url",
+              image_url: {
+                url: body.image,
+              },
+            },
+          ]
+        : userPrompt,
+    },
+  ];
+};
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -160,7 +184,10 @@ export default async function handler(req, res) {
   try {
     const body = await readJsonBody(req);
     const token = process.env.HF_TOKEN;
-    const model = process.env.HF_3D_MODEL || defaultModel;
+    const hasImage = isImageDataUrl(body.image);
+    const model = hasImage
+      ? process.env.HF_3D_VISION_MODEL || defaultVisionModel
+      : process.env.HF_3D_MODEL || defaultModel;
 
     if (!token) {
       return res.status(200).json({
@@ -169,6 +196,7 @@ export default async function handler(req, res) {
         meta: {
           mode: "local-fallback",
           model: "fallback",
+          usedImage: hasImage,
           reason: "HF_TOKEN assente",
         },
       });
@@ -178,7 +206,7 @@ export default async function handler(req, res) {
       const client = new InferenceClient(token);
       const completion = await client.chatCompletion({
         model,
-        messages: buildMessages(body),
+        messages: buildMessages(body, hasImage),
         max_tokens: 3200,
         temperature: 0.05,
       });
@@ -194,6 +222,7 @@ export default async function handler(req, res) {
         meta: {
           mode: "hugging-face",
           model,
+          usedImage: hasImage,
         },
       });
     } catch (error) {
@@ -203,6 +232,7 @@ export default async function handler(req, res) {
         meta: {
           mode: "local-fallback",
           model,
+          usedImage: hasImage,
           error: error instanceof Error ? error.message : "Errore Hugging Face",
         },
       });
