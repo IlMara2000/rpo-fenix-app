@@ -129,22 +129,26 @@ const buildMessages = (body) => [
   {
     role: "system",
     content: [
-      "You generate structured JSON for a real-estate 3D floor plan renderer.",
-      "Return only valid JSON. No markdown. No comments.",
-      "Coordinates are meters, centered around 0 on x/z. Keep rooms rectangular and adjacent.",
-      "Use Italian room names. Max 12 rooms. Furniture coordinates are relative to the room center.",
-      "Required root fields: title, style, width, depth, wallHeight, wallThickness, rooms, notes, source.",
-      "Each room needs: id, name, type, x, z, width, depth, height, color, furniture.",
-      "Each furniture item needs: id, type, x, z, width, depth, height, color, optional rotation.",
+      "Return minified valid JSON only. No markdown. No explanation.",
+      "Build a compact 3D real-estate floor-plan layout for a browser renderer.",
+      "Coordinates are meters, centered on x/z 0. Rectangular adjacent rooms only.",
+      "Root keys: title, style, width, depth, wallHeight, wallThickness, rooms, notes, source.",
+      "Room keys: id, name, type, x, z, width, depth, height, color, furniture.",
+      "Furniture keys: id, type, x, z, width, depth, height, color.",
+      "Use short IDs, Italian room names, hex colors, max two furniture items per room.",
+      "Do not include nulls, prose, measurements text, comments, duplicate keys, or trailing commas.",
     ].join(" "),
   },
   {
     role: "user",
-    content: `Create a practical 3D floor plan layout for this Italian real-estate request:
-Prompt: ${body.prompt || "appartamento residenziale"}
-Style: ${body.style || "premium"}
-Approx area sqm: ${body.areaSqm || 90}
-Desired room count: ${body.roomCount || 6}`,
+    content: [
+      `Prompt: ${body.prompt || "appartamento residenziale"}`,
+      `Style: ${body.style || "premium"}`,
+      `Approx area sqm: ${body.areaSqm || 90}`,
+      `Desired room count: ${clamp(Number(body.roomCount) || 6, 4, 10)}`,
+      "Return exactly one JSON object shaped like:",
+      "{\"title\":\"...\",\"style\":\"premium\",\"width\":10,\"depth\":9,\"wallHeight\":2.75,\"wallThickness\":0.14,\"rooms\":[{\"id\":\"r1\",\"name\":\"Soggiorno\",\"type\":\"soggiorno\",\"x\":0,\"z\":0,\"width\":4,\"depth\":4,\"height\":0.08,\"color\":\"#293242\",\"furniture\":[{\"id\":\"f1\",\"type\":\"divano\",\"x\":0,\"z\":0,\"width\":1.8,\"depth\":0.75,\"height\":0.55,\"color\":\"#b94949\"}]}],\"notes\":[\"Layout AI\"],\"source\":\"hugging-face\"}",
+    ].join("\n"),
   },
 ];
 
@@ -175,8 +179,8 @@ export default async function handler(req, res) {
       const completion = await client.chatCompletion({
         model,
         messages: buildMessages(body),
-        max_tokens: 1600,
-        temperature: 0.18,
+        max_tokens: 3200,
+        temperature: 0.05,
       });
       const content = completion?.choices?.[0]?.message?.content || "";
       const plan = extractJson(content);
