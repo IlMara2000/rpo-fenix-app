@@ -312,7 +312,7 @@ function renderMarketingPlan(canvas: HTMLCanvasElement, plan: FloorPlan3D) {
   canvas.height = Math.floor(cssHeight * pixelRatio);
   ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
-  ctx.fillStyle = "#f6f5f1";
+  ctx.fillStyle = "#f7f4ee";
   ctx.fillRect(0, 0, cssWidth, cssHeight);
   addNoise(ctx, cssWidth, cssHeight);
 
@@ -381,7 +381,7 @@ function renderFaithfulUploadedPlan(canvas: HTMLCanvasElement, image: HTMLImageE
   canvas.height = Math.floor(cssHeight * pixelRatio);
   ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
-  ctx.fillStyle = "#f6f5f1";
+  ctx.fillStyle = "#f7f4ee";
   ctx.fillRect(0, 0, cssWidth, cssHeight);
   addNoise(ctx, cssWidth, cssHeight);
 

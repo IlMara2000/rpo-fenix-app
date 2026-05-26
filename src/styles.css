@@ -4266,9 +4266,7 @@ td {
 }
 
 .plan-relief-viewer-shell {
-  background:
-    linear-gradient(180deg, rgba(7, 16, 29, 0.9), rgba(3, 7, 12, 0.95)),
-    #050507;
+  background: #f5f2ec;
 }
 
 .plan-3d-canvas {
@@ -4294,7 +4292,7 @@ td {
   display: grid;
   width: 100%;
   min-height: 600px;
-  background: #f6f5f1;
+  background: #f5f2ec;
 }
 
 .plan-local-render canvas {
