@@ -1441,7 +1441,7 @@ function ContactSection() {
         </p>
         <div className="contact-strip">
           <Mail size={18} />
-          <span>Risposta entro un giorno lavorativo</span>
+          <span>Risposta rapida garantita</span>
         </div>
       </div>
       <form
