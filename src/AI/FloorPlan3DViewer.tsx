@@ -6,6 +6,7 @@ type FloorPlan3DViewerProps = {
   baseImageUrl?: string;
   finalImageUrl?: string;
   fallbackLabel?: string;
+  generated?: boolean;
 };
 
 type CanvasRenderState = {
@@ -470,12 +471,12 @@ function renderFaithfulUploadedPlan(canvas: HTMLCanvasElement, image: HTMLImageE
   ctx.restore();
 }
 
-export function FloorPlan3DViewer({ plan, baseImageUrl, finalImageUrl, fallbackLabel }: FloorPlan3DViewerProps) {
+export function FloorPlan3DViewer({ plan, baseImageUrl, finalImageUrl, fallbackLabel, generated = false }: FloorPlan3DViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || finalImageUrl) return undefined;
+    if (!canvas || finalImageUrl || !generated) return undefined;
     let cancelled = false;
 
     const render = async () => {
@@ -503,6 +504,8 @@ export function FloorPlan3DViewer({ plan, baseImageUrl, finalImageUrl, fallbackL
   }, [plan, baseImageUrl, finalImageUrl]);
 
   function downloadSnapshot() {
+    if (!generated) return;
+
     if (finalImageUrl) {
       const link = document.createElement("a");
       link.href = finalImageUrl;
@@ -523,15 +526,21 @@ export function FloorPlan3DViewer({ plan, baseImageUrl, finalImageUrl, fallbackL
     <div className="plan-3d-viewer-shell plan-relief-viewer-shell">
       {finalImageUrl ? (
         <img className="plan-ai-final-image" src={finalImageUrl} alt="Rilievo AI su planimetria" />
-      ) : (
+      ) : generated ? (
         <div className="plan-local-render" aria-label="Planimetria arredata generata localmente">
           <canvas ref={canvasRef} />
           <span>{fallbackLabel || "Render locale gratuito"}</span>
         </div>
+      ) : (
+        <div className="plan-render-empty" aria-label="Anteprima vuota">
+          <span>Carica una planimetria e premi genera</span>
+        </div>
       )}
-      <button className="plan-3d-snapshot" type="button" onClick={downloadSnapshot}>
-        Scarica JPG finale
-      </button>
+      {generated ? (
+        <button className="plan-3d-snapshot" type="button" onClick={downloadSnapshot}>
+          Scarica JPG finale
+        </button>
+      ) : null}
     </div>
   );
 }

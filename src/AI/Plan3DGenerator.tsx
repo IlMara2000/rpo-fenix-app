@@ -47,6 +47,7 @@ export function Plan3DGenerator() {
   );
   const [loading, setLoading] = useState(false);
   const [finalImageUrl, setFinalImageUrl] = useState<string | null>(null);
+  const [hasGenerated, setHasGenerated] = useState(false);
   const [message, setMessage] = useState("Carica una planimetria e aggiungi una descrizione sintetica.");
   const [meta, setMeta] = useState<GenerateResponse["meta"]>({ mode: "browser-fallback" });
 
@@ -112,6 +113,7 @@ export function Plan3DGenerator() {
       });
       setPlan(normalizedPlan);
       setFinalImageUrl(data.renderImage ?? null);
+      setHasGenerated(true);
       setMeta(data.meta ?? { mode: normalizedPlan.source });
       setMessage(
         data.renderImage
@@ -130,6 +132,7 @@ export function Plan3DGenerator() {
       );
       setPlan(fallbackPlan);
       setFinalImageUrl(null);
+      setHasGenerated(true);
       setMeta({ mode: "browser-fallback", error: error instanceof Error ? error.message : "Errore sconosciuto" });
       setMessage("Ho generato un layout locale di continuita': puoi comunque scaricare il JPG finale.");
     } finally {
@@ -143,6 +146,8 @@ export function Plan3DGenerator() {
 
   function clearFiles() {
     setImageFile(null);
+    setFinalImageUrl(null);
+    setHasGenerated(false);
     setMessage("File rimossi. Carica un JPG e inserisci il testo nella descrizione.");
   }
 
@@ -250,6 +255,7 @@ export function Plan3DGenerator() {
           baseImageUrl={imagePreview || undefined}
           finalImageUrl={finalImageUrl || undefined}
           fallbackLabel={aiCreditsDepleted ? "Render locale gratuito" : undefined}
+          generated={hasGenerated}
         />
       </section>
     </section>

@@ -4312,6 +4312,26 @@ td {
   text-transform: uppercase;
 }
 
+.plan-render-empty {
+  display: grid;
+  width: 100%;
+  min-height: 600px;
+  place-items: center;
+  padding: 28px;
+  background: #f5f2ec;
+}
+
+.plan-render-empty span {
+  max-width: 22rem;
+  color: #57534c;
+  font-size: 0.86rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  line-height: 1.5;
+  text-align: center;
+  text-transform: uppercase;
+}
+
 .plan-ai-fallback-image {
   position: relative;
   display: grid;
