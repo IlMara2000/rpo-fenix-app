@@ -1421,20 +1421,16 @@ function AccessSection({ onLogin }: { onLogin: () => void }) {
           </span>
           <span>
             <strong>FENIX SUITE</strong>
-            <small>Accedi al gestionale interno con cruscotto, immobili, clienti e agenda.</small>
           </span>
-          <ChevronRight size={22} strokeWidth={1.8} aria-hidden="true" />
         </button>
-        {externalTools.map(({ title, description, href, Icon }) => (
+        {externalTools.map(({ title, href, Icon }) => (
           <a className="access-card" href={href} key={title}>
             <span className="access-icon" aria-hidden="true">
               <Icon size={26} strokeWidth={1.8} />
             </span>
             <span>
               <strong>{title}</strong>
-              <small>{description}</small>
             </span>
-            <ArrowUpRight size={22} strokeWidth={1.8} aria-hidden="true" />
           </a>
         ))}
       </div>

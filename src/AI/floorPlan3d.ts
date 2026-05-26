@@ -150,7 +150,7 @@ function roomTypesFromPrompt(prompt: string, requestedCount: number) {
   if (text.includes("ripostiglio")) rooms.push("ripostiglio");
   if (text.includes("terrazzo") || text.includes("balcone")) rooms.push("terrazzo");
 
-  return rooms.slice(0, clamp(requestedCount, 4, 12));
+  return rooms.slice(0, clamp(requestedCount, 1, 12));
 }
 
 export function createFallbackFloorPlan(request: FloorPlan3DRequest, source: FloorPlan3D["source"] = "browser-fallback"): FloorPlan3D {

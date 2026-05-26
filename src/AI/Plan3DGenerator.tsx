@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Box, ImagePlus, Loader2, Sparkles, Trash2, WandSparkles } from "lucide-react";
+import { Box, ImagePlus, Loader2, Trash2, WandSparkles } from "lucide-react";
 import { FloorPlan3DViewer } from "./FloorPlan3DViewer";
 import {
   createFallbackFloorPlan,
@@ -149,14 +149,6 @@ export function Plan3DGenerator() {
   return (
     <section className="plan-ai-grid">
       <aside className="plan-ai-panel">
-        <div className="plan-ai-panel-title">
-          <span>
-            <Sparkles size={18} />
-            Generatore planimetrie
-          </span>
-          <b>{meta?.mode === "hugging-face" ? "AI collegata" : "Motore locale"}</b>
-        </div>
-
         <form className="plan-ai-form" onSubmit={generatePlan}>
           <label
             className="plan-upload-card"
@@ -225,7 +217,7 @@ export function Plan3DGenerator() {
             <label>
               Ambienti
               <input
-                min={4}
+                min={1}
                 max={12}
                 type="number"
                 value={request.roomCount}
@@ -250,9 +242,6 @@ export function Plan3DGenerator() {
         <header>
           <span>
             <strong>{plan.title}</strong>
-            <small>
-              {plan.rooms.length} ambienti - {Math.round(plan.width * plan.depth)} mq stimati - rilievo JPG finale
-            </small>
           </span>
           <b>{plan.style}</b>
         </header>

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
-import { ArrowLeft, Loader2, WandSparkles } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 const Plan3DGenerator = lazy(() =>
   import("./AI/Plan3DGenerator").then((module) => ({ default: module.Plan3DGenerator })),
@@ -17,9 +17,18 @@ export function PlanimetrieTool({ onNavigate }: PlanimetrieToolProps) {
   return (
     <main className="plan-shell">
       <header className="plan-header">
-        <button type="button" onClick={() => onNavigate("/")}>
+        <button
+          type="button"
+          onClick={() => {
+            if (window.history.length > 1) {
+              window.history.back();
+              return;
+            }
+            onNavigate("/");
+          }}
+        >
           <ArrowLeft size={17} />
-          RPO
+          Indietro
         </button>
         <img src="/logo.png" alt="Fenix Group" />
         <button type="button" onClick={() => onNavigate("/crm")}>
@@ -29,14 +38,8 @@ export function PlanimetrieTool({ onNavigate }: PlanimetrieToolProps) {
 
       <section className="plan-hero">
         <div>
-          <span className="system-label">Planimetrie AI</span>
-          <h1>Genera planimetrie 3D da JPG e descrizione.</h1>
-        </div>
-        <div className="plan-hero-actions">
-          <div className="plan-status">
-            <WandSparkles size={17} />
-            CARICA JPG + TESTO E SCARICA JPG
-          </div>
+          <span className="system-label">Da JPG a planimetria arredata</span>
+          <h1>Planimetrie</h1>
         </div>
       </section>
 
