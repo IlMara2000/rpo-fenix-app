@@ -5,6 +5,7 @@ import type { FloorPlan3D, Furniture3D, Room3D } from "./floorPlan3d";
 type FloorPlan3DViewerProps = {
   plan: FloorPlan3D;
   baseImageUrl?: string;
+  finalImageUrl?: string;
 };
 
 const wallMaterial = new THREE.MeshStandardMaterial({
@@ -66,7 +67,7 @@ function addRoomRelief(group: THREE.Group, room: Room3D, plan: FloorPlan3D) {
   });
 }
 
-export function FloorPlan3DViewer({ plan, baseImageUrl }: FloorPlan3DViewerProps) {
+export function FloorPlan3DViewer({ plan, baseImageUrl, finalImageUrl }: FloorPlan3DViewerProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
@@ -170,6 +171,20 @@ export function FloorPlan3DViewer({ plan, baseImageUrl }: FloorPlan3DViewerProps
   }, [plan, baseImageUrl]);
 
   function downloadSnapshot() {
+    if (finalImageUrl) {
+      const link = document.createElement("a");
+      link.href = finalImageUrl;
+      link.download = `${plan.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-rilievo-ai.jpg`;
+      link.click();
+      return;
+    }
+    if (baseImageUrl) {
+      const link = document.createElement("a");
+      link.href = baseImageUrl;
+      link.download = `${plan.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-planimetria-originale.jpg`;
+      link.click();
+      return;
+    }
     const renderer = rendererRef.current;
     if (!renderer) return;
     const link = document.createElement("a");
@@ -180,7 +195,16 @@ export function FloorPlan3DViewer({ plan, baseImageUrl }: FloorPlan3DViewerProps
 
   return (
     <div className="plan-3d-viewer-shell plan-relief-viewer-shell">
-      <div ref={hostRef} className="plan-3d-canvas plan-relief-canvas" aria-label="Rilievo 3D su planimetria 2D" />
+      {finalImageUrl ? (
+        <img className="plan-ai-final-image" src={finalImageUrl} alt="Rilievo AI su planimetria" />
+      ) : baseImageUrl ? (
+        <div className="plan-ai-fallback-image" aria-label="Anteprima planimetria caricata">
+          <img src={baseImageUrl} alt="Planimetria caricata" />
+          <span>Render AI non disponibile</span>
+        </div>
+      ) : (
+        <div ref={hostRef} className="plan-3d-canvas plan-relief-canvas" aria-label="Rilievo 3D su planimetria 2D" />
+      )}
       <button className="plan-3d-snapshot" type="button" onClick={downloadSnapshot}>
         Scarica JPG finale
       </button>

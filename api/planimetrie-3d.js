@@ -6,6 +6,14 @@ export const config = {
 
 const defaultModel = "Qwen/Qwen3-4B-Instruct-2507";
 const defaultVisionModel = "Qwen/Qwen3-VL-4B-Instruct";
+const defaultImageModels = [
+  "black-forest-labs/FLUX.2-dev",
+  "Qwen/Qwen-Image-Edit",
+  "black-forest-labs/FLUX.1-Kontext-dev",
+  "black-forest-labs/FLUX.2-klein-4B",
+];
+const defaultImageToImageModels = ["timbrooks/instruct-pix2pix", "lllyasviel/sd-controlnet-depth"];
+const defaultTextToImageModels = ["black-forest-labs/FLUX.1-schnell", "stabilityai/stable-diffusion-xl-base-1.0"];
 
 const readJsonBody = async (req) => {
   if (req.body && typeof req.body === "object") {
@@ -175,6 +183,105 @@ const buildMessages = (body, hasImage) => {
   ];
 };
 
+const buildRenderPrompt = (body) =>
+  [
+    "Create a single top-down floor-plan image in Italian real-estate style.",
+    "Use the uploaded plan as fixed base layout: keep walls, openings and room labels geometry coherent.",
+    "Apply a subtle 3D relief effect directly over the 2D plan (no perspective room scene, no free 3D environment).",
+    "Add clean furniture hints proportional to room size, photoreal lighting not required.",
+    "Output must be one high-quality JPG-ready image for brochure use.",
+    `Style: ${body.style || "premium"}.`,
+    `Notes: ${body.prompt || "Planimetria residenziale"}.`,
+  ].join(" ");
+
+const blobToDataUrl = async (blob) => {
+  const buffer = Buffer.from(await blob.arrayBuffer());
+  const mime = blob.type && blob.type.startsWith("image/") ? blob.type : "image/jpeg";
+  return `data:${mime};base64,${buffer.toString("base64")}`;
+};
+
+const dataUrlToBlob = async (dataUrl) => {
+  const match = String(dataUrl || "").match(/^data:(image\/[^;]+);base64,(.+)$/);
+  if (!match) {
+    throw new Error("Immagine base64 non valida.");
+  }
+  return new Blob([Buffer.from(match[2], "base64")], { type: match[1] });
+};
+
+const shortError = (error) => {
+  const message = error instanceof Error ? error.message : String(error || "errore sconosciuto");
+  return message.replace(/\s+/g, " ").slice(0, 260);
+};
+
+const renderErrorMessage = (error) => {
+  const message = error instanceof Error ? error.message : String(error || "errore sconosciuto");
+  return message.replace(/\s+/g, " ").slice(0, 1400);
+};
+
+const generateRenderImage = async (client, body) => {
+  const sourceBlob = await dataUrlToBlob(body.image);
+  const prompt = buildRenderPrompt(body);
+  const parameters = {
+    prompt,
+    negative_prompt:
+      "free camera 3d scene, first person view, blue technical wireframe, random boxes, unreadable plan, distorted floorplan, extra rooms, exterior render",
+    num_inference_steps: 28,
+    guidance_scale: 5.8,
+    target_size: { width: 1280, height: 900 },
+  };
+  const errors = [];
+  const preferredModel = process.env.HF_3D_IMAGE_MODEL;
+  const imageTextModels = [preferredModel, ...defaultImageModels].filter(Boolean);
+
+  for (const model of imageTextModels) {
+    try {
+      const blob = await client.imageTextToImage({
+        model,
+        inputs: sourceBlob,
+        parameters,
+      });
+      return { image: await blobToDataUrl(blob), model, task: "image-text-to-image" };
+    } catch (error) {
+      errors.push(`${model}: ${shortError(error)}`);
+    }
+  }
+
+  for (const model of [...imageTextModels, ...defaultImageToImageModels]) {
+    try {
+      const blob = await client.imageToImage({
+        provider: "replicate",
+        model,
+        inputs: sourceBlob,
+        parameters,
+      });
+      return { image: await blobToDataUrl(blob), model, task: "image-to-image" };
+    } catch (error) {
+      errors.push(`${model}: ${shortError(error)}`);
+    }
+  }
+
+  for (const model of defaultTextToImageModels) {
+    try {
+      const blob = await client.textToImage({
+        model,
+        inputs: `${prompt} Top-down furnished real-estate floor plan, 2D plan relief overlay, clean architectural brochure image.`,
+        parameters: {
+          negative_prompt: parameters.negative_prompt,
+          num_inference_steps: 24,
+          guidance_scale: 4.5,
+          width: 1280,
+          height: 900,
+        },
+      });
+      return { image: await blobToDataUrl(blob), model, task: "text-to-image" };
+    } catch (error) {
+      errors.push(`${model}: ${shortError(error)}`);
+    }
+  }
+
+  throw new Error(errors.slice(-4).join(" | "));
+};
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Metodo non consentito" });
@@ -201,12 +308,14 @@ export default async function handler(req, res) {
       });
     }
 
-    try {
-      const client = new InferenceClient(token);
-      let activeModel = model;
-      let completion;
-      let visionRetryError = null;
+    const client = new InferenceClient(token);
+    let activeModel = model;
+    let plan = createFallbackPlan(body, "layout-fallback");
+    let planError = null;
+    let visionRetryError = null;
 
+    try {
+      let completion;
       try {
         completion = await client.chatCompletion({
           model: activeModel,
@@ -219,7 +328,7 @@ export default async function handler(req, res) {
           throw error;
         }
 
-        visionRetryError = error instanceof Error ? error.message : "Errore modello vision";
+        visionRetryError = shortError(error);
         activeModel = process.env.HF_3D_MODEL || defaultModel;
         completion = await client.chatCompletion({
           model: activeModel,
@@ -241,34 +350,45 @@ export default async function handler(req, res) {
       }
 
       const content = completion?.choices?.[0]?.message?.content || "";
-      const plan = extractJson(content);
-
-      return res.status(200).json({
-        success: true,
-        plan: {
-          ...plan,
-          source: "hugging-face",
-        },
-        meta: {
-          mode: "hugging-face",
-          model: activeModel,
-          usedImage: hasImage,
-          visionRetry: Boolean(visionRetryError),
-          visionError: visionRetryError,
-        },
-      });
+      plan = {
+        ...extractJson(content),
+        source: "hugging-face",
+      };
     } catch (error) {
-      return res.status(200).json({
-        success: true,
-        plan: createFallbackPlan(body),
-        meta: {
-          mode: "local-fallback",
-          model,
-          usedImage: hasImage,
-          error: error instanceof Error ? error.message : "Errore Hugging Face",
-        },
-      });
+      planError = shortError(error);
     }
+
+    let renderImage = null;
+    let renderError = null;
+    let imageModel = null;
+    let imageTask = null;
+    if (hasImage) {
+      try {
+        const render = await generateRenderImage(client, body);
+        renderImage = render.image;
+        imageModel = render.model;
+        imageTask = render.task;
+      } catch (error) {
+        renderError = renderErrorMessage(error);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      plan,
+      renderImage,
+      meta: {
+        mode: renderImage || plan.source === "hugging-face" ? "hugging-face" : "local-fallback",
+        model: activeModel,
+        imageModel,
+        imageTask,
+        renderError,
+        planError,
+        usedImage: hasImage,
+        visionRetry: Boolean(visionRetryError),
+        visionError: visionRetryError,
+      },
+    });
   } catch (error) {
     return res.status(500).json({
       error: error instanceof Error ? error.message : "Errore generazione planimetria 3D.",

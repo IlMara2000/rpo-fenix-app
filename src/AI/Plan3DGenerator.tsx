@@ -20,9 +20,12 @@ const defaultRequest: FloorPlan3DRequest = {
 type GenerateResponse = {
   success?: boolean;
   plan?: unknown;
+  renderImage?: string | null;
   meta?: {
     mode?: string;
     model?: string;
+    imageModel?: string;
+    renderError?: string | null;
     error?: string;
     usedImage?: boolean;
   };
@@ -43,6 +46,7 @@ export function Plan3DGenerator() {
     ),
   );
   const [loading, setLoading] = useState(false);
+  const [finalImageUrl, setFinalImageUrl] = useState<string | null>(null);
   const [message, setMessage] = useState("Carica una planimetria e aggiungi una descrizione sintetica.");
   const [meta, setMeta] = useState<GenerateResponse["meta"]>({ mode: "browser-fallback" });
 
@@ -106,8 +110,13 @@ export function Plan3DGenerator() {
         prompt: mergedPrompt || "Planimetria residenziale caricata dall'utente.",
       });
       setPlan(normalizedPlan);
+      setFinalImageUrl(data.renderImage ?? null);
       setMeta(data.meta ?? { mode: normalizedPlan.source });
-      setMessage("JPG finale pronto: controlla il render e scarica l'immagine.");
+      setMessage(
+        data.renderImage
+          ? "JPG finale AI pronto: controlla e scarica l'immagine."
+          : `Render AI non disponibile: ${data.meta?.renderError || "verifica HF_TOKEN e modello"}. Disponibile anteprima tecnica e download.`,
+      );
     } catch (error) {
       const fallbackPlan = createFallbackFloorPlan(
         {
@@ -117,6 +126,7 @@ export function Plan3DGenerator() {
         "browser-fallback",
       );
       setPlan(fallbackPlan);
+      setFinalImageUrl(null);
       setMeta({ mode: "browser-fallback", error: error instanceof Error ? error.message : "Errore sconosciuto" });
       setMessage("Ho generato un layout locale di continuita': puoi comunque scaricare il JPG finale.");
     } finally {
@@ -210,16 +220,6 @@ export function Plan3DGenerator() {
               </select>
             </label>
             <label>
-              Mq indicativi
-              <input
-                min={35}
-                max={260}
-                type="number"
-                value={request.areaSqm}
-                onChange={(event) => updateRequest({ areaSqm: Number(event.target.value) })}
-              />
-            </label>
-            <label>
               Ambienti
               <input
                 min={4}
@@ -253,7 +253,7 @@ export function Plan3DGenerator() {
           </span>
           <b>{plan.style}</b>
         </header>
-        <FloorPlan3DViewer plan={plan} baseImageUrl={imagePreview || undefined} />
+        <FloorPlan3DViewer plan={plan} baseImageUrl={imagePreview || undefined} finalImageUrl={finalImageUrl || undefined} />
       </section>
     </section>
   );

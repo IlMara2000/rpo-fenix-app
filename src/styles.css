@@ -4187,7 +4187,7 @@ td {
 
 .plan-ai-fields {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -4280,6 +4280,49 @@ td {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.plan-ai-final-image {
+  display: block;
+  width: 100%;
+  min-height: 600px;
+  object-fit: cover;
+}
+
+.plan-ai-fallback-image {
+  position: relative;
+  display: grid;
+  min-height: 600px;
+  place-items: center;
+  padding: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015)),
+    #08090d;
+}
+
+.plan-ai-fallback-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 540px;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+  filter: contrast(1.04) saturate(0.92);
+}
+
+.plan-ai-fallback-image span {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  padding: 8px 12px;
+  border: 1px solid rgba(239, 68, 68, 0.34);
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(15, 15, 18, 0.82);
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .plan-3d-snapshot {
