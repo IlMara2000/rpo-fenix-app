@@ -1326,76 +1326,7 @@ function Hero({ onLogin }: { onLogin: () => void }) {
           </button>
         </div>
       </div>
-      <DashboardPreview />
     </section>
-  );
-}
-
-function DashboardPreview() {
-  const previewSteps = [
-    { time: "1", title: "Inserisci cliente" },
-    { time: "2", title: "Qualifica esigenza" },
-    { time: "3", title: "Pianifica ricontatto" },
-  ];
-  const previewActions = [
-    { name: "Immobili", tag: "Schede e portali", score: "Pronto" },
-    { name: "Censimento", tag: "Zone e contatti", score: "Pronto" },
-    { name: "Agenda", tag: "Attivita e visite", score: "Pronto" },
-  ];
-
-  return (
-    <div className="dashboard-preview" aria-label="Anteprima dashboard gestionale">
-      <div className="dash-head">
-        <div>
-          <span className="system-label">Pannello cruscotto</span>
-          <strong>Pipeline agenzia</strong>
-        </div>
-        <span className="live-dot">Live</span>
-      </div>
-      <div className="dash-metrics">
-        <div>
-          <small>Immobili</small>
-          <strong>0</strong>
-        </div>
-        <div>
-          <small>Clienti</small>
-          <strong>0</strong>
-        </div>
-        <div>
-          <small>Censimento</small>
-          <strong>0</strong>
-        </div>
-      </div>
-      <div className="dash-grid">
-        <div className="timeline-panel">
-          <div className="panel-title">
-            <CalendarDays size={18} />
-            Flusso iniziale
-          </div>
-          {previewSteps.map((item) => (
-            <div className="timeline-item" key={item.time}>
-              <span>{item.time}</span>
-              <p>{item.title}</p>
-            </div>
-          ))}
-        </div>
-        <div className="lead-panel">
-          <div className="panel-title">
-            <Sparkles size={18} />
-            Moduli pronti
-          </div>
-          {previewActions.map((row) => (
-            <div className="lead-row" key={row.name}>
-              <span>
-                <strong>{row.name}</strong>
-                <small>{row.tag}</small>
-              </span>
-              <b>{row.score}</b>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }
 
