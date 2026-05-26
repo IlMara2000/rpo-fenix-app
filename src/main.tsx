@@ -1434,7 +1434,7 @@ function ContactSection() {
     <section className="contact-section" id="richiedi">
       <div className="contact-copy">
         <span className="system-label">Richiedi informazioni</span>
-        <h2>Parla con un consulente Fenix Suite</h2>
+        <h2>Parla con un nostro tecnico</h2>
         <p>
           Compila il modulo per ricevere dettagli, assistenza o una presentazione del gestionale
           e valutare come adattarlo al flusso operativo della tua agenzia.
