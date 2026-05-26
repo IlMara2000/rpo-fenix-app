@@ -219,7 +219,6 @@ const renderErrorMessage = (error) => {
 };
 
 const generateRenderImage = async (client, body) => {
-  const sourceBlob = await dataUrlToBlob(body.image);
   const prompt = buildRenderPrompt(body);
   const parameters = {
     prompt,
@@ -232,6 +231,27 @@ const generateRenderImage = async (client, body) => {
   const errors = [];
   const preferredModel = process.env.HF_3D_IMAGE_MODEL;
   const imageTextModels = [preferredModel, ...defaultImageModels].filter(Boolean);
+
+  for (const model of defaultTextToImageModels) {
+    try {
+      const blob = await client.textToImage({
+        model,
+        inputs: `${prompt} Top-down furnished real-estate floor plan, 2D plan relief overlay, clean architectural brochure image.`,
+        parameters: {
+          negative_prompt: parameters.negative_prompt,
+          num_inference_steps: 24,
+          guidance_scale: 4.5,
+          width: 1280,
+          height: 900,
+        },
+      });
+      return { image: await blobToDataUrl(blob), model, task: "text-to-image" };
+    } catch (error) {
+      errors.push(`${model}: ${shortError(error)}`);
+    }
+  }
+
+  const sourceBlob = await dataUrlToBlob(body.image);
 
   for (const model of imageTextModels) {
     try {
@@ -255,25 +275,6 @@ const generateRenderImage = async (client, body) => {
         parameters,
       });
       return { image: await blobToDataUrl(blob), model, task: "image-to-image" };
-    } catch (error) {
-      errors.push(`${model}: ${shortError(error)}`);
-    }
-  }
-
-  for (const model of defaultTextToImageModels) {
-    try {
-      const blob = await client.textToImage({
-        model,
-        inputs: `${prompt} Top-down furnished real-estate floor plan, 2D plan relief overlay, clean architectural brochure image.`,
-        parameters: {
-          negative_prompt: parameters.negative_prompt,
-          num_inference_steps: 24,
-          guidance_scale: 4.5,
-          width: 1280,
-          height: 900,
-        },
-      });
-      return { image: await blobToDataUrl(blob), model, task: "text-to-image" };
     } catch (error) {
       errors.push(`${model}: ${shortError(error)}`);
     }

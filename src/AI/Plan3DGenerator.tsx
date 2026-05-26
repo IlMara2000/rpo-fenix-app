@@ -52,6 +52,7 @@ export function Plan3DGenerator() {
 
   const hasInput = Boolean(imageFile || request.prompt.trim());
   const mergedPrompt = useMemo(() => request.prompt.trim(), [request.prompt]);
+  const aiCreditsDepleted = Boolean(meta?.renderError?.toLowerCase().includes("depleted"));
 
   useEffect(() => {
     if (!imageFile) {
@@ -115,7 +116,9 @@ export function Plan3DGenerator() {
       setMessage(
         data.renderImage
           ? "JPG finale AI pronto: controlla e scarica l'immagine."
-          : `Render AI non disponibile: ${data.meta?.renderError || "verifica HF_TOKEN e modello"}. Disponibile anteprima tecnica e download.`,
+          : data.meta?.renderError?.toLowerCase().includes("depleted")
+            ? "Crediti Hugging Face esauriti: ho generato gratis una planimetria arredata locale scaricabile in JPG."
+            : "Ho generato gratis una planimetria arredata locale scaricabile in JPG.",
       );
     } catch (error) {
       const fallbackPlan = createFallbackFloorPlan(
@@ -253,7 +256,12 @@ export function Plan3DGenerator() {
           </span>
           <b>{plan.style}</b>
         </header>
-        <FloorPlan3DViewer plan={plan} baseImageUrl={imagePreview || undefined} finalImageUrl={finalImageUrl || undefined} />
+        <FloorPlan3DViewer
+          plan={plan}
+          baseImageUrl={imagePreview || undefined}
+          finalImageUrl={finalImageUrl || undefined}
+          fallbackLabel={aiCreditsDepleted ? "Render locale gratuito" : undefined}
+        />
       </section>
     </section>
   );

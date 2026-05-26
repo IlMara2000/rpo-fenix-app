@@ -4289,6 +4289,36 @@ td {
   object-fit: cover;
 }
 
+.plan-local-render {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-height: 600px;
+  background: #f6f5f1;
+}
+
+.plan-local-render canvas {
+  display: block;
+  width: 100%;
+  min-height: 600px;
+}
+
+.plan-local-render span {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  padding: 8px 12px;
+  border: 1px solid rgba(62, 62, 58, 0.16);
+  border-radius: 999px;
+  color: #282824;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .plan-ai-fallback-image {
   position: relative;
   display: grid;
