@@ -351,18 +351,156 @@ function renderMarketingPlan(canvas: HTMLCanvasElement, plan: FloorPlan3D) {
   });
 }
 
-export function FloorPlan3DViewer({ plan, finalImageUrl, fallbackLabel }: FloorPlan3DViewerProps) {
+function loadCanvasImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Immagine non leggibile"));
+    image.src = src;
+  });
+}
+
+function drawWoodWash(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) {
+  ctx.save();
+  ctx.globalAlpha = 0.34;
+  drawWood(ctx, x, y, width, height);
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = "#f7f0e5";
+  ctx.fillRect(x, y, width, height);
+  ctx.restore();
+}
+
+function renderFaithfulUploadedPlan(canvas: HTMLCanvasElement, image: HTMLImageElement) {
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return;
+
+  const cssWidth = Math.max(360, canvas.clientWidth || 900);
+  const cssHeight = Math.max(520, canvas.clientHeight || 680);
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(cssWidth * pixelRatio);
+  canvas.height = Math.floor(cssHeight * pixelRatio);
+  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+  ctx.fillStyle = "#f6f5f1";
+  ctx.fillRect(0, 0, cssWidth, cssHeight);
+  addNoise(ctx, cssWidth, cssHeight);
+
+  const margin = Math.max(34, Math.min(cssWidth, cssHeight) * 0.055);
+  const scale = Math.min((cssWidth - margin * 2) / image.naturalWidth, (cssHeight - margin * 2) / image.naturalHeight);
+  const drawWidth = image.naturalWidth * scale;
+  const drawHeight = image.naturalHeight * scale;
+  const drawX = (cssWidth - drawWidth) / 2;
+  const drawY = (cssHeight - drawHeight) / 2;
+
+  ctx.save();
+  ctx.shadowColor = "rgba(0, 0, 0, 0.2)";
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 14;
+  drawWoodWash(ctx, drawX, drawY, drawWidth, drawHeight);
+  ctx.restore();
+
+  const sample = document.createElement("canvas");
+  const maxSampleSide = 900;
+  const sampleScale = Math.min(1, maxSampleSide / Math.max(image.naturalWidth, image.naturalHeight));
+  sample.width = Math.max(1, Math.round(image.naturalWidth * sampleScale));
+  sample.height = Math.max(1, Math.round(image.naturalHeight * sampleScale));
+  const sampleCtx = sample.getContext("2d", { willReadFrequently: true });
+  if (!sampleCtx) return;
+
+  sampleCtx.drawImage(image, 0, 0, sample.width, sample.height);
+  const imageData = sampleCtx.getImageData(0, 0, sample.width, sample.height);
+  const data = imageData.data;
+  const mask = new Uint8Array(sample.width * sample.height);
+
+  for (let y = 1; y < sample.height - 1; y += 1) {
+    for (let x = 1; x < sample.width - 1; x += 1) {
+      const index = (y * sample.width + x) * 4;
+      const red = data[index];
+      const green = data[index + 1];
+      const blue = data[index + 2];
+      const alpha = data[index + 3];
+      const luma = red * 0.299 + green * 0.587 + blue * 0.114;
+      const contrast =
+        Math.abs(luma - (data[index - 4] * 0.299 + data[index - 3] * 0.587 + data[index - 2] * 0.114)) +
+        Math.abs(luma - (data[index + 4] * 0.299 + data[index + 5] * 0.587 + data[index + 6] * 0.114)) +
+        Math.abs(luma - (data[index - sample.width * 4] * 0.299 + data[index - sample.width * 4 + 1] * 0.587 + data[index - sample.width * 4 + 2] * 0.114)) +
+        Math.abs(luma - (data[index + sample.width * 4] * 0.299 + data[index + sample.width * 4 + 1] * 0.587 + data[index + sample.width * 4 + 2] * 0.114));
+
+      if (alpha > 40 && (luma < 118 || (luma < 185 && contrast > 95))) {
+        mask[y * sample.width + x] = 1;
+      }
+    }
+  }
+
+  const lineCanvas = document.createElement("canvas");
+  lineCanvas.width = sample.width;
+  lineCanvas.height = sample.height;
+  const lineCtx = lineCanvas.getContext("2d");
+  if (!lineCtx) return;
+
+  lineCtx.fillStyle = "rgba(62, 63, 62, 0.88)";
+  const point = Math.max(1, Math.round(sample.width / 560));
+  for (let y = 0; y < sample.height; y += point) {
+    for (let x = 0; x < sample.width; x += point) {
+      if (!mask[y * sample.width + x]) continue;
+      lineCtx.fillRect(x - point, y - point, point * 3, point * 3);
+    }
+  }
+
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+  ctx.restore();
+
+  ctx.save();
+  ctx.filter = "drop-shadow(0 2px 2px rgba(0,0,0,0.22))";
+  ctx.drawImage(lineCanvas, drawX, drawY, drawWidth, drawHeight);
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalCompositeOperation = "multiply";
+  ctx.globalAlpha = 0.26;
+  ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.78)";
+  ctx.lineWidth = 1.2;
+  ctx.strokeRect(drawX, drawY, drawWidth, drawHeight);
+  ctx.restore();
+}
+
+export function FloorPlan3DViewer({ plan, baseImageUrl, finalImageUrl, fallbackLabel }: FloorPlan3DViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || finalImageUrl) return undefined;
-    renderMarketingPlan(canvas, plan);
+    let cancelled = false;
 
-    const observer = new ResizeObserver(() => renderMarketingPlan(canvas, plan));
+    const render = async () => {
+      if (baseImageUrl) {
+        try {
+          const image = await loadCanvasImage(baseImageUrl);
+          if (!cancelled) renderFaithfulUploadedPlan(canvas, image);
+          return;
+        } catch {
+          if (cancelled) return;
+        }
+      }
+      renderMarketingPlan(canvas, plan);
+    };
+
+    void render();
+    const observer = new ResizeObserver(() => {
+      void render();
+    });
     observer.observe(canvas);
-    return () => observer.disconnect();
-  }, [plan, finalImageUrl]);
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+    };
+  }, [plan, baseImageUrl, finalImageUrl]);
 
   function downloadSnapshot() {
     if (finalImageUrl) {
