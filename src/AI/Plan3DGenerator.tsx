@@ -248,7 +248,6 @@ export function Plan3DGenerator() {
           <span>
             <strong>{plan.title}</strong>
           </span>
-          <b>{plan.style}</b>
         </header>
         <FloorPlan3DViewer
           plan={plan}

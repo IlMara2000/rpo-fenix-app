@@ -3713,14 +3713,33 @@ td {
 }
 
 .plan-header {
-  grid-template-columns: auto minmax(120px, 220px) auto;
-  justify-content: space-between;
+  position: relative;
+  grid-template-columns: minmax(300px, 0.32fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 42px;
 }
 
 .plan-header img {
-  width: min(100%, 190px);
+  grid-column: 2;
+  grid-row: 1;
+  width: min(100%, 250px);
   height: auto;
   justify-self: center;
+  margin-top: 30px;
+}
+
+.plan-header button:first-of-type {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  margin-top: 30px;
+}
+
+.plan-header button:last-of-type {
+  position: absolute;
+  top: 30px;
+  right: 0;
 }
 
 .plan-hero {
@@ -4422,6 +4441,17 @@ td {
     display: flex;
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .plan-header img {
+    width: min(100%, 220px);
+    margin-top: 12px;
+  }
+
+  .plan-header button:first-of-type,
+  .plan-header button:last-of-type {
+    position: static;
+    margin-top: 0;
   }
 
   .rpo-header-actions {
