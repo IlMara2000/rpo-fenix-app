@@ -5088,6 +5088,152 @@ td,
   background: rgba(255, 255, 255, 0.04);
 }
 
+.area-home-panel {
+  background: rgba(15, 16, 21, 0.82);
+}
+
+.area-agenda-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.area-agenda-columns section {
+  min-height: 154px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.area-agenda-columns h3 {
+  margin: 0 0 12px;
+  color: #ffffff;
+  font-size: 0.95rem;
+}
+
+.area-agenda-columns p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.area-agenda-list {
+  display: grid;
+  gap: 8px;
+}
+
+.area-agenda-list article {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 8px 10px;
+  align-items: start;
+  padding: 9px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.area-agenda-list article span {
+  grid-row: span 2;
+  color: var(--red);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.area-agenda-list article strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 0.86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.area-agenda-list article small {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-window-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.activity-window-tabs button {
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 0.78rem;
+  font-weight: 820;
+}
+
+.activity-window-tabs button.active {
+  border-color: rgba(239, 68, 68, 0.55);
+  background: rgba(239, 68, 68, 0.18);
+}
+
+.activity-bar-chart {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(18px, 1fr));
+  align-items: end;
+  min-height: 178px;
+  gap: 8px;
+  padding: 16px 12px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
+}
+
+.activity-bar-chart span {
+  display: grid;
+  align-items: end;
+  height: 138px;
+  gap: 8px;
+  min-width: 0;
+}
+
+.activity-bar-chart b {
+  display: block;
+  align-self: end;
+  min-height: 8px;
+  border-radius: 7px 7px 2px 2px;
+  background: linear-gradient(180deg, #ef4444, rgba(201, 79, 79, 0.38));
+}
+
+.activity-bar-chart small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 760;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-overview.compact {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.progress-overview.compact .progress-line {
+  min-height: auto;
+  padding: 12px;
+}
+
+.area-call-queue article {
+  min-height: 54px;
+}
+
 .scope-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5462,6 +5608,7 @@ td,
   .crm-flow-grid,
   .kpi-row,
   .progress-overview,
+  .area-agenda-columns,
   .scope-strip,
   .month-board,
   .census-phase-grid,
@@ -5549,6 +5696,7 @@ td,
   .crm-flow-grid,
   .kpi-row,
   .progress-overview,
+  .area-agenda-columns,
   .scope-strip,
   .month-board,
   .census-phase-grid,
@@ -5559,6 +5707,10 @@ td,
 
   .crm-flow-grid button {
     min-height: 76px;
+  }
+
+  .activity-bar-chart {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   .app-sidebar {

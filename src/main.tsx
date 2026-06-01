@@ -491,8 +491,8 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
   start: [
     {
       key: "start-dashboard",
-      label: "Progressi",
-      description: "Progressi giornalieri e andamento mensile rispetto agli obiettivi del team collegato.",
+      label: "Oggi",
+      description: "Agenda, attivita e ricontatti del giorno con riepilogo mensile.",
       Icon: LayoutDashboard,
     },
   ],
@@ -520,6 +520,18 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       label: "Affitti",
       description: "Gestione locazioni annuali e disponibilita.",
       Icon: CalendarDays,
+    },
+    {
+      key: "immobili-ricerca-op",
+      label: "Ricerca Op.",
+      description: "Ricerca proprietari e opportunita collegate alle schede immobiliari.",
+      Icon: Search,
+    },
+    {
+      key: "immobili-ricerca-cli",
+      label: "Ricerca C.",
+      description: "Ricerca clienti compatibili con immobili, zone e caratteristiche.",
+      Icon: UsersRound,
     },
   ],
   richieste: [
@@ -1935,6 +1947,7 @@ function StartView({
   onCommit: CrmCommit;
   onOpenModule: (moduleKey: ModuleKey, pageKey?: string) => void;
 }) {
+  const [activityWindow, setActivityWindow] = useState<7 | 14 | 30>(7);
   const accountScope = getAccountScope(accounts, currentUser);
   const scopeOwners = new Set(
     accountScope.accounts.flatMap((account) => [
@@ -1963,6 +1976,13 @@ function StartView({
   const monthlyProperties = data.properties.length;
   const monthlyActivities = scopedActivities.length;
   const monthlyGoals = scopedGoals.length;
+  const agendaToday = scopedActivities.filter((activity) => activity.day === "Oggi").slice(0, 4);
+  const agendaTomorrow = scopedActivities.filter((activity) => activity.day === "Domani").slice(0, 4);
+  const agendaWeek = scopedActivities.filter((activity) => activity.day === "Settimana").slice(0, 4);
+  const censusRecallRows = data.contacts
+    .filter((contact) => /censimento|proprietario|valutazione|ricontattare/i.test(`${contact.source} ${contact.type} ${contact.status}`))
+    .slice(0, 8);
+  const activityBars = buildActivityBars(scopedActivities, activityWindow);
 
   function registerCall(contact: ContactRecord) {
     onCommit(
@@ -2038,37 +2058,51 @@ function StartView({
         <KpiCard label="Appuntamenti" value={String(openAppointments)} trend="settimana" Icon={CalendarDays} />
       </div>
 
-      <Panel className="span-12" title="Progressi mensili">
-        <div className="progress-overview">
-          <ProgressLine current={monthlyContacts} label="Clienti censiti nel database" target={Math.max(20, monthlyContacts)} />
-          <ProgressLine current={monthlyProperties} label="Immobili in gestione" target={Math.max(10, monthlyProperties)} />
-          <ProgressLine current={monthlyActivities} label="Attivita registrate" target={Math.max(40, monthlyActivities)} />
-          <ProgressLine current={monthlyGoals} label="Obiettivi configurati" target={Math.max(4, monthlyGoals)} />
+      <Panel className="span-12 area-home-panel" title="Agenda">
+        <div className="area-agenda-columns">
+          <AgendaColumn title="Oggi" items={agendaToday} empty="Non hai nessun appuntamento per oggi" />
+          <AgendaColumn title="Domani" items={agendaTomorrow} empty="Non hai nessun appuntamento per domani" />
+          <AgendaColumn title="Questa settimana" items={agendaWeek} empty="Non hai appuntamenti nei prossimi giorni della settimana" />
         </div>
       </Panel>
 
-      <Panel className="span-12" title="Ambito di analisi">
-        <div className="scope-strip">
-          <span>
-            <strong>{accountScope.label}</strong>
-            <small>{accountScope.accounts.length} account attivi inclusi nei progressi</small>
-          </span>
-          <span>
-            <strong>Giornaliero</strong>
-            <small>Telefonate, ricontatti e agenda del giorno</small>
-          </span>
-          <span>
-            <strong>Mensile</strong>
-            <small>Analisi disponibili entrando nelle sezioni operative</small>
-          </span>
+      <Panel className="span-7 area-home-panel" title="Attivita effettuate">
+        <div className="activity-window-tabs" aria-label="Periodo attivita">
+          {[7, 14, 30].map((days) => (
+            <button
+              className={activityWindow === days ? "active" : ""}
+              key={days}
+              type="button"
+              onClick={() => setActivityWindow(days as 7 | 14 | 30)}
+            >
+              {days} giorni
+            </button>
+          ))}
+        </div>
+        <div className="activity-bar-chart">
+          {activityBars.map((bar) => (
+            <span key={bar.label}>
+              <b style={{ height: `${bar.height}%` }} />
+              <small>{bar.label}</small>
+            </span>
+          ))}
         </div>
       </Panel>
 
-      <Panel className="span-5" title="Clienti da richiamare" action="Ricontatti">
-        <div className="call-queue">
+      <Panel className="span-5 area-home-panel" title="Progressi mensili">
+        <div className="progress-overview compact">
+          <ProgressLine current={monthlyContacts} label="Clienti censiti" target={Math.max(20, monthlyContacts)} />
+          <ProgressLine current={monthlyProperties} label="Immobili" target={Math.max(10, monthlyProperties)} />
+          <ProgressLine current={monthlyActivities} label="Attivita" target={Math.max(40, monthlyActivities)} />
+          <ProgressLine current={monthlyGoals} label="Obiettivi" target={Math.max(4, monthlyGoals)} />
+        </div>
+      </Panel>
+
+      <Panel className="span-6 area-home-panel" title="Nominativi da ricontattare" action={accountScope.label}>
+        <div className="call-queue area-call-queue">
           {fallbackQueue.length ? (
             fallbackQueue.map((contact, index) => (
-              <article key={contact.name}>
+              <article key={contact.id}>
                 <span>{String(index + 1).padStart(2, "0")}</span>
                 <div>
                   <strong>{contact.name}</strong>
@@ -2080,9 +2114,32 @@ function StartView({
               </article>
             ))
           ) : (
-            <EmptyState title="Nessun ricontatto" text="Aggiungi un nominativo o salva un appunto veloce per creare la prima attivita." />
+            <EmptyState title="Nessuno da ricontattare" text="Aggiungi un cliente o salva una nota veloce per creare il primo richiamo." />
           )}
         </div>
+      </Panel>
+
+      <Panel className="span-6 area-home-panel" title="Contatti censiti da ricontattare" action="Censimento">
+        <DataTable
+          columns={["Nome", "Telefono", "Stato", "Prossimo passo"]}
+          rows={censusRecallRows.map((contact) => [
+            contact.name,
+            contact.phone || "-",
+            contact.status,
+            contact.nextStep,
+          ])}
+          actions={[
+            {
+              label: "Apri",
+              onClick: (rowIndex) => {
+                const selected = censusRecallRows[rowIndex];
+                if (selected) {
+                  onOpenModule("proprietari", "proprietari-elenco");
+                }
+              },
+            },
+          ]}
+        />
       </Panel>
 
       <Panel className="span-4" title="Aggiungi nota veloce">
@@ -2160,7 +2217,7 @@ function StartView({
         </div>
       </Panel>
 
-      <Panel className="span-8" title="Clienti recenti">
+      <Panel className="span-5" title="Clienti recenti">
         <DataTable
           columns={["Nome", "Tipo", "Situazione", "Fonte", "Responsabile"]}
           rows={data.contacts.slice(0, 8).map((contact) => [
@@ -2170,12 +2227,6 @@ function StartView({
             contact.source,
             contact.owner,
           ])}
-        />
-      </Panel>
-
-      <Panel className="span-4" title="Schema semplice">
-        <Checklist
-          items={["Chiama i ricontatti urgenti", "Aggiorna la scheda cliente", "Collega esigenza e immobile", "Pianifica prossimo contatto"]}
         />
       </Panel>
 
@@ -2210,6 +2261,60 @@ function StartView({
       </Panel>
     </div>
   );
+}
+
+function AgendaColumn({
+  title,
+  items,
+  empty,
+}: {
+  title: string;
+  items: ActivityRecord[];
+  empty: string;
+}) {
+  return (
+    <section>
+      <h3>{title}</h3>
+      {items.length ? (
+        <div className="area-agenda-list">
+          {items.map((item) => (
+            <article key={item.id}>
+              <span>{item.time}</span>
+              <strong>{item.title}</strong>
+              <small>{item.type} - {item.contact || item.property || item.owner}</small>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p>{empty}</p>
+      )}
+    </section>
+  );
+}
+
+function buildActivityBars(activities: ActivityRecord[], days: 7 | 14 | 30) {
+  const visibleDays = days === 7 ? 8 : days === 14 ? 10 : 12;
+  const today = new Date();
+  const buckets = Array.from({ length: visibleDays }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (visibleDays - index - 1));
+    const label = date.toLocaleDateString("it-IT", { day: "numeric", month: "short" }).replace(".", "");
+    return {
+      label,
+      value: 0,
+    };
+  });
+
+  activities.slice(0, days).forEach((activity, index) => {
+    const bucketIndex = buckets.length - 1 - (index % buckets.length);
+    buckets[bucketIndex].value += /telefonata/i.test(activity.type) ? 2 : 1;
+  });
+
+  const maxValue = Math.max(1, ...buckets.map((bucket) => bucket.value));
+  return buckets.map((bucket) => ({
+    ...bucket,
+    height: Math.max(8, Math.round((bucket.value / maxValue) * 100)),
+  }));
 }
 
 function PropertiesView({
