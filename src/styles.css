@@ -5814,3 +5814,390 @@ td,
     transition-duration: 0.01ms !important;
   }
 }
+
+/* CRM AREA-style light workspace */
+.workspace-shell {
+  grid-template-columns: 70px minmax(0, 1fr);
+  background: #f0f0f0;
+}
+
+.app-sidebar {
+  padding: 0;
+  background: #050505;
+  border-right: 0;
+  box-shadow: 6px 0 18px rgba(0, 0, 0, 0.16);
+}
+
+.app-brand,
+.crm-version {
+  display: none;
+}
+
+.module-nav {
+  gap: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.module-nav button {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  min-height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: #ffffff;
+  background: #050505;
+}
+
+.module-nav button span {
+  display: none;
+}
+
+.module-nav button svg {
+  width: 24px;
+  height: 24px;
+  color: #ffffff;
+}
+
+.module-nav button:hover,
+.module-nav button.active {
+  color: #ffffff;
+  background: #24446f;
+}
+
+.app-main {
+  padding: 0;
+  background: #f0f0f0;
+}
+
+.app-header {
+  display: none;
+}
+
+.workspace-content {
+  min-height: 100vh;
+  padding: 26px 30px 42px;
+  color: #222222;
+  background: #f0f0f0;
+}
+
+.area-start-content {
+  padding-top: 30px;
+}
+
+.area-start-content .workspace-status,
+.area-start-content .module-heading,
+.area-start-content > .submodule-nav {
+  display: none;
+}
+
+.area-dashboard {
+  display: grid;
+  grid-template-columns: minmax(300px, 430px) minmax(420px, 1fr) minmax(300px, 430px);
+  grid-template-areas:
+    "news objectives recensus"
+    "agenda nominativi recensus";
+  gap: 22px 20px;
+  align-items: start;
+}
+
+.area-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d8d8d8;
+  color: #222222;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.area-card-news {
+  grid-area: news;
+  min-height: 378px;
+}
+
+.area-card-objectives {
+  grid-area: objectives;
+  min-height: 280px;
+}
+
+.area-card-census-recalls {
+  grid-area: recensus;
+  min-height: 378px;
+  max-height: 378px;
+}
+
+.area-card-agenda {
+  grid-area: agenda;
+  min-height: 342px;
+}
+
+.area-card-nominativi {
+  grid-area: nominativi;
+  min-height: 380px;
+}
+
+.area-card-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 185px);
+  gap: 12px;
+  align-items: center;
+  min-height: 47px;
+  padding: 9px 14px;
+  border-bottom: 1px solid #dfdfdf;
+}
+
+.area-card-header h2 {
+  margin: 0;
+  color: #5f646b;
+  font-size: 1rem;
+  font-weight: 560;
+  line-height: 1.1;
+}
+
+.area-card-header select {
+  width: 100%;
+  min-height: 24px;
+  border: 1px solid #cccccc;
+  border-radius: 3px;
+  color: #555555;
+  background: #ffffff;
+  font-size: 0.78rem;
+}
+
+.area-card-header h2:only-child {
+  grid-column: 1 / -1;
+}
+
+.area-card-body,
+.area-list-section {
+  padding: 14px;
+}
+
+.area-total {
+  color: #606060;
+  font-size: 0.86rem;
+  text-align: right;
+}
+
+.census-ring {
+  display: grid;
+  width: min(225px, 70vw);
+  aspect-ratio: 1;
+  margin: 24px auto 0;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle closest-side, #ffffff 57%, transparent 59% 65%, #ffffff 66% 68%, transparent 69%),
+    conic-gradient(#72cf45 0 72%, #ff9f0a 72% 83%, #ff675d 83% 96%, #555555 96% 100%);
+}
+
+.census-ring > div {
+  display: grid;
+  width: 128px;
+  height: 128px;
+  place-items: center;
+  border-radius: 50%;
+  color: #111111;
+  background: #ffffff;
+  text-align: center;
+}
+
+.census-ring strong {
+  max-width: 110px;
+  color: #111111;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.census-ring span {
+  color: #111111;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.area-empty-center {
+  display: grid;
+  min-height: 232px;
+  place-items: center;
+  padding: 20px;
+  color: #555555;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.area-list-section {
+  color: #4f545a;
+}
+
+.area-list-section > section + section {
+  margin-top: 18px;
+}
+
+.area-list-section h3 {
+  margin: 0 0 14px;
+  color: #666666;
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.area-list-section p {
+  margin: 0 0 20px;
+  color: #4f545a;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.area-card .area-agenda-list {
+  display: grid;
+  gap: 8px;
+}
+
+.area-card .area-agenda-list article {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  gap: 4px 10px;
+  padding: 0;
+  background: transparent;
+}
+
+.area-card .area-agenda-list article span,
+.area-card .area-agenda-list article strong,
+.area-card .area-agenda-list article small {
+  color: #333333;
+}
+
+.area-contact-table {
+  display: grid;
+}
+
+.area-contact-head,
+.area-contact-table button {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(120px, 0.95fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.area-contact-head {
+  padding: 8px 6px 10px;
+  border-bottom: 1px solid #dddddd;
+  color: #666666;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.area-contact-table button,
+.area-mini-list button {
+  width: 100%;
+  border: 0;
+  color: #126fc6;
+  background: transparent;
+  text-align: left;
+}
+
+.area-contact-table button {
+  min-height: 36px;
+  padding: 8px 6px;
+  border-bottom: 1px solid #e2e2e2;
+  font-size: 0.8rem;
+}
+
+.area-contact-table button b {
+  color: #126fc6;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.area-card-census-recalls .area-list-section {
+  max-height: 330px;
+  overflow-y: auto;
+}
+
+.area-mini-list {
+  display: grid;
+  gap: 7px;
+}
+
+.area-mini-list button {
+  display: grid;
+  gap: 2px;
+  min-height: 32px;
+  padding: 0;
+  color: #126fc6;
+  font-size: 0.84rem;
+}
+
+.area-mini-list small {
+  color: #555555;
+  font-size: 0.76rem;
+}
+
+@media (max-width: 1180px) {
+  .area-dashboard {
+    grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1fr);
+    grid-template-areas:
+      "news objectives"
+      "agenda nominativi"
+      "recensus recensus";
+  }
+
+  .area-card-census-recalls {
+    max-height: none;
+  }
+}
+
+@media (max-width: 980px) {
+  .workspace-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    height: auto;
+  }
+
+  .module-nav {
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .module-nav button {
+    flex: 0 0 58px;
+    min-height: 48px;
+  }
+
+  .workspace-content {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 760px) {
+  .area-dashboard {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "news"
+      "objectives"
+      "recensus"
+      "agenda"
+      "nominativi";
+    gap: 16px;
+  }
+
+  .area-card {
+    min-height: auto;
+    max-height: none;
+  }
+
+  .area-card-header {
+    grid-template-columns: 1fr;
+  }
+
+  .area-contact-head,
+  .area-contact-table button {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

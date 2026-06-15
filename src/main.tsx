@@ -1755,7 +1755,7 @@ function Workspace({
           </div>
         </header>
 
-        <section className="workspace-content">
+        <section className={`workspace-content ${safeActiveModule === "start" ? "area-start-content" : ""}`}>
           <div className="workspace-status" role="status">
             <span>
               <CheckCircle2 size={16} />
@@ -1938,7 +1938,6 @@ function StartView({
   accounts,
   currentUser,
   data,
-  onCommit,
   onOpenModule,
 }: {
   accounts: AccountRecord[];
@@ -1947,7 +1946,6 @@ function StartView({
   onCommit: CrmCommit;
   onOpenModule: (moduleKey: ModuleKey, pageKey?: string) => void;
 }) {
-  const [activityWindow, setActivityWindow] = useState<7 | 14 | 30>(7);
   const accountScope = getAccountScope(accounts, currentUser);
   const scopeOwners = new Set(
     accountScope.accounts.flatMap((account) => [
@@ -1960,305 +1958,127 @@ function StartView({
     accountScope.label === "Tutta agenzia" || !owner || scopeOwners.has(owner.toLowerCase());
   const scopedContacts = data.contacts.filter((contact) => isInScope(contact.owner));
   const scopedActivities = data.activities.filter((activity) => isInScope(activity.owner));
-  const scopedGoals = data.goals.filter((goal) => isInScope(goal.owner));
   const callQueue = scopedContacts
     .filter((contact) => /ricontattare|lead|valutazione|visita/i.test(contact.status))
-    .slice(0, 5);
-  const fallbackQueue = callQueue.length ? callQueue : scopedContacts.slice(0, 5);
-  const todayCalls = scopedActivities.filter(
-    (activity) => activity.day === "Oggi" && /telefonata/i.test(activity.type),
-  ).length;
-  const urgentFollowUps = scopedContacts.filter((contact) => /ricontattare|lead/i.test(contact.status)).length;
-  const openAppointments = scopedActivities.filter(
-    (activity) => activity.day === "Oggi" && /visita|appuntamento|incarico/i.test(activity.type),
-  ).length;
-  const monthlyContacts = scopedContacts.length;
-  const monthlyProperties = data.properties.length;
-  const monthlyActivities = scopedActivities.length;
-  const monthlyGoals = scopedGoals.length;
+    .slice(0, 8);
+  const fallbackQueue = callQueue.length ? callQueue : scopedContacts.slice(0, 8);
   const agendaToday = scopedActivities.filter((activity) => activity.day === "Oggi").slice(0, 4);
   const agendaTomorrow = scopedActivities.filter((activity) => activity.day === "Domani").slice(0, 4);
   const agendaWeek = scopedActivities.filter((activity) => activity.day === "Settimana").slice(0, 4);
   const censusRecallRows = data.contacts
     .filter((contact) => /censimento|proprietario|valutazione|ricontattare/i.test(`${contact.source} ${contact.type} ${contact.status}`))
-    .slice(0, 8);
-  const activityBars = buildActivityBars(scopedActivities, activityWindow);
-
-  function registerCall(contact: ContactRecord) {
-    onCommit(
-      (currentData) => ({
-        ...currentData,
-        contacts: currentData.contacts.map((item) =>
-          item.id === contact.id
-            ? {
-                ...item,
-                status: "Chiamato oggi",
-                nextStep: "Aggiornare esito chiamata",
-                updatedAt: nowLabel(),
-              }
-            : item,
-        ),
-        activities: [
-          createActivity({
-            title: `Telefonata ${contact.name}`,
-            type: "Telefonata",
-            contact: contact.name,
-            note: `Chiamata avviata da Start al numero ${contact.phone || "non indicato"}.`,
-          }),
-          ...currentData.activities,
-        ],
-      }),
-      `Telefonata registrata per ${contact.name}.`,
-    );
-  }
+    .slice(0, 12);
+  const censusTotal = Math.max(0, data.censusAreas.reduce((sum, area) => sum + area.contacts, 0) || censusRecallRows.length);
+  const overdueCensus = Math.max(0, censusRecallRows.filter((contact) => /ricontattare|valutazione/i.test(contact.status)).length || censusTotal);
+  const objectives = data.goals.filter((goal) => isInScope(goal.owner));
 
   return (
-    <div className="workspace-grid">
-      <Panel className="span-12 crm-flow-panel" title="Percorso rapido">
-        <div className="crm-flow-grid">
-          <button type="button" onClick={() => onOpenModule("nominativi", "nominativi-nuovo")}>
-            <UsersRound size={20} />
-            <span>
-              <strong>Salva cliente</strong>
-              <small>Nome, telefono, esigenza o nota.</small>
-            </span>
-            <ChevronRight size={16} />
-          </button>
-          <button type="button" onClick={() => onOpenModule("censimento", "censimento-zone")}>
-            <MapPinned size={20} />
-            <span>
-              <strong>Apri censimento</strong>
-              <small>Zone, stabili e contatti territoriali.</small>
-            </span>
-            <ChevronRight size={16} />
-          </button>
-          <button type="button" onClick={() => onOpenModule("immobili", "immobili-nuovo")}>
-            <Home size={20} />
-            <span>
-              <strong>Inserisci immobile</strong>
-              <small>Scheda, proprietario e prezzo.</small>
-            </span>
-            <ChevronRight size={16} />
-          </button>
-          <button type="button" onClick={() => onOpenModule("attivita", "attivita-nuova")}>
-            <CalendarDays size={20} />
-            <span>
-              <strong>Pianifica attivita</strong>
-              <small>Telefonata, visita o ricontatto.</small>
-            </span>
-            <ChevronRight size={16} />
-          </button>
+    <div className="area-dashboard">
+      <section className="area-card area-card-news">
+        <AreaCardHeader title="Notizie Censimento" filter={accountScope.label} />
+        <div className="area-card-body">
+          <div className="area-total">Totale: {censusTotal}</div>
+          <CensusRing value={overdueCensus} />
         </div>
-      </Panel>
+      </section>
 
-      <div className="kpi-row">
-        <KpiCard label="Chiamate oggi" value={String(todayCalls)} trend="giornaliero" Icon={PhoneCall} />
-        <KpiCard label="Da seguire" value={String(urgentFollowUps)} trend="giornaliero" Icon={CalendarCheck2} />
-        <KpiCard label="Clienti mese" value={String(monthlyContacts)} trend={accountScope.label} Icon={UsersRound} />
-        <KpiCard label="Appuntamenti" value={String(openAppointments)} trend="settimana" Icon={CalendarDays} />
-      </div>
+      <section className="area-card area-card-objectives">
+        <AreaCardHeader title="Obiettivi" filter="Oggi" />
+        <div className="area-empty-center">
+          {objectives.length ? (
+            <div className="progress-overview compact">
+              {objectives.slice(0, 4).map((goal) => (
+                <ProgressLine current={goal.current} key={goal.id} label={goal.label} target={goal.target} />
+              ))}
+            </div>
+          ) : (
+            <span>Nessun obiettivo presente per i filtri selezionati</span>
+          )}
+        </div>
+      </section>
 
-      <Panel className="span-12 area-home-panel" title="Agenda">
-        <div className="area-agenda-columns">
+      <section className="area-card area-card-census-recalls">
+        <AreaCardHeader title="Contatti censiti da ricontattare" filter={accountScope.label} />
+        <div className="area-list-section">
+          <h3>Oggi</h3>
+          {censusRecallRows.length ? (
+            <div className="area-contact-table">
+              <div className="area-contact-head">
+                <span>Nome</span>
+                <span>Telefono</span>
+              </div>
+              {censusRecallRows.map((contact) => (
+                <button key={contact.id} type="button" onClick={() => onOpenModule("proprietari", "proprietari-elenco")}>
+                  <span>{contact.name}</span>
+                  <b>{contact.phone || "-"}</b>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p>Nessun contatto censito da ricontattare per oggi</p>
+          )}
+        </div>
+      </section>
+
+      <section className="area-card area-card-agenda">
+        <AreaCardHeader title="Agenda" />
+        <div className="area-list-section">
           <AgendaColumn title="Oggi" items={agendaToday} empty="Non hai nessun appuntamento per oggi" />
           <AgendaColumn title="Domani" items={agendaTomorrow} empty="Non hai nessun appuntamento per domani" />
-          <AgendaColumn title="Questa settimana" items={agendaWeek} empty="Non hai appuntamenti nei prossimi giorni della settimana" />
+          <AgendaColumn title="Questa settimana" items={agendaWeek} empty="Non hai nessun appuntamento per i prossimi giorni della settimana" />
         </div>
-      </Panel>
+      </section>
 
-      <Panel className="span-7 area-home-panel" title="Attivita effettuate">
-        <div className="activity-window-tabs" aria-label="Periodo attivita">
-          {[7, 14, 30].map((days) => (
-            <button
-              className={activityWindow === days ? "active" : ""}
-              key={days}
-              type="button"
-              onClick={() => setActivityWindow(days as 7 | 14 | 30)}
-            >
-              {days} giorni
-            </button>
-          ))}
-        </div>
-        <div className="activity-bar-chart">
-          {activityBars.map((bar) => (
-            <span key={bar.label}>
-              <b style={{ height: `${bar.height}%` }} />
-              <small>{bar.label}</small>
-            </span>
-          ))}
-        </div>
-      </Panel>
-
-      <Panel className="span-5 area-home-panel" title="Progressi mensili">
-        <div className="progress-overview compact">
-          <ProgressLine current={monthlyContacts} label="Clienti censiti" target={Math.max(20, monthlyContacts)} />
-          <ProgressLine current={monthlyProperties} label="Immobili" target={Math.max(10, monthlyProperties)} />
-          <ProgressLine current={monthlyActivities} label="Attivita" target={Math.max(40, monthlyActivities)} />
-          <ProgressLine current={monthlyGoals} label="Obiettivi" target={Math.max(4, monthlyGoals)} />
-        </div>
-      </Panel>
-
-      <Panel className="span-6 area-home-panel" title="Nominativi da ricontattare" action={accountScope.label}>
-        <div className="call-queue area-call-queue">
-          {fallbackQueue.length ? (
-            fallbackQueue.map((contact, index) => (
-              <article key={contact.id}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <div>
-                  <strong>{contact.name}</strong>
-                  <small>{contact.status} - {contact.source}</small>
+      <section className="area-card area-card-nominativi">
+        <AreaCardHeader title="Nominativi da ricontattare" filter={accountScope.label} />
+        <div className="area-list-section">
+          {[
+            { title: "Oggi", rows: fallbackQueue.slice(0, 3), empty: "Non hai nessuno da ricontattare" },
+            { title: "Domani", rows: [], empty: "Non hai nessuno da ricontattare" },
+            { title: "Questa settimana", rows: [], empty: "Non hai nessuno da ricontattare nei prossimi giorni della settimana" },
+          ].map((section) => (
+            <section key={section.title}>
+              <h3>{section.title}</h3>
+              {section.rows.length ? (
+                <div className="area-mini-list">
+                  {section.rows.map((contact) => (
+                    <button key={contact.id} type="button" onClick={() => onOpenModule("nominativi", "nominativi-elenco")}>
+                      <span>{contact.name}</span>
+                      <small>{contact.phone || contact.status}</small>
+                    </button>
+                  ))}
                 </div>
-                <button type="button" onClick={() => registerCall(contact)}>
-                  Chiama
-                </button>
-              </article>
-            ))
-          ) : (
-            <EmptyState title="Nessuno da ricontattare" text="Aggiungi un cliente o salva una nota veloce per creare il primo richiamo." />
-          )}
+              ) : (
+                <p>{section.empty}</p>
+              )}
+            </section>
+          ))}
         </div>
-      </Panel>
+      </section>
+    </div>
+  );
+}
 
-      <Panel className="span-6 area-home-panel" title="Contatti censiti da ricontattare" action="Censimento">
-        <DataTable
-          columns={["Nome", "Telefono", "Stato", "Prossimo passo"]}
-          rows={censusRecallRows.map((contact) => [
-            contact.name,
-            contact.phone || "-",
-            contact.status,
-            contact.nextStep,
-          ])}
-          actions={[
-            {
-              label: "Apri",
-              onClick: (rowIndex) => {
-                const selected = censusRecallRows[rowIndex];
-                if (selected) {
-                  onOpenModule("proprietari", "proprietari-elenco");
-                }
-              },
-            },
-          ]}
-        />
-      </Panel>
+function AreaCardHeader({ title, filter }: { title: string; filter?: string }) {
+  return (
+    <header className="area-card-header">
+      <h2>{title}</h2>
+      {filter ? (
+        <select aria-label={`Filtro ${title}`} defaultValue={filter}>
+          <option>{filter}</option>
+        </select>
+      ) : null}
+    </header>
+  );
+}
 
-      <Panel className="span-4" title="Aggiungi nota veloce">
-        <QuickForm
-          button="Salva nota"
-          fields={["Nome o telefono", "Esigenza", "Budget / zona", "Prossimo passo"]}
-          onSubmit={(values) => {
-            const nameOrPhone = fieldValue(values, "Nome o telefono", "Nominativo veloce");
-            const existingContact = data.contacts.find(
-              (contact) => contact.name.toLowerCase() === nameOrPhone.toLowerCase() || contact.phone === nameOrPhone,
-            );
-            const note = [
-              fieldValue(values, "Esigenza", "Esigenza da qualificare"),
-              fieldValue(values, "Budget / zona", "Budget/zona da definire"),
-            ].join(" - ");
-            onCommit(
-              (currentData) => ({
-                ...currentData,
-                contacts: existingContact
-                  ? currentData.contacts.map((contact) =>
-                      contact.id === existingContact.id
-                        ? {
-                            ...contact,
-                            note,
-                            nextStep: fieldValue(values, "Prossimo passo", "Ricontatto"),
-                            status: "Appunto aggiornato",
-                            updatedAt: nowLabel(),
-                          }
-                        : contact,
-                    )
-                  : [
-                      {
-                        id: makeId("contact"),
-                        name: nameOrPhone,
-                        type: fieldValue(values, "Esigenza", "Da qualificare"),
-                        status: "Nuovo appunto",
-                        source: "Start",
-                        owner: "Daniele",
-                        phone: nameOrPhone.includes("+") || /\d{6,}/.test(nameOrPhone) ? nameOrPhone : "",
-                        note,
-                        nextStep: fieldValue(values, "Prossimo passo", "Richiamare"),
-                        updatedAt: nowLabel(),
-                      },
-                      ...currentData.contacts,
-                    ],
-                activities: [
-                  createActivity({
-                    title: `Appunto veloce ${nameOrPhone}`,
-                    type: "Nota",
-                    contact: nameOrPhone,
-                    note,
-                  }),
-                  ...currentData.activities,
-                ],
-              }),
-              `Appunto salvato per ${nameOrPhone}.`,
-            );
-          }}
-        />
-      </Panel>
-
-      <Panel className="span-3" title="Prossimi impegni">
-        <div className="compact-list">
-          {data.activities.filter((item) => item.day === "Oggi").length ? (
-            data.activities.filter((item) => item.day === "Oggi").slice(0, 5).map((item) => (
-              <div key={item.id}>
-                <span>{item.time}</span>
-                <strong>{item.title}</strong>
-                <small>{item.type}</small>
-              </div>
-            ))
-          ) : (
-            <EmptyState title="Agenda libera" text="Crea una nuova attivita dalla sezione Agenda." />
-          )}
-        </div>
-      </Panel>
-
-      <Panel className="span-5" title="Clienti recenti">
-        <DataTable
-          columns={["Nome", "Tipo", "Situazione", "Fonte", "Responsabile"]}
-          rows={data.contacts.slice(0, 8).map((contact) => [
-            contact.name,
-            contact.type,
-            contact.status,
-            contact.source,
-            contact.owner,
-          ])}
-        />
-      </Panel>
-
-      <Panel className="span-12" title="Immobili pronti da proporre">
-        <DataTable
-          columns={["Codice", "Immobile", "Zona", "Stato", "Prezzo", "Proprietario"]}
-          rows={data.properties.slice(0, 8).map((item) => [
-            item.code,
-            item.title,
-            item.zone,
-            item.status,
-            item.price,
-            item.owner,
-          ])}
-        />
-      </Panel>
-
-      <Panel className="span-12" title="Storico operazioni">
-        <div className="compact-list">
-          {data.activityLog.length ? (
-            data.activityLog.slice(0, 6).map((item) => (
-              <div key={item}>
-                <span>Log</span>
-                <strong>{item}</strong>
-                <small>Persistito in locale</small>
-              </div>
-            ))
-          ) : (
-            <EmptyState title="Storico vuoto" text="Le operazioni salvate nel CRM compariranno qui in ordine cronologico." />
-          )}
-        </div>
-      </Panel>
+function CensusRing({ value }: { value: number }) {
+  return (
+    <div className="census-ring" aria-label={`In scadenza oltre 7 giorni: ${value}`}>
+      <div>
+        <strong>In scadenza oltre 7 gg</strong>
+        <span>{value.toLocaleString("it-IT")}</span>
+      </div>
     </div>
   );
 }
