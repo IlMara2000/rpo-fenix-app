@@ -254,6 +254,19 @@ type SessionUser = {
   role: UserRole;
 };
 
+type ClientContext = {
+  networkId: string;
+  observedAt: string;
+};
+
+type MigrationRecord = {
+  schemaVersion: number;
+  deviceId: string;
+  networkId: string;
+  accountEmail: string;
+  migratedAt: string;
+};
+
 type CrmData = {
   properties: PropertyRecord[];
   requests: RequestRecord[];
@@ -275,6 +288,13 @@ const accountPasswordHash =
 const accountsStorageKey = "fenix-suite-accounts-v1";
 const sessionStorageKey = "fenix-suite-current-user-v1";
 const legacySessionKey = "fenix-suite-session";
+const crmSchemaVersion = 3;
+const migrationStorageKey = "fenix-suite-migration-v3";
+const deviceStorageKey = "fenix-suite-device-id";
+const legacyCrmStorageKeys = [
+  "fenix-suite-crm-data",
+  "fenix-suite-crm-data-v1",
+];
 
 const roleOptions: UserRole[] = [
   "TITOLARE",
@@ -381,7 +401,7 @@ const defaultAccount: AccountRecord = {
   passwordHash: accountPasswordHash,
   role: "SVILUPPATORE",
   status: "Attivo",
-  accessLimitEnabled: true,
+  accessLimitEnabled: false,
   accessStartHour: defaultAccessStartHour,
   accessEndHour: defaultAccessEndHour,
   updatedAt: "Account iniziale",
@@ -860,6 +880,10 @@ function accountAccessLabel(account: AccountRecord) {
 }
 
 function isAccountOnline(account: AccountRecord, date = new Date()) {
+  if (account.email.toLowerCase() === accountEmail) {
+    return true;
+  }
+
   if (account.status !== "Attivo") {
     return false;
   }
@@ -927,6 +951,8 @@ function loadAccounts(): AccountRecord[] {
         status: "Attivo",
         role: "SVILUPPATORE",
         passwordHash: defaultAccount.passwordHash,
+        accessLimitEnabled: false,
+        updatedAt: "Account sviluppatore riattivato",
       }
     : defaultAccount;
   const withoutDefault = normalized.filter((account) => account.email !== defaultAccount.email);
@@ -1123,6 +1149,93 @@ const initialCrmData: CrmData = {
   activityLog: [],
 };
 
+function getOrCreateDeviceId() {
+  const existing = localStorage.getItem(deviceStorageKey);
+  if (existing) {
+    return existing;
+  }
+
+  const generated =
+    typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  localStorage.setItem(deviceStorageKey, generated);
+  return generated;
+}
+
+function removeLegacyUpdateBlocks() {
+  const removableKeys: string[] = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (
+      key &&
+      key !== migrationStorageKey &&
+      /^fenix-suite/i.test(key) &&
+      /(new-version|new_version|update-required|upgrade-required|migration-required|version-block)/i.test(key)
+    ) {
+      removableKeys.push(key);
+    }
+  }
+  removableKeys.forEach((key) => localStorage.removeItem(key));
+}
+
+function runNonBlockingLocalMigration() {
+  removeLegacyUpdateBlocks();
+
+  const currentData = localStorage.getItem(crmStorageKey);
+  if (!currentData || !safeJsonParse(currentData)) {
+    const legacyData = legacyCrmStorageKeys
+      .map((key) => localStorage.getItem(key))
+      .find((value) => value && safeJsonParse(value));
+    if (legacyData) {
+      localStorage.setItem(crmStorageKey, legacyData);
+    }
+  }
+
+  const savedSession = localStorage.getItem(sessionStorageKey);
+  const parsedSession = savedSession ? safeJsonParse(savedSession) as Partial<SessionUser> | null : null;
+  const accountForMigration = String(parsedSession?.email || accountEmail).toLowerCase();
+  const previousRecord = safeJsonParse(localStorage.getItem(migrationStorageKey) || "") as Partial<MigrationRecord> | null;
+  const migrationRecord: MigrationRecord = {
+    schemaVersion: crmSchemaVersion,
+    deviceId: getOrCreateDeviceId(),
+    networkId: String(previousRecord?.networkId || "pending"),
+    accountEmail: accountForMigration,
+    migratedAt: new Date().toISOString(),
+  };
+  localStorage.setItem(migrationStorageKey, JSON.stringify(migrationRecord));
+
+  saveAccounts(loadAccounts());
+}
+
+async function updateMigrationClientContext(accountForMigration: string) {
+  try {
+    const response = await fetch("/api/client-context", {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+    if (!response.ok) {
+      return;
+    }
+    const context = await response.json() as ClientContext;
+    if (!context.networkId) {
+      return;
+    }
+    const previousRecord = safeJsonParse(localStorage.getItem(migrationStorageKey) || "") as Partial<MigrationRecord> | null;
+    const migrationRecord: MigrationRecord = {
+      schemaVersion: crmSchemaVersion,
+      deviceId: String(previousRecord?.deviceId || getOrCreateDeviceId()),
+      networkId: context.networkId,
+      accountEmail: accountForMigration.toLowerCase(),
+      migratedAt: String(previousRecord?.migratedAt || context.observedAt || new Date().toISOString()),
+    };
+    localStorage.setItem(migrationStorageKey, JSON.stringify(migrationRecord));
+  } catch {
+    // La migrazione locale resta valida anche se il contesto di rete non e disponibile.
+  }
+}
+
 function AppRouter() {
   const [path, setPath] = useState(() => window.location.pathname);
 
@@ -1188,8 +1301,11 @@ function ProgramSelector({ onNavigate }: { onNavigate: (path: string) => void })
 }
 
 function CrmApp() {
-  const [sessionUser, setSessionUser] = useState<SessionUser | null>(() => getStoredSessionUser());
-  const [screen, setScreen] = useState<Screen>(() => (getStoredSessionUser() ? "workspace" : "marketing"));
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(() => {
+    runNonBlockingLocalMigration();
+    return getStoredSessionUser();
+  });
+  const [screen, setScreen] = useState<Screen>(() => (sessionUser ? "workspace" : "marketing"));
   const [clock, setClock] = useState(() => new Date());
   const [loginNotice, setLoginNotice] = useState("");
 
@@ -1197,6 +1313,10 @@ function CrmApp() {
     const intervalId = window.setInterval(() => setClock(new Date()), 30000);
     return () => window.clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    void updateMigrationClientContext(sessionUser?.email || accountEmail);
+  }, [sessionUser?.email]);
 
   useEffect(() => {
     if (screen !== "workspace" || !sessionUser) {
