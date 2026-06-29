@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   BadgeCheck,
   BarChart3,
+  Bell,
   Blocks,
   BriefcaseBusiness,
   Building2,
@@ -486,6 +487,24 @@ const modules: ModuleItem[] = [
     label: "Immobili",
     description: "Schede immobili, proprietari, prezzi e pubblicazione.",
     Icon: Home,
+  },
+  {
+    key: "richieste",
+    label: "Richieste",
+    description: "Richieste clienti, matching e proposta immobili.",
+    Icon: BriefcaseBusiness,
+  },
+  {
+    key: "pubblicita",
+    label: "Pubblicita",
+    description: "Portali, campagne, vetrina e canali pubblicitari.",
+    Icon: Globe2,
+  },
+  {
+    key: "contattiPubblicita",
+    label: "+ Contatto P.",
+    description: "Lead pubblicitari da portali, sito e campagne.",
+    Icon: Bell,
   },
   {
     key: "attivita",
@@ -1824,57 +1843,57 @@ function Workspace({
 
   return (
     <main className="workspace-shell">
-      <aside className="app-sidebar">
-        <button
-          className="app-brand button-reset"
-          type="button"
-          onClick={() => openModule("start")}
-        >
-          <BrandMark />
-          <span>
-            <strong>Fenix Suite</strong>
-          <small>Gestionale immobiliare</small>
-          </span>
-        </button>
-        <div className="crm-version">
-          <span>Area riservata</span>
-          <b>CRM</b>
-        </div>
-        <nav className="module-nav" aria-label="Moduli gestionale">
-          {visibleModules.map(({ key, label, Icon }) => (
-            <button
-              className={key === safeActiveModule ? "active" : ""}
-              key={key}
-              type="button"
-              onClick={() => openModule(key)}
-            >
-              <Icon size={19} />
-              <span>{label}</span>
-            </button>
-          ))}
-        </nav>
-      </aside>
-
       <section className="app-main">
-        <header className="app-header">
-          <div className="app-search">
-            <Search size={18} />
-            <input
-              aria-label="Cerca nel gestionale"
-              placeholder="Cerca immobili, clienti, zone..."
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </div>
-          <div className="app-header-actions">
-            <button type="button" onClick={onLogout}>
-              <LogOut size={16} />
-              Esci
-            </button>
-          </div>
-        </header>
+        <CrmTopbar
+          activeModule={safeActiveModule}
+          modules={visibleModules}
+          onLogout={onLogout}
+          onOpenModule={openModule}
+        />
 
+        <div className="area-workspace-frame">
+          <aside className="app-sidebar">
+            <button className="area-user-card button-reset" type="button" onClick={() => openModule("start")}>
+              <UserRound size={28} />
+              <span>
+                <strong>{currentUser.name}</strong>
+                <small>SALES</small>
+              </span>
+            </button>
+            <nav className="module-nav" aria-label="Moduli gestionale">
+              {visibleModules.map(({ key, label, Icon }) => (
+                <button
+                  className={key === safeActiveModule ? "active" : ""}
+                  key={key}
+                  type="button"
+                  onClick={() => openModule(key)}
+                >
+                  <Icon size={19} />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </nav>
+            {currentPages.length > 1 ? (
+              <nav className="area-side-pages" aria-label={`Sottomenu ${currentModule.label}`}>
+                {currentPages.map(({ key, label, Icon }) => (
+                  <button
+                    className={key === currentPage.key ? "active" : ""}
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      setActivePage(key);
+                      localStorage.setItem("fenix-suite-active-module", safeActiveModule);
+                      localStorage.setItem("fenix-suite-active-page", key);
+                      setNotice(`${currentModule.label} / ${label}: pronto.`);
+                    }}
+                  >
+                    <Icon size={17} />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </nav>
+            ) : null}
+          </aside>
         <section className={`workspace-content ${safeActiveModule === "start" ? "area-start-content" : ""}`}>
           <div className="workspace-status" role="status">
             <span>
@@ -1886,7 +1905,11 @@ function Workspace({
 
           <section className="module-heading">
             <div>
-              <span className="system-label">Fenix CRM / {currentModule.label}</span>
+              <span className="system-label">
+                {currentModule.label}
+                <ChevronRight size={13} />
+                {currentPage.label}
+              </span>
               <h1>{currentPage.label}</h1>
               <p>{currentPage.description}</p>
             </div>
@@ -1928,8 +1951,50 @@ function Workspace({
             agendaResetVersion={agendaResetVersion}
           />
         </section>
+        </div>
       </section>
     </main>
+  );
+}
+
+function CrmTopbar({
+  modules,
+  activeModule,
+  onOpenModule,
+  onLogout,
+}: {
+  modules: ModuleItem[];
+  activeModule: ModuleKey;
+  onOpenModule: (moduleKey: ModuleKey, pageKey?: string) => void;
+  onLogout: () => void;
+}) {
+  const primaryModules = modules.filter((module) =>
+    ["immobili", "richieste", "nominativi", "agenda", "pubblicita", "censimento", "contattiPubblicita"].includes(module.key),
+  );
+
+  return (
+    <header className="area-topbar">
+      <button className="area-topbar-brand button-reset" type="button" onClick={() => onOpenModule("start")}>
+        <BrandMark />
+      </button>
+      <nav aria-label="Moduli principali">
+        {primaryModules.map(({ key, label, Icon }) => (
+          <button
+            className={key === activeModule ? "active" : ""}
+            key={key}
+            type="button"
+            onClick={() => onOpenModule(key)}
+          >
+            <Icon size={24} />
+            <span>{label === "Contatti Pubblicita" ? "+ Contatto P." : label}</span>
+          </button>
+        ))}
+      </nav>
+      <button className="area-topbar-logout" type="button" onClick={onLogout}>
+        <LogOut size={17} />
+        Esci
+      </button>
+    </header>
   );
 }
 
@@ -5273,11 +5338,24 @@ function RouteSummary({
   path: string;
   items: string[];
 }) {
-  void module;
-  void page;
-  void path;
-  void items;
-  return null;
+  const [open, setOpen] = useState(false);
+
+  return (
+    <section className="route-summary span-12">
+      <button type="button" onClick={() => setOpen((value) => !value)}>
+        <span>Mostra/nascondi filtri</span>
+        <small>{module} / {page} / {path}</small>
+        <ChevronRight className={open ? "open" : ""} size={17} />
+      </button>
+      {open ? (
+        <div>
+          {items.map((item) => (
+            <span key={item}>{item}</span>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
 }
 
 function WorkflowSteps({ steps }: { steps: string[] }) {
