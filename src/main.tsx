@@ -606,6 +606,12 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       description: "Inserimento cliente con telefono, esigenza, provenienza e prossimo ricontatto.",
       Icon: UserRound,
     },
+    {
+      key: "nominativi-richieste",
+      label: "Richieste",
+      description: "Elenco richieste collegate ai nominativi con preferenze, budget e incroci.",
+      Icon: BriefcaseBusiness,
+    },
   ],
   proprietari: [
     {
@@ -623,10 +629,22 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
   ],
   agenda: [
     {
+      key: "agenda-nuova",
+      label: "Nuova",
+      description: "Nuova attivita o appuntamento collegato a clienti, immobili e operatori.",
+      Icon: Plus,
+    },
+    {
       key: "agenda-calendario",
       label: "Agenda",
       description: "Calendario operativo per oggi, domani e settimana.",
       Icon: CalendarDays,
+    },
+    {
+      key: "agenda-storico",
+      label: "Ricerca",
+      description: "Ricerca storico attivita per operatore, cliente, immobile, tipologia ed esito.",
+      Icon: Search,
     },
   ],
   attivita: [
@@ -666,6 +684,18 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
     },
   ],
   censimento: [
+    {
+      key: "censimento-nuovo-contatto",
+      label: "Nuovo Contatto",
+      description: "Crea un contatto censimento con immobile, dati catastali e proprietario.",
+      Icon: Plus,
+    },
+    {
+      key: "censimento-contatti",
+      label: "Contatti",
+      description: "Elenco contatti censiti con filtri per nominativo, telefono, zona e catasto.",
+      Icon: UsersRound,
+    },
     {
       key: "censimento-zone",
       label: "Zona",
@@ -712,13 +742,49 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       description: "Utenti, ruoli, permessi e manutenzione degli accessi.",
       Icon: UsersRound,
     },
+    {
+      key: "utilita-preferenze",
+      label: "Preferenze",
+      description: "Widget Start, moduli visibili e preferenze operative personali.",
+      Icon: Settings,
+    },
+    {
+      key: "utilita-backup",
+      label: "Copie sicurezza",
+      description: "Backup locale dell'archivio e strumenti di ripristino.",
+      Icon: DatabaseBackup,
+    },
+    {
+      key: "utilita-portali",
+      label: "Esportazioni",
+      description: "Riepilogo esportazioni immobili sui portali collegati.",
+      Icon: UploadCloud,
+    },
+    {
+      key: "utilita-info-territoriali",
+      label: "Info territoriali",
+      description: "Collegamento operativo a servizi territoriali e verifiche esterne.",
+      Icon: MapPinned,
+    },
   ],
   impostazioni: [
+    {
+      key: "impostazioni-cantieri",
+      label: "Cantieri",
+      description: "Elenco cantieri e nuove costruzioni.",
+      Icon: Building2,
+    },
     {
       key: "impostazioni-tipologie",
       label: "Tipologie",
       description: "Tipologie immobiliari disponibili nelle schede.",
       Icon: Home,
+    },
+    {
+      key: "impostazioni-tipi-gestione",
+      label: "Tipi gestione",
+      description: "Vendita, affitto e altre modalita operative abilitate.",
+      Icon: BriefcaseBusiness,
     },
     {
       key: "impostazioni-stati",
@@ -727,10 +793,52 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       Icon: BadgeCheck,
     },
     {
+      key: "impostazioni-accessori",
+      label: "Accessori",
+      description: "Accessori generali, per tipologia e per tipo gestione.",
+      Icon: ListChecks,
+    },
+    {
+      key: "impostazioni-accessori-tipologia",
+      label: "Accessori tipologia",
+      description: "Associazione accessori alle tipologie immobiliari.",
+      Icon: Home,
+    },
+    {
+      key: "impostazioni-accessori-gestione",
+      label: "Accessori gestione",
+      description: "Associazione accessori ai tipi gestione.",
+      Icon: BriefcaseBusiness,
+    },
+    {
       key: "impostazioni-modulistica",
       label: "Modulistica",
       description: "Contratti, modelli e documenti.",
       Icon: FileBadge,
+    },
+    {
+      key: "impostazioni-cartelli",
+      label: "Setup cartelli",
+      description: "Modelli stampabili e cartelli vetrina.",
+      Icon: GalleryVerticalEnd,
+    },
+    {
+      key: "impostazioni-distanze",
+      label: "Distanze",
+      description: "Punti di interesse e distanze usate nelle schede.",
+      Icon: MapPinned,
+    },
+    {
+      key: "impostazioni-aziende",
+      label: "Aziende",
+      description: "Anagrafiche aziende, partita IVA, indirizzi e contatti.",
+      Icon: Building2,
+    },
+    {
+      key: "impostazioni-tipo-attivita",
+      label: "Tipi attività",
+      description: "Tipologie appuntamento e colori agenda.",
+      Icon: CalendarCheck2,
     },
     {
       key: "impostazioni-azienda",
@@ -745,15 +853,57 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       Icon: Globe2,
     },
     {
+      key: "impostazioni-frazioni",
+      label: "Frazioni",
+      description: "Frazioni geografiche trattate dall'agenzia.",
+      Icon: MapPinned,
+    },
+    {
+      key: "impostazioni-localita",
+      label: "Localita",
+      description: "Localita collegate a frazioni, comuni e zone.",
+      Icon: MapPinned,
+    },
+    {
       key: "impostazioni-provenienze",
       label: "Provenienze",
       description: "Portali, giornalini, siti web e altri canali.",
       Icon: CircleDot,
     },
     {
+      key: "impostazioni-provenienze-portali",
+      label: "Portali",
+      description: "Portali immobiliari personali e collegati.",
+      Icon: Globe2,
+    },
+    {
+      key: "impostazioni-provenienze-giornalini",
+      label: "Giornalini",
+      description: "Provenienze da giornalini e canali offline.",
+      Icon: FileBadge,
+    },
+    {
+      key: "impostazioni-provenienze-siti",
+      label: "Siti Web",
+      description: "Provenienze da siti web e landing.",
+      Icon: PanelsTopLeft,
+    },
+    {
+      key: "impostazioni-provenienze-altri",
+      label: "Altro",
+      description: "Altre provenienze commerciali.",
+      Icon: CircleDot,
+    },
+    {
       key: "impostazioni-email-cp",
       label: "E-mail Contatti P.",
       description: "Mailbox e mittenti accettati per lead pubblicitari.",
+      Icon: Mail,
+    },
+    {
+      key: "impostazioni-email-cp-mittenti",
+      label: "Mittenti accettati",
+      description: "Mittenti abilitati per acquisire contatti pubblicitari via email.",
       Icon: Mail,
     },
   ],
@@ -2448,9 +2598,12 @@ function PropertiesView({
           button={newMode ? "Crea scheda" : "Salva filtro"}
           fields={newMode
             ? [
+                { name: "Riferimento", required: false },
                 "Titolo immobile",
+                { name: "Tipologia", options: ["Appartamento", "Attico", "Villa", "Box", "Negozio", "Ufficio", "Terreno"], required: false },
                 "Zona",
                 { name: "Tipo gestione", options: ["Vendita", "Affitto"] },
+                { name: "Stato trattativa", options: ["Bozza", "Notizia", "In valutazione", "In gestione", "Sospeso", "Venduto", "Affittato"], required: false },
                 "Prezzo richiesto",
                 "Proprietario",
                 { name: "Numero", required: false },
@@ -2460,6 +2613,13 @@ function PropertiesView({
                 { name: "Subalterno", required: false },
                 { name: "Categoria catastale", options: cadastralCategoryOptions, required: false },
                 { name: "Vani", options: roomOptions, required: false },
+                { name: "Tipo incarico", options: ["Non indicato", "Esclusiva", "Non esclusiva", "Collaborazione"], required: false },
+                { name: "Occupazione", options: ["Non indicato", "Libero", "Occupato", "Locato"], required: false },
+                { name: "Stato conservazione", options: ["Non indicato", "Nuovo", "Buono", "Da ristrutturare", "Ristrutturato"], required: false },
+                { name: "Pubblica sito", options: ["No", "Si"], required: false },
+                { name: "Occasione", options: ["No", "Si"], required: false },
+                { name: "Last minute", options: ["No", "Si"], required: false },
+                { name: "Descrizione", required: false },
               ]
             : searchFilterFields}
           required={newMode}
@@ -2477,7 +2637,7 @@ function PropertiesView({
               code: `FS-${String(250 + data.properties.length).padStart(3, "0")}`,
               title,
               zone: fieldValue(values, "Zona", "Zona da definire"),
-              status: "Bozza",
+              status: fieldValue(values, "Stato trattativa", "Bozza"),
               price,
               owner: fieldValue(values, "Proprietario", "Proprietario da associare"),
               portals: "Bozza",
@@ -2489,7 +2649,18 @@ function PropertiesView({
               subaltern: fieldValue(values, "Subalterno"),
               cadastralCategory: fieldValue(values, "Categoria catastale"),
               rooms: fieldValue(values, "Vani"),
-              source: "Inserimento manuale",
+              source: [
+                "Inserimento manuale",
+                fieldValue(values, "Riferimento"),
+                fieldValue(values, "Tipologia"),
+                fieldValue(values, "Tipo incarico"),
+                fieldValue(values, "Occupazione"),
+                fieldValue(values, "Stato conservazione"),
+                fieldValue(values, "Pubblica sito") === "Si" ? "Pubblica sito" : "",
+                fieldValue(values, "Occasione") === "Si" ? "Occasione" : "",
+                fieldValue(values, "Last minute") === "Si" ? "Last minute" : "",
+                fieldValue(values, "Descrizione"),
+              ].filter(Boolean).join(" - "),
               updatedAt: nowLabel(),
             };
             onCommit(
@@ -2664,7 +2835,22 @@ function RequestsView({
       <Panel className={pageKey === "richieste-nuova" ? "span-4 crm-form-panel" : "span-4"} title={pageKey === "richieste-nuova" ? "Nuova richiesta" : "Filtro richieste"}>
         <QuickForm
           button={pageKey === "richieste-nuova" ? "Salva richiesta" : "Applica filtro"}
-          fields={pageKey === "richieste-nuova" ? ["Cliente", "Budget", "Zone preferite", "Tipologia"] : searchFilterFields}
+          fields={pageKey === "richieste-nuova"
+            ? [
+                "Cliente",
+                { name: "Stato trattativa", options: ["Nuova", "Qualificata", "Visita", "Trattativa", "Chiusa"], required: false },
+                { name: "Tipo gestione", options: ["Vendita", "Affitto", "Vendita e affitto"], required: false },
+                { name: "Tipologia ottimale", options: ["Appartamento", "Attico", "Villa", "Box", "Negozio", "Ufficio"], required: false },
+                { name: "Tipologie tollerate", required: false },
+                { name: "Zone preferite", required: false },
+                { name: "Zone tollerate", required: false },
+                "Budget",
+                { name: "Prezzo minimo", required: false },
+                { name: "Prezzo massimo", required: false },
+                { name: "Stato conservazione", options: ["Qualsiasi", "Nuovo", "Buono", "Da ristrutturare", "Ristrutturato"], required: false },
+                { name: "Caratteristiche indispensabili", required: false },
+              ]
+            : searchFilterFields}
           required={pageKey === "richieste-nuova"}
           onSubmit={(values) => {
             if (pageKey !== "richieste-nuova") {
@@ -2675,11 +2861,18 @@ function RequestsView({
             const newRequest: RequestRecord = {
               id: makeId("request"),
               client: fieldValue(values, "Cliente", "Nuovo cliente"),
-              target: `${fieldValue(values, "Tipologia", "Immobile")} entro ${fieldValue(values, "Budget", "budget da definire")}`,
+              target: [
+                fieldValue(values, "Tipo gestione", "Vendita"),
+                fieldValue(values, "Tipologia ottimale", "Immobile"),
+                fieldValue(values, "Budget", "budget da definire"),
+                fieldValue(values, "Prezzo minimo") || fieldValue(values, "Prezzo massimo")
+                  ? `range ${fieldValue(values, "Prezzo minimo", "0")} - ${fieldValue(values, "Prezzo massimo", "n/d")}`
+                  : "",
+              ].filter(Boolean).join(" / "),
               area: fieldValue(values, "Zone preferite", "Zona da definire"),
               match: proposal === "Da abbinare" ? "0%" : "91%",
               proposal,
-              status: "Nuova",
+              status: fieldValue(values, "Stato trattativa", "Nuova"),
               updatedAt: nowLabel(),
             };
             onCommit(
@@ -2853,8 +3046,19 @@ function ContactsView({
             ? [
                 "Nome",
                 "Cognome",
+                { name: "Data nascita", required: false },
+                { name: "Luogo nascita", required: false },
+                { name: "Sesso", options: ["Non indicato", "M", "F"], required: false },
                 "Numero",
+                { name: "Email", required: false },
                 { name: "Codice fiscale", required: false },
+                { name: "Tipologia nominativo", options: ["Generico", "Proprietario", "Proprietario affitti", "Acquirente", "Locatario", "Inserzionista", "Segnalatore"], required: false },
+                { name: "Azienda", required: false },
+                { name: "Data acquisizione", required: false },
+                { name: "Data ricontatto", required: false },
+                { name: "Motivo ricontatto", required: false },
+                { name: "Cittadinanza", required: false },
+                { name: "Lingua", required: false },
                 "Esigenza",
                 "Provenienza",
                 { name: "Prossimo passo", required: false },
@@ -2875,13 +3079,25 @@ function ContactsView({
               name: fullName,
               firstName,
               lastName,
-              type: fieldValue(values, "Esigenza", "Da qualificare"),
+              type: fieldValue(values, "Tipologia nominativo", fieldValue(values, "Esigenza", "Da qualificare")),
               status: "Nuovo cliente",
               source: fieldValue(values, "Provenienza", "Manuale"),
               owner: "Daniele",
               phone: fieldValue(values, "Numero"),
+              email: fieldValue(values, "Email"),
               taxCode: fieldValue(values, "Codice fiscale"),
-              note: "Inserito manualmente.",
+              note: [
+                fieldValue(values, "Esigenza"),
+                fieldValue(values, "Data nascita"),
+                fieldValue(values, "Luogo nascita"),
+                fieldValue(values, "Sesso"),
+                fieldValue(values, "Azienda"),
+                fieldValue(values, "Data acquisizione"),
+                fieldValue(values, "Data ricontatto"),
+                fieldValue(values, "Motivo ricontatto"),
+                fieldValue(values, "Cittadinanza"),
+                fieldValue(values, "Lingua"),
+              ].filter(Boolean).join(" - ") || "Inserito manualmente.",
               nextStep: fieldValue(values, "Prossimo passo", "Primo contatto"),
               updatedAt: nowLabel(),
             };
@@ -3482,6 +3698,7 @@ function AgendaView({
 }) {
   const [calendarMode, setCalendarMode] = useState<"week" | "month">("week");
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const newMode = pageKey === "agenda-nuova";
   const filteredActivities = data.activities.filter((item) => {
     const linkedContact = data.contacts.find((contact) => sameLabel(contact.name, item.contact));
     const splitName = splitFullName(item.contact);
@@ -3520,10 +3737,10 @@ function AgendaView({
         module="Attivita"
         page={labelForPage("agenda", pageKey)}
         path={pathForPage(pageKey)}
-        items={["Attivita -> cliente", "Attivita -> immobile", "Agenda -> storico e promemoria"]}
+        items={["Nuova attivita -> agenda", "Agenda -> storico", "Storico -> esito e follow-up"]}
       />
       <Panel
-        className="span-8"
+        className={newMode ? "span-8" : "span-8"}
         title={pageKey === "agenda-storico" ? "Ricerca storico attivita" : "Agenda operativa"}
         action={activeFilters(filters).length ? "Azzera filtri" : undefined}
         onPanelAction={() => {
@@ -3615,41 +3832,52 @@ function AgendaView({
           </>
         )}
       </Panel>
-      <Panel className={pageKey === "attivita-nuova" ? "span-4 crm-form-panel" : "span-4"} title={pageKey === "attivita-nuova" ? "Nuova attivita" : "Filtro agenda"}>
+      <Panel className={newMode ? "span-4 crm-form-panel" : "span-4"} title={newMode ? "Nuova attivita" : "Filtro agenda"}>
         <QuickForm
-          button={pageKey === "attivita-nuova" ? "Pianifica" : "Cerca"}
-          fields={pageKey === "attivita-nuova"
+          button={newMode ? "Pianifica" : "Cerca"}
+          fields={newMode
             ? [
                 { name: "Tipo attività", options: ["Appuntamento", "Telefonata", "Visita immobile", "E-mail", "WhatsApp", "Promemoria"] },
-                "Cliente",
-                "Data",
-                "Ora",
-                { name: "Luogo", required: false },
+                "Titolo",
+                "Cliente / Nominativo",
                 { name: "Immobile", required: false },
-                { name: "Stato", options: ["Da confermare", "Confermato", "Sospeso", "Annullato"], required: false },
+                "Data inizio",
+                "Ora inizio",
+                { name: "Data fine", required: false },
+                { name: "Ora fine", required: false },
+                { name: "Dove", required: false },
+                { name: "Operatore", required: false },
+                { name: "Stato appuntamento", options: ["Da confermare", "Confermato", "Sospeso", "Annullato", "Completato"], required: false },
+                { name: "Visualizza in agenda", options: ["Si", "No"], required: false },
+                { name: "Attività ricorrente", options: ["No", "Giornaliera", "Settimanale", "Mensile"], required: false },
                 { name: "Note", required: false },
               ]
             : searchFilterFields}
-          required={pageKey === "attivita-nuova"}
+          required={newMode}
           onSubmit={(values) => {
-            if (pageKey !== "attivita-nuova") {
+            if (!newMode) {
               setFilters(values);
               onAction(`Ricerca agenda eseguita: ${valuesSummary(values)}.`);
               return;
             }
-            const client = fieldValue(values, "Cliente", "Cliente da definire");
-            const date = fieldValue(values, "Data");
-            const hour = fieldValue(values, "Ora", currentTimeLabel());
+            const client = fieldValue(values, "Cliente / Nominativo", "Cliente da definire");
+            const date = fieldValue(values, "Data inizio");
+            const hour = fieldValue(values, "Ora inizio", currentTimeLabel());
             const dateTime = [date, hour].filter(Boolean).join(" ");
             const activityType = fieldValue(values, "Tipo attività", "Appuntamento");
             const newActivity = createActivity({
               time: dateTime,
-              title: `${activityType} ${client}`,
+              title: fieldValue(values, "Titolo", `${activityType} ${client}`),
               type: activityType,
               contact: client,
               property: fieldValue(values, "Immobile"),
-              note: [fieldValue(values, "Luogo"), fieldValue(values, "Note")].filter(Boolean).join(" - "),
-              status: fieldValue(values, "Stato", "Da confermare"),
+              note: [
+                fieldValue(values, "Dove"),
+                fieldValue(values, "Operatore"),
+                fieldValue(values, "Attività ricorrente"),
+                fieldValue(values, "Note"),
+              ].filter(Boolean).join(" - "),
+              status: fieldValue(values, "Stato appuntamento", "Da confermare"),
               day: /domani/i.test(dateTime) ? "Domani" : /settimana/i.test(dateTime) ? "Settimana" : "Oggi",
             });
             onCommit(
@@ -3890,8 +4118,9 @@ function AdvertisingContactsView({
       </Panel>
       <Panel className="span-4" title={pageKey === "contatti-p-nuovo" ? "Nuovo contatto pubblicita" : "Qualifica lead"}>
         <QuickForm
-          button={pageKey === "contatti-p-nuovo" ? "Salva lead" : "Converti"}
+          button={pageKey === "contatti-p-nuovo" ? "Salva lead" : "Converti / aggiorna"}
           fields={[
+            { name: "Cerca nominativo", required: false, placeholder: "Cognome Nome Telefono Email" },
             "Nome",
             "Cognome",
             { name: "Tipo telefono", options: ["Cellulare", "Fisso"], required: false },
@@ -3900,8 +4129,13 @@ function AdvertisingContactsView({
             "Provenienza",
             { name: "Esigenza", options: ["Vorrei acquistare", "Cerco affitto", "Vorrei vendere", "Cerco inquilino"], required: false },
             { name: "Immobile richiesto", required: false },
+            { name: "Data ricezione", required: false },
+            { name: "Ora ricezione", required: false },
             { name: "Mezzo di contatto", options: ["Telefono", "Email", "Persona", "Portale"], required: false },
+            { name: "Operatore designato", required: false },
+            { name: "Data designazione", required: false },
             { name: "Qualità contatto", options: ["Da valutare", "Scarso", "Sufficiente", "Buono", "Ottimo"], required: false },
+            { name: "Prendi in carico", options: ["No", "Si"], required: false },
             { name: "Nota", required: false },
           ]}
           onSubmit={(values) => {
@@ -3922,11 +4156,15 @@ function AdvertisingContactsView({
               email: fieldValue(values, "Email"),
               note: [
                 fieldValue(values, "Esigenza", "Lead da qualificare"),
+                fieldValue(values, "Data ricezione"),
+                fieldValue(values, "Ora ricezione"),
                 fieldValue(values, "Mezzo di contatto"),
+                fieldValue(values, "Operatore designato"),
+                fieldValue(values, "Data designazione"),
                 fieldValue(values, "Qualità contatto"),
                 fieldValue(values, "Nota"),
               ].filter(Boolean).join(" - "),
-              nextStep: "Ricontatto commerciale",
+              nextStep: fieldValue(values, "Prendi in carico") === "Si" ? "Preso in carico" : "Ricontatto commerciale",
               updatedAt: nowLabel(),
             };
             onCommit(
@@ -4063,7 +4301,11 @@ function CensusView({
     },
   ];
   const pageTitle =
-    pageKey === "censimento-vie"
+    pageKey === "censimento-contatti"
+      ? "Contatti Censimento"
+      : pageKey === "censimento-nuovo-contatto"
+        ? "Nuovo contatto"
+    : pageKey === "censimento-vie"
       ? "Vie censite"
       : pageKey === "censimento-complessi"
         ? "Complessi e palazzi"
@@ -4073,7 +4315,11 @@ function CensusView({
           ? "Proprietari immobili"
           : "Zone censite";
   const formTitle =
-    pageKey === "censimento-vie"
+    pageKey === "censimento-contatti"
+      ? "Filtro contatti"
+      : pageKey === "censimento-nuovo-contatto"
+        ? "Nuovo contatto censimento"
+    : pageKey === "censimento-vie"
       ? "Crea o seleziona via"
       : pageKey === "censimento-complessi"
         ? "Crea o seleziona complesso"
@@ -4083,7 +4329,34 @@ function CensusView({
           ? "Collega proprietario"
           : "Crea o seleziona zona";
   const formFields =
-    pageKey === "censimento-vie"
+    pageKey === "censimento-contatti"
+      ? searchFilterFields
+      : pageKey === "censimento-nuovo-contatto"
+        ? [
+            "Zona",
+            "Via",
+            "Civico",
+            "Complesso",
+            { name: "Estensione", options: ["Intero edificio", "Parte di edificio", "Unita immobiliare"], required: false },
+            { name: "Numero piani", required: false },
+            { name: "Piano", required: false },
+            { name: "Scala", required: false },
+            { name: "Foglio", required: false },
+            { name: "Particella", required: false },
+            { name: "Subalterno", required: false },
+            { name: "Categoria catastale", options: cadastralCategoryOptions, required: false },
+            { name: "Vani", options: roomOptions, required: false },
+            { name: "Superficie", required: false },
+            { name: "Occupazione", options: ["Libero", "Occupato", "Affittato", "Sconosciuto"], required: false },
+            { name: "Ascensore", options: ["Non indicato", "Si", "No"], required: false },
+            "Nome",
+            "Cognome",
+            { name: "Telefono", required: false },
+            { name: "Email", required: false },
+            { name: "Codice fiscale", required: false },
+            { name: "Immobile collegato", required: false },
+          ]
+    : pageKey === "censimento-vie"
       ? ["Zona", "Via"]
       : pageKey === "censimento-complessi"
         ? ["Zona", "Via", "Palazzo / Complesso", "Unita"]
@@ -4117,7 +4390,9 @@ function CensusView({
             ]
           : ["Zona"];
   const tableColumns =
-    pageKey === "censimento-vie"
+    pageKey === "censimento-contatti" || pageKey === "censimento-nuovo-contatto"
+      ? ["Cognome e nome", "Tipologia", "Zona/Via", "Telefono", "Catasto", "Ricontatto"]
+      : pageKey === "censimento-vie"
       ? ["Zona", "Via", "Complessi", "Aggiornato"]
       : pageKey === "censimento-complessi"
         ? ["Zona", "Via", "Complesso", "Unita", "Proprietari"]
@@ -4127,7 +4402,16 @@ function CensusView({
           ? ["Proprietario", "Tipo", "Percorso", "Telefono", "Catasto", "Stato"]
           : ["Zona", "Vie/Palazzi", "Proprietari", "Aggiornato"];
   const tableRows =
-    pageKey === "censimento-vie"
+    pageKey === "censimento-contatti" || pageKey === "censimento-nuovo-contatto"
+      ? censusOwners.map((owner) => [
+          owner.name,
+          owner.type,
+          owner.note || "-",
+          owner.phone || "-",
+          cadastralLabel(owner),
+          owner.nextStep || owner.status,
+        ])
+      : pageKey === "censimento-vie"
       ? censusStreets.map((street) => [street.zone, street.street, String(street.complexes), street.updatedAt])
       : pageKey === "censimento-complessi"
         ? censusComplexes.map((complex) => [
@@ -4562,23 +4846,23 @@ function CensusView({
         </div>
       </Panel>
 
-      {pageKey === "censimento-proprietari" ? (
+      {pageKey === "censimento-proprietari" || pageKey === "censimento-contatti" ? (
         <Panel
           className="span-12"
-          title="Filtro proprietari"
+          title={pageKey === "censimento-contatti" ? "Filtro contatti censimento" : "Filtro proprietari"}
           action={activeFilters(filters).length ? "Azzera filtri" : undefined}
           onPanelAction={() => {
             setFilters({});
-            onAction("Filtri proprietari azzerati.");
+            onAction("Filtri censimento azzerati.");
           }}
         >
           <QuickForm
-            button="Filtra proprietari"
+            button="Filtra"
             fields={searchFilterFields}
             required={false}
             onSubmit={(values) => {
               setFilters(values);
-              onAction(`Filtro proprietari applicato: ${valuesSummary(values)}.`);
+              onAction(`Filtro censimento applicato: ${valuesSummary(values)}.`);
             }}
           />
         </Panel>
@@ -4629,10 +4913,17 @@ function CensusView({
       </Panel>
       <Panel className="span-4 crm-form-panel" title={formTitle}>
         <QuickForm
-          button="Salva"
+          button={pageKey === "censimento-contatti" ? "Filtra" : "Salva"}
           fields={formFields}
-          required
-          onSubmit={saveCensus}
+          required={pageKey !== "censimento-contatti"}
+          onSubmit={(values) => {
+            if (pageKey === "censimento-contatti") {
+              setFilters(values);
+              onAction(`Filtro contatti censimento applicato: ${valuesSummary(values)}.`);
+              return;
+            }
+            saveCensus(values);
+          }}
         />
       </Panel>
 
@@ -4741,6 +5032,42 @@ function UtilitiesView({
   onAction: (message: string) => void;
 }) {
   const logRows = useFilteredRows(data.activityLog, query, (item) => item);
+  const utilityTitle =
+    pageKey === "utilita-preferenze"
+      ? "Preferenze operative"
+      : pageKey === "utilita-backup"
+        ? "Copie di sicurezza"
+        : pageKey === "utilita-portali"
+          ? "Esportazioni portali"
+          : pageKey === "utilita-info-territoriali"
+            ? "Info territoriali"
+            : "Strumenti account";
+  const utilityRows =
+    pageKey === "utilita-portali"
+      ? data.marketingChannels.map((channel) => [channel.name, channel.status, `${channel.progress}%`, channel.updatedAt])
+      : pageKey === "utilita-preferenze"
+        ? [
+            ["Widget Start", "Agenda / censimento / contatti", "Attivo", "Personale"],
+            ["Modulo predefinito", "Oggi", "Attivo", "Personale"],
+            ["Notifiche", "Agenda e ricontatti", "Attivo", "Account"],
+          ]
+        : pageKey === "utilita-info-territoriali"
+          ? [
+              ["Catasto", "Consultazione dati", "Collegamento esterno", "Manuale"],
+              ["Mappa zone", "Censimento e immobili", "Interno", "Attivo"],
+              ["Portali", "Verifica pubblicazione", "Collegamento esterno", "Attivo"],
+            ]
+          : [
+              ["Backup CRM", `${data.properties.length + data.contacts.length} record`, "Pronto", nowLabel()],
+              ["Account", "Ruoli e orari", "Inclusi", nowLabel()],
+              ["Storico attività", `${data.activities.length} attività`, "Incluso", nowLabel()],
+            ];
+  const utilityColumns =
+    pageKey === "utilita-portali"
+      ? ["Canale", "Stato", "Avanzamento", "Aggiornato"]
+      : pageKey === "utilita-info-territoriali"
+        ? ["Servizio", "Uso", "Tipo", "Stato"]
+        : ["Voce", "Dettaglio", "Stato", "Ambito"];
 
   return (
     <div className="workspace-grid">
@@ -4760,6 +5087,9 @@ function UtilitiesView({
             </a>
           ))}
         </div>
+      </Panel>
+      <Panel className="span-6" title={utilityTitle}>
+        <DataTable columns={utilityColumns} rows={utilityRows} />
       </Panel>
       <Panel className="span-6" title="Import export">
         <div className="tool-grid">
@@ -4798,7 +5128,15 @@ function UtilitiesView({
       </Panel>
       <Panel className="span-12" title="Procedure rapide">
         <Checklist
-          items={["Verifica portali", "Scarica archivio", "Controlla privacy", "Aggiorna report mensile"]}
+          items={
+            pageKey === "utilita-preferenze"
+              ? ["Mostra widget Start", "Avvisi agenda", "Ricerca rapida", "Salvataggio preferenze"]
+              : pageKey === "utilita-portali"
+                ? ["Verifica portali", "Esporta pubblicazioni", "Controlla lead", "Aggiorna report"]
+                : pageKey === "utilita-info-territoriali"
+                  ? ["Controlla zona", "Verifica via", "Apri dati catastali", "Aggiorna censimento"]
+                  : ["Scarica archivio", "Controlla duplicati", "Verifica account", "Aggiorna report mensile"]
+          }
         />
       </Panel>
       <Panel className="span-12" title="Log attivita">
@@ -5271,11 +5609,8 @@ function AccountsView({
 
 function SettingsView({ pageKey, query, onCommit }: { pageKey: string; query: string; onCommit: CrmCommit }) {
   const settingLabel = labelForPage("impostazioni", pageKey);
-  const settingRows = [
-    [settingLabel, "Attivo", "Globale", "Modificabile"],
-    [`${settingLabel} vendita`, "Attivo", "Vendite", "Modificabile"],
-    [`${settingLabel} locazione`, "In verifica", "Affitti", "Bloccato"],
-  ];
+  const settingConfig = settingsConfigForPage(pageKey, settingLabel);
+  const settingRows = settingConfig.rows;
   const rows = useFilteredRows(settingRows, query, (row) => row.join(" "));
 
   return (
@@ -5284,47 +5619,174 @@ function SettingsView({ pageKey, query, onCommit }: { pageKey: string; query: st
         module="Impostazioni"
         page={settingLabel}
         path={pathForPage(pageKey)}
-        items={["Configurazione -> schede", "Configurazione -> filtri", "Configurazione -> automatismi"]}
+        items={settingConfig.flow}
       />
-      <Panel className="span-5" title="Profilo account">
-        <div className="profile-card">
-          <span>
-            <UserRound size={24} />
-          </span>
-          <strong>Profilo operativo</strong>
-          <small>Configurazione account Fenix Suite</small>
-          <button type="button" onClick={() => onCommit((data) => data, "Profilo account aggiornato.")}>
-            Aggiorna profilo
-          </button>
-        </div>
+      <Panel className="span-5 crm-form-panel" title={settingConfig.formTitle}>
+        <QuickForm
+          button={settingConfig.button}
+          fields={settingConfig.fields}
+          required={false}
+          onSubmit={(values) => {
+            const summary = valuesSummary(values, settingLabel);
+            onCommit(
+              (data) => ({
+                ...data,
+                activityLog: [`${settingLabel}: ${summary}`, ...data.activityLog],
+              }),
+              `${settingLabel}: configurazione salvata.`,
+            );
+          }}
+        />
       </Panel>
       <Panel className="span-7" title={settingLabel}>
-        <DataTable columns={["Voce", "Stato", "Ambito", "Permesso"]} rows={rows} />
+        <DataTable columns={settingConfig.columns} rows={rows} />
       </Panel>
-      <Panel className="span-12" title="Automazioni">
+      <Panel className="span-12" title="Azioni configurazione">
         <div className="tool-grid">
-          <ToolButton label="Backup automatico" Icon={DatabaseBackup} onClick={() => onCommit((data) => data, "Backup automatico attivato.")} />
-          <ToolButton label="Notifiche agenda" Icon={CalendarCheck2} onClick={() => onCommit((data) => data, "Notifiche agenda aggiornate.")} />
-          <ToolButton label="Sync portali" Icon={RefreshCcwDot} onClick={() => onCommit((data) => ({
+          <ToolButton label="Salva impostazione" Icon={CheckCircle2} onClick={() => onCommit((data) => ({
             ...data,
-            marketingChannels: data.marketingChannels.map((channel) =>
-              channel.name === "Portali immobiliari"
-                ? { ...channel, status: "Sync automatico configurato", progress: 100, updatedAt: nowLabel() }
-                : channel,
-            ),
-          }), "Sync portali configurato.")} />
-          <ToolButton label="Privacy e consensi" Icon={ShieldCheck} onClick={() => onCommit((data) => ({
-            ...data,
-            contacts: data.contacts.map((contact) => ({
-              ...contact,
-              status: contact.status === "Privacy verificata" ? contact.status : contact.status,
-              updatedAt: nowLabel(),
-            })),
-          }), "Privacy e consensi verificati.")} />
+            activityLog: [`${settingLabel}: impostazioni confermate`, ...data.activityLog],
+          }), `${settingLabel}: impostazioni confermate.`)} />
+          <ToolButton label="Aggiorna filtri" Icon={RefreshCcwDot} onClick={() => onCommit((data) => data, `${settingLabel}: filtri aggiornati.`)} />
+          <ToolButton label="Backup setup" Icon={DatabaseBackup} onClick={() => onCommit((data) => {
+            downloadCrmData(data);
+            return data;
+          }, "Backup configurazione scaricato.")} />
+          <ToolButton label="Verifica uso" Icon={Search} onClick={() => onCommit((data) => data, `${settingLabel}: verifica completata.`)} />
         </div>
       </Panel>
     </div>
   );
+}
+
+function settingsConfigForPage(pageKey: string, settingLabel: string) {
+  const commonFields: QuickFormField[] = [
+    "Nome",
+    { name: "Stato", options: ["Attivo", "In verifica", "Disattivo"], required: false },
+    { name: "Ambito", required: false },
+  ];
+  const commonRows = [
+    [settingLabel, "Attivo", "Globale", "Modificabile"],
+    [`${settingLabel} vendita`, "Attivo", "Vendite", "Modificabile"],
+    [`${settingLabel} locazione`, "In verifica", "Affitti", "Modificabile"],
+  ];
+  const base = {
+    columns: ["Voce", "Stato", "Ambito", "Permesso"],
+    rows: commonRows,
+    fields: commonFields,
+    formTitle: `Nuova voce ${settingLabel}`,
+    button: "Salva",
+    flow: ["Configurazione -> schede", "Configurazione -> filtri", "Configurazione -> automatismi"],
+  };
+
+  if (pageKey === "impostazioni-azienda") {
+    return {
+      ...base,
+      columns: ["Dato", "Valore", "Sezione", "Stato"],
+      rows: [
+        ["Fenix Group Real Estate", "Agenzia", "Dati agenzia", "Attivo"],
+        ["Logo", "Caricato", "Brand", "Attivo"],
+        ["Contatti", "Telefono / email", "Recapiti", "Da verificare"],
+      ],
+      fields: ["Nome agenzia", "REA", "Telefono", "Cellulare", "Email", "Indirizzo", "Legale rappresentante"],
+      formTitle: "Dati agenzia",
+      flow: ["Agenzia -> recapiti", "Recapiti -> documenti", "Brand -> stampe e portali"],
+    };
+  }
+
+  if (pageKey === "impostazioni-accessori-tipologia" || pageKey === "impostazioni-accessori-gestione") {
+    return {
+      ...base,
+      columns: [pageKey.endsWith("tipologia") ? "Tipologia" : "Tipo gestione", "Accessori collegati", "Stato", "Aggiornato"],
+      rows: [
+        ["Appartamento", "Balcone, ascensore, cantina", "Attivo", nowLabel()],
+        ["Villa", "Giardino, box, terrazzo", "Attivo", nowLabel()],
+        ["Affitto", "Arredo, cauzione, contratto", "Attivo", nowLabel()],
+      ],
+      fields: [
+        pageKey.endsWith("tipologia") ? "Tipologia" : "Tipo gestione",
+        "Accessori collegati",
+        { name: "Stato", options: ["Attivo", "Disattivo"], required: false },
+      ],
+      formTitle: "Associa accessori",
+      flow: ["Accessori -> tipologia", "Accessori -> gestione", "Scheda immobile -> filtri"],
+    };
+  }
+
+  if (pageKey === "impostazioni-provenienze-portali" || pageKey === "impostazioni-provenienze-giornalini" || pageKey === "impostazioni-provenienze-siti" || pageKey === "impostazioni-provenienze-altri") {
+    return {
+      ...base,
+      columns: ["Provenienza", "Tipo", "Stato", "Uso"],
+      rows: [
+        ["Immobiliare.it", "Portale", "Attivo", "Lead pubblicita"],
+        ["Sito agenzia", "Sito web", "Attivo", "Contatto diretto"],
+        ["Cartello vetrina", "Offline", "Attivo", "Telefonate"],
+      ],
+      fields: ["Nome provenienza", { name: "Tipo", options: ["Portale", "Giornalino", "Sito web", "Altro"], required: false }, "Email ricezione", "Note"],
+      formTitle: "Nuova provenienza",
+      flow: ["Provenienza -> lead", "Lead -> nominativo", "Nominativo -> richiesta"],
+    };
+  }
+
+  if (pageKey === "impostazioni-email-cp" || pageKey === "impostazioni-email-cp-mittenti") {
+    return {
+      ...base,
+      columns: ["Casella / mittente", "Tipo", "Stato", "Uso"],
+      rows: [
+        ["lead@grfenix.com", "Casella", "Attivo", "Contatti pubblicita"],
+        ["noreply@portale.it", "Mittente accettato", "Attivo", "Import lead"],
+      ],
+      fields: ["Email", { name: "Tipo", options: ["Casella", "Mittente accettato"], required: false }, "Provenienza collegata"],
+      formTitle: "Configura email contatti P.",
+      flow: ["Email -> contatto pubblicita", "Mittente -> provenienza", "Lead -> presa in carico"],
+    };
+  }
+
+  if (pageKey === "impostazioni-tipo-attivita") {
+    return {
+      ...base,
+      columns: ["Tipo attività", "Colore agenda", "Visibile", "Stato"],
+      rows: [
+        ["Telefonata", "Rosso", "Si", "Attivo"],
+        ["Visita immobile", "Verde", "Si", "Attivo"],
+        ["Censimento", "Blu", "Si", "Attivo"],
+      ],
+      fields: ["Tipo attività", "Colore agenda", { name: "Visibile in agenda", options: ["Si", "No"], required: false }],
+      formTitle: "Nuovo tipo attività",
+      flow: ["Tipo attività -> agenda", "Agenda -> storico", "Storico -> statistiche"],
+    };
+  }
+
+  if (pageKey === "impostazioni-aree" || pageKey === "impostazioni-frazioni" || pageKey === "impostazioni-localita") {
+    return {
+      ...base,
+      columns: ["Area", "Comune", "Livello", "Stato"],
+      rows: [
+        ["Centro", "Milano", "Zona", "Attivo"],
+        ["Nord", "Milano", "Frazione", "Attivo"],
+        ["Residenziale", "Milano", "Localita", "In verifica"],
+      ],
+      fields: ["Nome area", "Comune", { name: "Livello", options: ["Zona", "Frazione", "Localita"], required: false }],
+      formTitle: "Area geografica",
+      flow: ["Area -> censimento", "Area -> immobili", "Area -> richieste"],
+    };
+  }
+
+  if (pageKey === "impostazioni-aziende") {
+    return {
+      ...base,
+      columns: ["Ragione sociale", "Partita IVA", "Codice fiscale", "Contatti"],
+      rows: [
+        ["Fenix Group", "Da completare", "Da completare", "Amministrazione"],
+        ["Partner tecnico", "Da completare", "Da completare", "Referente"],
+      ],
+      fields: ["Ragione sociale", "Partita IVA", "Codice fiscale", "Indirizzo", "Telefono", "Email"],
+      formTitle: "Nuova azienda",
+      flow: ["Azienda -> anagrafica", "Anagrafica -> contratti", "Contratti -> documenti"],
+    };
+  }
+
+  return base;
 }
 
 function RouteSummary({
@@ -5796,11 +6258,14 @@ function pathForPage(pageKey: string) {
     "proprietari-collega": "/proprietari/collega",
     "attivita-elenco": "/attivita",
     "attivita-nuova": "/attivita/nuova",
+    "agenda-nuova": "/agenda/attivita/nuova",
     "agenda-calendario": "/agenda",
     "agenda-storico": "/agenda/storico",
     "pubblicita-portali": "/pubblicita",
     "contatti-p-nuovo": "/contatti-pubblicita/nuovo",
     "contatti-p-elenco": "/contatti-pubblicita",
+    "censimento-nuovo-contatto": "/censimento/nominativi/create",
+    "censimento-contatti": "/censimento/nominativi",
     "censimento-zone": "/censimento/zone",
     "censimento-vie": "/censimento/vie",
     "censimento-complessi": "/censimento/complessi",
@@ -5818,13 +6283,24 @@ function pathForPage(pageKey: string) {
     "impostazioni-tipi-gestione": "/impostazioni/tipi-gestione",
     "impostazioni-stati": "/impostazioni/stati-conservazione",
     "impostazioni-accessori": "/impostazioni/accessori",
+    "impostazioni-accessori-tipologia": "/impostazioni/accessori/tipologia",
+    "impostazioni-accessori-gestione": "/impostazioni/accessori/tipo-gestione",
     "impostazioni-modulistica": "/impostazioni/contratti",
     "impostazioni-cartelli": "/impostazioni/preset-cartellini",
     "impostazioni-distanze": "/impostazioni/distanze",
+    "impostazioni-aziende": "/impostazioni/aziende",
+    "impostazioni-tipo-attivita": "/tipo-attivita",
     "impostazioni-azienda": "/impostazioni/agenzia",
     "impostazioni-aree": "/impostazioni/aree-geografiche",
+    "impostazioni-frazioni": "/impostazioni/frazioni",
+    "impostazioni-localita": "/impostazioni/localita",
     "impostazioni-provenienze": "/impostazioni/provenienze",
+    "impostazioni-provenienze-portali": "/impostazioni/provenienze/portali-personali",
+    "impostazioni-provenienze-giornalini": "/impostazioni/provenienze/giornalini",
+    "impostazioni-provenienze-siti": "/impostazioni/provenienze/siti-web",
+    "impostazioni-provenienze-altri": "/impostazioni/provenienze/altri",
     "impostazioni-email-cp": "/impostazioni/email-contatti-pubblicita",
+    "impostazioni-email-cp-mittenti": "/impostazioni/email-contatti-pubblicita/mittenti",
   };
 
   return paths[pageKey] ?? "/workspace";
