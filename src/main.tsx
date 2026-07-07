@@ -1,5 +1,6 @@
 import { StrictMode, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -1944,6 +1945,7 @@ function Workspace({
   const creationPage = currentPages.find((page) =>
     page.label.toLowerCase().includes("nuov"),
   );
+  const reduceMotion = useReducedMotion();
 
   function runAction(message: string) {
     setNotice(message);
@@ -2044,7 +2046,12 @@ function Workspace({
               </nav>
             ) : null}
           </aside>
-        <section className={`workspace-content ${safeActiveModule === "start" ? "area-start-content" : ""}`}>
+        <motion.section
+          className={`workspace-content ${safeActiveModule === "start" ? "area-start-content" : ""}`}
+          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+          animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div className="workspace-status" role="status">
             <span>
               <CheckCircle2 size={16} />
@@ -2087,20 +2094,30 @@ function Workspace({
             }}
           />
 
-          <ModuleView
-            moduleKey={safeActiveModule}
-            pageKey={currentPage.key}
-            query={query}
-            data={crmData}
-            onCommit={commitData}
-            onAction={runAction}
-            onOpenModule={openModule}
-            currentUser={currentUser}
-            accounts={accounts}
-            onAccountsChange={updateAccounts}
-            agendaResetVersion={agendaResetVersion}
-          />
-        </section>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`${safeActiveModule}-${currentPage.key}`}
+              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+              animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <ModuleView
+                moduleKey={safeActiveModule}
+                pageKey={currentPage.key}
+                query={query}
+                data={crmData}
+                onCommit={commitData}
+                onAction={runAction}
+                onOpenModule={openModule}
+                currentUser={currentUser}
+                accounts={accounts}
+                onAccountsChange={updateAccounts}
+                agendaResetVersion={agendaResetVersion}
+              />
+            </motion.div>
+          </AnimatePresence>
+        </motion.section>
         </div>
       </section>
     </main>
@@ -5867,8 +5884,16 @@ function Panel({
   children: ReactNode;
   className?: string;
 }) {
+  const reduceMotion = useReducedMotion();
+
   return (
-    <section className={`workspace-panel ${className}`}>
+    <motion.section
+      className={`workspace-panel ${className}`}
+      initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.995 }}
+      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, margin: "-24px" }}
+      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+    >
       <header>
         <h2>{title}</h2>
         {action && onPanelAction ? (
@@ -5884,7 +5909,7 @@ function Panel({
         ) : null}
       </header>
       {children}
-    </section>
+    </motion.section>
   );
 }
 
@@ -5897,6 +5922,8 @@ function DataTable({
   rows: string[][];
   actions?: { label: string; onClick: (rowIndex: number) => void }[];
 }) {
+  const reduceMotion = useReducedMotion();
+
   return (
     <div className="table-wrap">
       <table>
@@ -5911,7 +5938,12 @@ function DataTable({
         <tbody>
           {rows.length ? (
             rows.map((row, rowIndex) => (
-              <tr key={row.join("-")}>
+              <motion.tr
+                key={row.join("-")}
+                initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+                animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(rowIndex * 0.015, 0.12), duration: 0.18 }}
+              >
                 {row.map((cell, index) => (
                   <td key={`${cell}-${index}`}>{cell}</td>
                 ))}
@@ -5924,7 +5956,7 @@ function DataTable({
                     ))}
                   </td>
                 ) : null}
-              </tr>
+              </motion.tr>
             ))
           ) : (
             <tr>

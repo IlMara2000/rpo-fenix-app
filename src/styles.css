@@ -6792,3 +6792,585 @@ td {
     grid-template-columns: 1fr;
   }
 }
+
+/* CRM RPO-inspired professional redesign */
+:root {
+  --crm-ink: #0a0a0c;
+  --crm-ink-2: #111115;
+  --crm-ink-3: #1b1c21;
+  --crm-red: #f04444;
+  --crm-red-dark: #bb2029;
+  --crm-red-soft: rgba(240, 68, 68, 0.12);
+  --crm-white: #ffffff;
+  --crm-canvas: #f5f6f8;
+  --crm-card: #ffffff;
+  --crm-line: #dfe3ea;
+  --crm-line-strong: #c9ced8;
+  --crm-text: #15161a;
+  --crm-muted: #68707f;
+  --crm-shadow: 0 18px 45px rgba(12, 15, 23, 0.09);
+  --crm-shadow-soft: 0 8px 22px rgba(12, 15, 23, 0.08);
+}
+
+.workspace-shell,
+.app-main {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(240, 68, 68, 0.16), transparent 31rem),
+    linear-gradient(180deg, #181012 0, #0a0a0c 78px, var(--crm-canvas) 78px);
+}
+
+.area-topbar {
+  min-height: 74px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(90deg, rgba(240, 68, 68, 0.18), transparent 36%),
+    var(--crm-ink);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
+}
+
+.area-topbar-brand {
+  height: 74px;
+  background:
+    linear-gradient(135deg, rgba(240, 68, 68, 0.18), transparent 46%),
+    #08080a;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+.area-topbar-brand .brand-mark {
+  height: 74px;
+  background-color: transparent;
+  filter: contrast(1.08);
+}
+
+.area-topbar nav {
+  height: 74px;
+  gap: 3px;
+  padding: 0 14px;
+}
+
+.area-topbar nav button,
+.area-topbar-logout {
+  min-width: 86px;
+  height: 74px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.72rem;
+  font-weight: 820;
+  letter-spacing: 0.01em;
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.area-topbar nav button svg,
+.area-topbar-logout svg {
+  width: 22px;
+  height: 22px;
+  color: rgba(255, 255, 255, 0.88);
+  stroke-width: 2.35;
+}
+
+.area-topbar nav button:hover,
+.area-topbar nav button.active,
+.area-topbar-logout:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateY(-1px);
+}
+
+.area-topbar nav button.active {
+  background:
+    linear-gradient(180deg, rgba(240, 68, 68, 0.22), rgba(240, 68, 68, 0.06));
+  box-shadow:
+    inset 0 -3px 0 var(--crm-red),
+    0 12px 26px rgba(240, 68, 68, 0.12);
+}
+
+.area-workspace-frame {
+  grid-template-columns: 224px minmax(0, 1fr);
+  min-height: calc(100vh - 74px);
+  background: var(--crm-canvas);
+}
+
+.app-sidebar {
+  top: 74px;
+  height: calc(100vh - 74px);
+  background:
+    linear-gradient(180deg, #08080a 0%, #101015 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.area-user-card {
+  min-height: 106px;
+  padding: 16px 18px;
+  color: #ffffff;
+  background:
+    linear-gradient(140deg, rgba(240, 68, 68, 0.27), transparent 46%),
+    linear-gradient(180deg, #1c1d23, #101116);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.area-user-card svg {
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--crm-red), var(--crm-red-dark));
+  box-shadow: 0 12px 24px rgba(240, 68, 68, 0.28);
+}
+
+.area-user-card strong,
+.area-user-card small {
+  color: #ffffff;
+}
+
+.area-user-card small {
+  color: rgba(255, 255, 255, 0.62);
+  letter-spacing: 0.08em;
+}
+
+.module-nav,
+.area-side-pages {
+  background: transparent;
+}
+
+.module-nav {
+  gap: 2px;
+  padding: 10px 8px;
+}
+
+.module-nav button,
+.area-side-pages button {
+  min-height: 44px;
+  padding: 0 12px 0 14px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  transition:
+    background 170ms ease,
+    color 170ms ease,
+    transform 170ms ease,
+    box-shadow 170ms ease;
+}
+
+.module-nav button::after {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.module-nav button span,
+.area-side-pages button span {
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.module-nav button svg,
+.area-side-pages button svg {
+  color: rgba(255, 255, 255, 0.72);
+  stroke-width: 2.25;
+}
+
+.module-nav button:hover,
+.module-nav button.active,
+.area-side-pages button:hover,
+.area-side-pages button.active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateX(2px);
+}
+
+.module-nav button.active,
+.area-side-pages button.active {
+  background: linear-gradient(90deg, rgba(240, 68, 68, 0.22), rgba(255, 255, 255, 0.05));
+  box-shadow:
+    inset 3px 0 0 var(--crm-red),
+    0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.area-side-pages {
+  margin: 2px 8px 14px;
+  padding: 8px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.area-side-pages button {
+  min-height: 36px;
+  padding-left: 20px;
+}
+
+.workspace-content {
+  min-height: calc(100vh - 74px);
+  padding: 0 32px 44px;
+  color: var(--crm-text);
+  background:
+    linear-gradient(180deg, #ffffff 0, #ffffff 110px, var(--crm-canvas) 110px);
+}
+
+.module-heading {
+  min-height: 104px;
+  margin: 0 -32px 24px;
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--crm-line);
+  color: var(--crm-text);
+  background:
+    linear-gradient(90deg, rgba(240, 68, 68, 0.07), transparent 34%),
+    #ffffff;
+  box-shadow: 0 1px 0 rgba(12, 15, 23, 0.04);
+}
+
+.module-heading .system-label {
+  color: var(--crm-red-dark);
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.module-heading h1 {
+  color: var(--crm-text);
+  font-size: clamp(1.72rem, 2.4vw, 2.45rem);
+  font-weight: 850;
+  line-height: 1.03;
+  letter-spacing: 0;
+}
+
+.module-heading p {
+  max-width: 58rem;
+  color: var(--crm-muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.module-action {
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--crm-red), var(--crm-red-dark));
+  box-shadow: 0 12px 22px rgba(240, 68, 68, 0.2);
+  transition: transform 170ms ease, box-shadow 170ms ease;
+}
+
+.module-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgba(240, 68, 68, 0.26);
+}
+
+.workspace-grid {
+  gap: 18px;
+}
+
+.route-summary {
+  overflow: hidden;
+  border: 1px solid var(--crm-line);
+  border-top: 3px solid var(--crm-red);
+  border-radius: 10px;
+  background: var(--crm-card);
+  box-shadow: var(--crm-shadow-soft);
+}
+
+.route-summary > button {
+  min-height: 50px;
+  color: var(--crm-text);
+}
+
+.route-summary > button span {
+  font-weight: 780;
+}
+
+.route-summary > button small {
+  color: var(--crm-muted);
+}
+
+.route-summary > div span {
+  border: 1px solid rgba(240, 68, 68, 0.18);
+  border-radius: 999px;
+  color: #6e2025;
+  background: var(--crm-red-soft);
+  font-weight: 740;
+}
+
+.workspace-panel,
+.area-card {
+  overflow: hidden;
+  border: 1px solid var(--crm-line);
+  border-radius: 10px;
+  color: var(--crm-text);
+  background: var(--crm-card);
+  box-shadow: var(--crm-shadow-soft);
+}
+
+.workspace-panel:hover {
+  border-color: var(--crm-line-strong);
+  box-shadow: var(--crm-shadow);
+}
+
+.workspace-panel > header {
+  min-height: 50px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--crm-line);
+  background:
+    linear-gradient(180deg, #ffffff, #fbfcfd);
+}
+
+.workspace-panel h2 {
+  color: var(--crm-text);
+  font-size: 0.98rem;
+  font-weight: 820;
+  letter-spacing: 0;
+}
+
+.workspace-panel > :not(header) {
+  margin: 16px;
+}
+
+.workspace-panel header button,
+.panel-action-label {
+  min-height: 34px;
+  border: 1px solid var(--crm-line);
+  border-radius: 8px;
+  color: var(--crm-text);
+  background: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 820;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.workspace-panel header button:hover {
+  border-color: rgba(240, 68, 68, 0.36);
+  background: var(--crm-red-soft);
+  transform: translateY(-1px);
+}
+
+.quick-form {
+  gap: 12px;
+}
+
+.quick-form label,
+.account-form label {
+  color: var(--crm-muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.quick-form input,
+.quick-form select,
+.account-form input,
+.account-form select,
+.account-row select {
+  min-height: 42px;
+  border: 1px solid var(--crm-line);
+  border-radius: 8px;
+  color: var(--crm-text);
+  background: #fbfcfd;
+  font-size: 0.88rem;
+  font-weight: 650;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.quick-form input:focus,
+.quick-form select:focus,
+.account-form input:focus,
+.account-form select:focus,
+.account-row select:focus {
+  border-color: rgba(240, 68, 68, 0.55);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(240, 68, 68, 0.1);
+  outline: none;
+}
+
+.quick-form button,
+.tool-button,
+.account-form button {
+  min-height: 42px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--crm-red), var(--crm-red-dark));
+  font-size: 0.75rem;
+  font-weight: 880;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 12px 24px rgba(240, 68, 68, 0.18);
+  transition: transform 170ms ease, box-shadow 170ms ease, filter 170ms ease;
+}
+
+.quick-form button:hover,
+.tool-button:hover,
+.account-form button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(240, 68, 68, 0.24);
+  filter: saturate(1.05);
+}
+
+.tool-button {
+  border: 1px solid rgba(240, 68, 68, 0.25);
+}
+
+.tool-button svg {
+  stroke-width: 2.25;
+}
+
+.table-wrap {
+  border: 1px solid var(--crm-line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+table {
+  color: var(--crm-text);
+}
+
+th {
+  color: var(--crm-muted);
+  background: #f8fafc;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+td {
+  color: var(--crm-text);
+  border-top: 1px solid #edf0f5;
+  font-size: 0.86rem;
+}
+
+tbody tr {
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+tbody tr:hover {
+  background: #fff6f6;
+}
+
+.row-actions button {
+  min-height: 30px;
+  border-radius: 7px;
+  background: var(--crm-ink-3);
+  font-size: 0.68rem;
+  font-weight: 820;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.row-actions button:hover {
+  background: var(--crm-red);
+  transform: translateY(-1px);
+}
+
+.kpi-card,
+.pipeline > div,
+.month-board article,
+.compact-list > div,
+.scope-strip span,
+.census-phase-grid article {
+  border-color: var(--crm-line);
+  background: linear-gradient(180deg, #ffffff, #fbfcfd);
+  box-shadow: 0 8px 18px rgba(12, 15, 23, 0.06);
+}
+
+.kpi-card strong,
+.pipeline strong,
+.month-board strong {
+  color: var(--crm-text);
+}
+
+.kpi-card svg,
+.scope-strip svg,
+.empty-state svg {
+  color: var(--crm-red);
+}
+
+.area-start-content {
+  background: var(--crm-canvas);
+}
+
+.area-start-content .workspace-panel,
+.area-start-content .area-card {
+  border-radius: 10px;
+}
+
+@media (max-width: 1320px) {
+  .area-dashboard {
+    grid-template-columns: minmax(280px, 0.9fr) minmax(340px, 1fr);
+    grid-template-areas:
+      "news objectives"
+      "agenda nominativi"
+      "recensus recensus";
+  }
+
+  .area-card-census-recalls {
+    max-height: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (max-width: 1080px) {
+  .area-topbar {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+
+  .area-workspace-frame {
+    grid-template-columns: 194px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 820px) {
+  .area-topbar {
+    min-height: auto;
+  }
+
+  .area-topbar nav {
+    height: 60px;
+  }
+
+  .area-workspace-frame {
+    grid-template-columns: 1fr;
+  }
+
+  .app-sidebar {
+    top: 0;
+    height: auto;
+  }
+
+  .module-nav,
+  .area-side-pages {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .module-nav button,
+  .area-side-pages button {
+    min-width: 82px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .module-nav button:hover,
+  .module-nav button.active,
+  .area-side-pages button:hover,
+  .area-side-pages button.active {
+    transform: translateY(-1px);
+  }
+
+  .workspace-content {
+    padding: 0 12px 30px;
+    background: var(--crm-canvas);
+  }
+
+  .module-heading {
+    margin: 0 -12px 16px;
+    padding: 18px 14px;
+  }
+
+  .workspace-panel,
+  .area-card,
+  .route-summary {
+    border-radius: 9px;
+  }
+}
