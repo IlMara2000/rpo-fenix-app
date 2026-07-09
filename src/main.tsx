@@ -5627,7 +5627,9 @@ function AccountsView({
 function SettingsView({ pageKey, query, onCommit }: { pageKey: string; query: string; onCommit: CrmCommit }) {
   const settingLabel = labelForPage("impostazioni", pageKey);
   const settingConfig = settingsConfigForPage(pageKey, settingLabel);
-  const settingRows = settingConfig.rows;
+  const [createdRows, setCreatedRows] = useState<string[][]>([]);
+  const [feedback, setFeedback] = useState("");
+  const settingRows = [...createdRows, ...settingConfig.rows];
   const rows = useFilteredRows(settingRows, query, (row) => row.join(" "));
 
   return (
@@ -5645,15 +5647,20 @@ function SettingsView({ pageKey, query, onCommit }: { pageKey: string; query: st
           required={false}
           onSubmit={(values) => {
             const summary = valuesSummary(values, settingLabel);
+            const firstValue = Object.values(values).find(Boolean) || settingLabel;
+            const nextRow = settingConfig.createRow(values, firstValue);
+            setCreatedRows((currentRows) => [nextRow, ...currentRows]);
+            setFeedback(`${settingConfig.successLabel}: ${firstValue}`);
             onCommit(
               (data) => ({
                 ...data,
                 activityLog: [`${settingLabel}: ${summary}`, ...data.activityLog],
               }),
-              `${settingLabel}: configurazione salvata.`,
+              `${settingConfig.successLabel}: ${summary}.`,
             );
           }}
         />
+        {feedback ? <p className="form-feedback">{feedback}</p> : null}
       </Panel>
       <Panel className="span-7" title={settingLabel}>
         <DataTable columns={settingConfig.columns} rows={rows} />
@@ -5693,6 +5700,13 @@ function settingsConfigForPage(pageKey: string, settingLabel: string) {
     fields: commonFields,
     formTitle: `Nuova voce ${settingLabel}`,
     button: "Salva",
+    successLabel: "Configurazione salvata",
+    createRow: (values: Record<string, string>, fallback: string) => [
+      values.Nome || values["Nome voce"] || fallback,
+      values.Stato || "Attivo",
+      values.Ambito || "Globale",
+      "Modificabile",
+    ],
     flow: ["Configurazione -> schede", "Configurazione -> filtri", "Configurazione -> automatismi"],
   };
 
@@ -5800,6 +5814,34 @@ function settingsConfigForPage(pageKey: string, settingLabel: string) {
       fields: ["Ragione sociale", "Partita IVA", "Codice fiscale", "Indirizzo", "Telefono", "Email"],
       formTitle: "Nuova azienda",
       flow: ["Azienda -> anagrafica", "Anagrafica -> contratti", "Contratti -> documenti"],
+    };
+  }
+
+  if (pageKey === "impostazioni-modulistica") {
+    return {
+      ...base,
+      columns: ["Contratto", "Tipo", "Stato", "Uso"],
+      rows: [
+        ["Incarico vendita", "Vendita", "Attivo", "Acquisizione immobile"],
+        ["Proposta acquisto", "Vendita", "Attivo", "Trattativa"],
+        ["Contratto locazione", "Affitto", "In verifica", "Locazioni"],
+      ],
+      fields: [
+        "Nome contratto",
+        { name: "Tipo", options: ["Vendita", "Affitto", "Acquisizione", "Proposta", "Privacy", "Altro"], required: false },
+        { name: "Stato", options: ["Attivo", "In verifica", "Disattivo"], required: false },
+        "Uso",
+      ],
+      formTitle: "Nuovo contratto",
+      button: "Nuovo contratto",
+      successLabel: "Contratto creato",
+      createRow: (values: Record<string, string>, fallback: string) => [
+        values["Nome contratto"] || fallback,
+        values.Tipo || "Vendita",
+        values.Stato || "Attivo",
+        values.Uso || "Modulistica agenzia",
+      ],
+      flow: ["Contratto -> modello", "Modello -> scheda", "Scheda -> firma/documenti"],
     };
   }
 

@@ -8443,3 +8443,279 @@ tbody tr:hover {
     font-weight: 820 !important;
   }
 }
+
+/* CRM Fenix mobile visual system */
+@media (max-width: 1024px) {
+  .workspace-shell,
+  .workspace-shell .app-main {
+    background:
+      linear-gradient(180deg, #241112 0, #101014 220px, #08090c 100%) !important;
+  }
+
+  .workspace-shell .area-topbar {
+    min-height: 72px !important;
+    height: 72px !important;
+    padding: 10px 86px 10px 18px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: linear-gradient(180deg, rgba(18, 19, 24, 0.96), rgba(10, 11, 14, 0.96)) !important;
+  }
+
+  .workspace-shell .area-topbar-brand {
+    justify-content: flex-start !important;
+    width: min(100%, 220px) !important;
+    max-width: calc(100vw - 128px) !important;
+    height: 52px !important;
+    padding: 6px 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 18px !important;
+    background:
+      linear-gradient(135deg, rgba(201, 79, 79, 0.12), transparent 48%),
+      rgba(255, 255, 255, 0.045) !important;
+  }
+
+  .workspace-shell .area-topbar-brand .brand-mark {
+    width: 150px !important;
+    height: 34px !important;
+  }
+
+  .workspace-shell .area-topbar-logout {
+    top: 16px !important;
+    right: 18px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    min-width: 70px !important;
+    padding: 0 14px !important;
+    border-color: rgba(201, 79, 79, 0.38) !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.045) !important;
+    font-size: 0.66rem !important;
+    font-weight: 850 !important;
+  }
+
+  .workspace-shell .area-workspace-frame {
+    min-height: calc(100vh - 72px) !important;
+    background: transparent !important;
+  }
+
+  .workspace-shell .app-sidebar {
+    top: 72px !important;
+    border-bottom: 1px solid rgba(201, 79, 79, 0.22) !important;
+    background: rgba(8, 9, 12, 0.96) !important;
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34) !important;
+  }
+
+  .workspace-shell .module-nav {
+    background: transparent !important;
+  }
+
+  .workspace-shell .module-nav button {
+    flex-basis: 92px !important;
+    width: 92px !important;
+    min-width: 92px !important;
+    min-height: 68px !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
+    color: rgba(255, 255, 255, 0.78) !important;
+    background: transparent !important;
+    font-size: 0.68rem !important;
+  }
+
+  .workspace-shell .module-nav button.active {
+    color: #ffffff !important;
+    background:
+      linear-gradient(180deg, rgba(201, 79, 79, 0.28), rgba(201, 79, 79, 0.08)),
+      rgba(255, 255, 255, 0.035) !important;
+    box-shadow: inset 0 -3px 0 var(--red) !important;
+  }
+
+  .workspace-shell .area-side-pages {
+    display: flex !important;
+    gap: 8px !important;
+    max-width: 100vw !important;
+    padding: 0 10px 10px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    background: transparent !important;
+    scrollbar-width: none !important;
+  }
+
+  .workspace-shell .area-side-pages::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .workspace-shell .area-side-pages button {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 92px !important;
+    min-height: 36px !important;
+    padding: 0 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 999px !important;
+    color: rgba(255, 255, 255, 0.78) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    font-size: 0.62rem !important;
+    font-weight: 850 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+  }
+
+  .workspace-shell .area-side-pages button.active {
+    border-color: rgba(201, 79, 79, 0.52) !important;
+    color: #ffffff !important;
+    background: rgba(201, 79, 79, 0.18) !important;
+  }
+
+  .workspace-shell .area-side-pages svg {
+    display: none !important;
+  }
+
+  .workspace-shell .workspace-content {
+    padding: 16px 14px 32px !important;
+    background:
+      radial-gradient(circle at 18% 0, rgba(201, 79, 79, 0.16), transparent 260px),
+      #08090c !important;
+    color: #f8f8fa !important;
+  }
+
+  .workspace-shell .area-dashboard {
+    padding-top: 0 !important;
+    gap: 16px !important;
+  }
+
+  .workspace-shell .area-card,
+  .workspace-shell .workspace-panel,
+  .workspace-shell .route-summary {
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 18px !important;
+    color: #f8f8fa !important;
+    background:
+      linear-gradient(135deg, rgba(201, 79, 79, 0.09), transparent 46%),
+      rgba(16, 17, 22, 0.94) !important;
+    box-shadow: 0 22px 48px rgba(0, 0, 0, 0.36) !important;
+  }
+
+  .workspace-shell .area-card-header,
+  .workspace-shell .workspace-panel header {
+    padding: 16px 16px 13px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: transparent !important;
+  }
+
+  .workspace-shell .area-card-header h3,
+  .workspace-shell .workspace-panel h2,
+  .workspace-shell .workspace-panel h3 {
+    color: #ffffff !important;
+    font-size: 1.08rem !important;
+    font-weight: 860 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .workspace-shell .area-card-body,
+  .workspace-shell .workspace-panel > :not(header),
+  .workspace-shell .compact-list,
+  .workspace-shell .pipeline,
+  .workspace-shell .month-board,
+  .workspace-shell td {
+    color: rgba(248, 248, 250, 0.78) !important;
+  }
+
+  .workspace-shell .area-card-body strong,
+  .workspace-shell .workspace-panel strong,
+  .workspace-shell .kpi-card strong,
+  .workspace-shell .pipeline strong,
+  .workspace-shell .month-board strong {
+    color: #ffffff !important;
+  }
+
+  .workspace-shell .area-card-header select,
+  .workspace-shell .quick-form input,
+  .workspace-shell .quick-form select,
+  .workspace-shell .account-form input,
+  .workspace-shell .account-form select {
+    min-height: 44px !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 14px !important;
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.075) !important;
+    font-size: 0.92rem !important;
+  }
+
+  .workspace-shell .area-card-header select option,
+  .workspace-shell .quick-form select option,
+  .workspace-shell .account-form select option {
+    color: #14151a;
+  }
+
+  .workspace-shell .quick-form label,
+  .workspace-shell .account-form label {
+    color: rgba(248, 248, 250, 0.62) !important;
+  }
+
+  .workspace-shell .quick-form button,
+  .workspace-shell .tool-button,
+  .workspace-shell .account-form button {
+    min-height: 48px !important;
+    border: 1px solid rgba(201, 79, 79, 0.4) !important;
+    border-radius: 16px !important;
+    color: #ffffff !important;
+    background: linear-gradient(180deg, #e45c61, #a73339) !important;
+    box-shadow: 0 18px 36px rgba(201, 79, 79, 0.24) !important;
+  }
+
+  .workspace-shell .table-wrap {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.045) !important;
+  }
+
+  .workspace-shell .table-wrap table {
+    color: rgba(248, 248, 250, 0.84) !important;
+    background: transparent !important;
+  }
+
+  .workspace-shell th {
+    color: rgba(248, 248, 250, 0.62) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .workspace-shell td {
+    color: rgba(248, 248, 250, 0.84) !important;
+    border-top-color: rgba(255, 255, 255, 0.08) !important;
+    background: transparent !important;
+  }
+
+  .workspace-shell tbody tr:hover {
+    background: rgba(201, 79, 79, 0.1) !important;
+  }
+
+  .workspace-shell .route-summary button {
+    color: #ffffff !important;
+    background: transparent !important;
+  }
+
+  .workspace-shell .route-summary small {
+    color: rgba(248, 248, 250, 0.58) !important;
+  }
+
+  .workspace-shell .form-feedback {
+    margin: 0 16px 16px !important;
+    padding: 12px 14px !important;
+    border: 1px solid rgba(34, 197, 94, 0.28) !important;
+    border-radius: 14px !important;
+    color: #dcfce7 !important;
+    background: rgba(34, 197, 94, 0.1) !important;
+    font-size: 0.86rem !important;
+    font-weight: 760 !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .workspace-shell .module-nav button {
+    flex-basis: 84px !important;
+    width: 84px !important;
+    min-width: 84px !important;
+  }
+
+  .workspace-shell .area-topbar-brand,
+  .workspace-shell .area-topbar-brand .brand-mark {
+    width: 132px !important;
+  }
+}
