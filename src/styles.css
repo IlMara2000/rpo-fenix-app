@@ -8324,3 +8324,122 @@ tbody tr:hover {
     width: 148px !important;
   }
 }
+
+/* CRM readability pass: keep layout, bring text back to Fenix tone */
+@media (max-width: 1024px) {
+  .workspace-shell .workspace-content {
+    background:
+      linear-gradient(180deg, rgba(201, 79, 79, 0.05), transparent 180px),
+      #f5f6f8 !important;
+    color: #20232a !important;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .workspace-shell .module-nav button {
+    color: rgba(255, 255, 255, 0.86) !important;
+    font-size: 0.68rem !important;
+    font-weight: 820 !important;
+    letter-spacing: 0.01em !important;
+  }
+
+  .workspace-shell .module-nav button.active {
+    color: #ffffff !important;
+    background:
+      linear-gradient(180deg, rgba(201, 79, 79, 0.2), rgba(201, 79, 79, 0.08)),
+      #121216 !important;
+  }
+
+  .workspace-shell .area-card,
+  .workspace-shell .workspace-panel,
+  .workspace-shell .route-summary {
+    border-color: rgba(31, 35, 45, 0.12) !important;
+    border-radius: 8px !important;
+    color: #20232a !important;
+    box-shadow: 0 8px 24px rgba(18, 24, 35, 0.12) !important;
+  }
+
+  .workspace-shell .area-card-header,
+  .workspace-shell .workspace-panel header {
+    padding: 13px 16px !important;
+    border-bottom-color: rgba(31, 35, 45, 0.1) !important;
+    background:
+      linear-gradient(180deg, #ffffff, #fbfcfd) !important;
+  }
+
+  .workspace-shell .area-card-header h3,
+  .workspace-shell .workspace-panel h2,
+  .workspace-shell .workspace-panel h3 {
+    color: #252832 !important;
+    font-size: 1.04rem !important;
+    font-weight: 780 !important;
+    line-height: 1.16 !important;
+  }
+
+  .workspace-shell .area-card-header small,
+  .workspace-shell .workspace-panel header small,
+  .workspace-shell .system-label {
+    color: #8a3540 !important;
+    font-size: 0.68rem !important;
+    font-weight: 850 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+  }
+
+  .workspace-shell .area-card-body,
+  .workspace-shell .workspace-panel > :not(header),
+  .workspace-shell .compact-list,
+  .workspace-shell .pipeline,
+  .workspace-shell .month-board,
+  .workspace-shell td {
+    color: #343944 !important;
+    font-size: 0.94rem !important;
+    line-height: 1.55 !important;
+  }
+
+  .workspace-shell .area-card-body strong,
+  .workspace-shell .workspace-panel strong,
+  .workspace-shell .kpi-card strong,
+  .workspace-shell .pipeline strong,
+  .workspace-shell .month-board strong {
+    color: #1f232b !important;
+    font-weight: 820 !important;
+  }
+
+  .workspace-shell .area-card-header select,
+  .workspace-shell .quick-form input,
+  .workspace-shell .quick-form select,
+  .workspace-shell .account-form input,
+  .workspace-shell .account-form select {
+    min-height: 38px !important;
+    border-color: #d7dbe3 !important;
+    border-radius: 8px !important;
+    color: #222630 !important;
+    background: #ffffff !important;
+    font-size: 0.92rem !important;
+    font-weight: 650 !important;
+  }
+
+  .workspace-shell .quick-form label,
+  .workspace-shell .account-form label {
+    color: #6d7280 !important;
+    font-size: 0.66rem !important;
+    font-weight: 850 !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  .workspace-shell .quick-form button,
+  .workspace-shell .tool-button,
+  .workspace-shell .account-form button {
+    border-radius: 8px !important;
+    font-size: 0.72rem !important;
+    font-weight: 850 !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  .workspace-shell .census-ring strong,
+  .workspace-shell .census-ring span {
+    color: #1d2028 !important;
+    font-weight: 820 !important;
+  }
+}
