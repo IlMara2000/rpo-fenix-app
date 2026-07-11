@@ -2143,6 +2143,10 @@ function CrmTopbar({
     <header className="area-topbar">
       <button className="area-topbar-brand button-reset" type="button" onClick={() => onOpenModule("start")}>
         <BrandMark />
+        <span className="area-brand-copy">
+          <strong>Fenix Suite</strong>
+          <small>Real Estate CRM</small>
+        </span>
       </button>
       <nav aria-label="Moduli principali">
         {primaryModules.map(({ key, label, Icon }) => (

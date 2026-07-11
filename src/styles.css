@@ -8719,3 +8719,291 @@ tbody tr:hover {
     width: 132px !important;
   }
 }
+
+/* CRM Pro Max proportion pass: tighter mobile rhythm and visible action feedback */
+@media (max-width: 1024px) {
+  .workspace-shell .area-topbar {
+    min-height: 64px !important;
+    height: 64px !important;
+    padding: 9px 86px 9px 14px !important;
+  }
+
+  .workspace-shell .area-topbar-brand {
+    width: min(100%, 224px) !important;
+    height: 46px !important;
+    gap: 10px !important;
+    padding: 5px 13px 5px 9px !important;
+    border-radius: 16px !important;
+  }
+
+  .workspace-shell .area-topbar-brand .brand-mark {
+    display: grid !important;
+    flex: 0 0 34px !important;
+    width: 34px !important;
+    height: 34px !important;
+    border: 1px solid rgba(201, 79, 79, 0.38) !important;
+    border-radius: 11px !important;
+    background:
+      linear-gradient(145deg, rgba(201, 79, 79, 0.18), rgba(255, 255, 255, 0.045)) !important;
+  }
+
+  .workspace-shell .area-topbar-brand .brand-mark::before,
+  .workspace-shell .area-topbar-brand .brand-mark span {
+    display: block !important;
+  }
+
+  .workspace-shell .area-brand-copy {
+    display: grid !important;
+    min-width: 0 !important;
+    gap: 1px !important;
+    text-align: left !important;
+  }
+
+  .workspace-shell .area-brand-copy strong {
+    overflow: hidden !important;
+    color: #ffffff !important;
+    font-size: 0.88rem !important;
+    font-weight: 850 !important;
+    line-height: 1.05 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .workspace-shell .area-brand-copy small {
+    overflow: hidden !important;
+    color: rgba(248, 248, 250, 0.48) !important;
+    font-size: 0.5rem !important;
+    font-weight: 850 !important;
+    letter-spacing: 0.12em !important;
+    line-height: 1 !important;
+    text-overflow: ellipsis !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+  }
+
+  .workspace-shell .area-topbar-logout {
+    top: 12px !important;
+    right: 14px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+
+  .workspace-shell .app-sidebar {
+    top: 64px !important;
+  }
+
+  .workspace-shell .module-nav button {
+    flex-basis: 88px !important;
+    width: 88px !important;
+    min-width: 88px !important;
+    min-height: 62px !important;
+    padding: 7px 6px 6px !important;
+    font-size: 0.65rem !important;
+  }
+
+  .workspace-shell .module-nav svg {
+    width: 22px !important;
+    height: 22px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .workspace-shell .area-side-pages {
+    gap: 7px !important;
+    padding: 0 10px 9px !important;
+  }
+
+  .workspace-shell .area-side-pages button {
+    min-width: 86px !important;
+    min-height: 34px !important;
+    padding: 0 11px !important;
+    font-size: 0.59rem !important;
+  }
+
+  .workspace-shell .workspace-content {
+    padding: 12px 12px 30px !important;
+  }
+
+  .workspace-shell .workspace-status {
+    position: sticky !important;
+    top: 136px !important;
+    z-index: 45 !important;
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    min-height: 44px !important;
+    margin: 0 0 12px !important;
+    padding: 9px 12px !important;
+    border: 1px solid rgba(201, 79, 79, 0.32) !important;
+    border-radius: 14px !important;
+    color: #ffffff !important;
+    background:
+      linear-gradient(135deg, rgba(201, 79, 79, 0.18), transparent 58%),
+      rgba(16, 17, 22, 0.96) !important;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24) !important;
+    backdrop-filter: blur(14px) !important;
+  }
+
+  .workspace-shell .workspace-status span {
+    display: inline-flex !important;
+    gap: 7px !important;
+    align-items: center !important;
+    min-width: 0 !important;
+    color: #ffffff !important;
+    font-size: 0.75rem !important;
+    font-weight: 760 !important;
+    line-height: 1.25 !important;
+  }
+
+  .workspace-shell .workspace-status small {
+    flex: 0 0 auto !important;
+    max-width: 34% !important;
+    overflow: hidden !important;
+    color: rgba(248, 248, 250, 0.54) !important;
+    font-size: 0.58rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.06em !important;
+    text-overflow: ellipsis !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+  }
+
+  .workspace-shell .area-dashboard {
+    gap: 14px !important;
+  }
+
+  .workspace-shell .area-card,
+  .workspace-shell .workspace-panel,
+  .workspace-shell .route-summary {
+    border-radius: 16px !important;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32) !important;
+  }
+
+  .workspace-shell .area-card-header,
+  .workspace-shell .workspace-panel header {
+    min-height: 58px !important;
+    padding: 14px 15px 12px !important;
+  }
+
+  .workspace-shell .area-card-header h3,
+  .workspace-shell .workspace-panel h2,
+  .workspace-shell .workspace-panel h3 {
+    font-size: clamp(1rem, 4.4vw, 1.2rem) !important;
+    line-height: 1.12 !important;
+  }
+
+  .workspace-shell .area-card-body,
+  .workspace-shell .workspace-panel > :not(header) {
+    padding: 14px 15px !important;
+  }
+
+  .workspace-shell .quick-form {
+    gap: 13px !important;
+  }
+
+  .workspace-shell .quick-form input,
+  .workspace-shell .quick-form select,
+  .workspace-shell .account-form input,
+  .workspace-shell .account-form select {
+    min-height: 46px !important;
+    padding: 0 14px !important;
+  }
+
+  .workspace-shell .quick-form button,
+  .workspace-shell .tool-button,
+  .workspace-shell .account-form button {
+    min-height: 50px !important;
+  }
+
+  .workspace-shell .tool-grid {
+    gap: 12px !important;
+  }
+
+  .workspace-shell .tool-button {
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .workspace-shell .tool-button svg:last-child {
+    opacity: 0.55 !important;
+  }
+
+  .workspace-shell .table-wrap {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    border-radius: 14px !important;
+  }
+
+  .workspace-shell .table-wrap table {
+    min-width: 620px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .workspace-shell .area-topbar-brand {
+    width: 178px !important;
+    max-width: calc(100vw - 116px) !important;
+  }
+
+  .workspace-shell .area-brand-copy strong {
+    font-size: 0.82rem !important;
+  }
+
+  .workspace-shell .area-brand-copy small {
+    display: none !important;
+  }
+
+  .workspace-shell .area-topbar-logout {
+    min-width: 62px !important;
+    padding: 0 10px !important;
+  }
+
+  .workspace-shell .module-nav button {
+    flex-basis: 78px !important;
+    width: 78px !important;
+    min-width: 78px !important;
+    font-size: 0.61rem !important;
+  }
+
+  .workspace-shell .workspace-status {
+    top: 128px !important;
+  }
+}
+
+/* CRM final contrast polish */
+@media (max-width: 1024px) {
+  .workspace-shell .area-card-header h3,
+  .workspace-shell .workspace-panel h2,
+  .workspace-shell .workspace-panel h3 {
+    color: rgba(248, 248, 250, 0.92) !important;
+    opacity: 1 !important;
+  }
+
+  .workspace-shell .area-card-body,
+  .workspace-shell .workspace-panel > :not(header),
+  .workspace-shell .empty-state,
+  .workspace-shell .compact-list,
+  .workspace-shell .pipeline,
+  .workspace-shell .month-board {
+    color: rgba(248, 248, 250, 0.7) !important;
+    opacity: 1 !important;
+  }
+
+  .workspace-shell .area-card-body p,
+  .workspace-shell .workspace-panel p,
+  .workspace-shell .area-card-body small,
+  .workspace-shell .workspace-panel small,
+  .workspace-shell .empty-state small {
+    color: rgba(248, 248, 250, 0.64) !important;
+    opacity: 1 !important;
+  }
+
+  .workspace-shell .area-card-body h4,
+  .workspace-shell .workspace-panel h4,
+  .workspace-shell .area-card-body strong,
+  .workspace-shell .workspace-panel strong {
+    color: rgba(248, 248, 250, 0.9) !important;
+    opacity: 1 !important;
+  }
+}
