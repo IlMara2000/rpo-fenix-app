@@ -9007,3 +9007,637 @@ tbody tr:hover {
     opacity: 1 !important;
   }
 }
+
+/* CRM unified Fenix workspace: same visual language on desktop and mobile */
+.workspace-shell,
+.workspace-shell .app-main {
+  min-height: 100vh !important;
+  overflow-x: hidden !important;
+  background:
+    radial-gradient(circle at 10% -4%, rgba(201, 79, 79, 0.24), transparent 310px),
+    linear-gradient(180deg, #241112 0, #111116 260px, #08090c 100%) !important;
+}
+
+.workspace-shell .app-main {
+  display: block !important;
+}
+
+.workspace-shell .area-topbar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 70 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  height: 76px !important;
+  min-height: 76px !important;
+  padding: 12px clamp(18px, 3vw, 38px) !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 0 !important;
+  background:
+    linear-gradient(180deg, rgba(18, 19, 24, 0.97), rgba(9, 10, 13, 0.97)) !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28) !important;
+  backdrop-filter: blur(18px) !important;
+  margin-bottom: 0 !important;
+}
+
+.workspace-shell .area-topbar nav {
+  display: none !important;
+}
+
+.workspace-shell .area-topbar-brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: auto !important;
+  max-width: min(320px, calc(100vw - 132px)) !important;
+  height: 52px !important;
+  gap: 12px !important;
+  padding: 6px 16px 6px 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 18px !important;
+  color: #ffffff !important;
+  background:
+    linear-gradient(135deg, rgba(201, 79, 79, 0.14), transparent 52%),
+    rgba(255, 255, 255, 0.045) !important;
+}
+
+.workspace-shell .area-topbar-brand .brand-mark {
+  display: grid !important;
+  flex: 0 0 38px !important;
+  width: 38px !important;
+  height: 38px !important;
+  border: 1px solid rgba(201, 79, 79, 0.42) !important;
+  border-radius: 12px !important;
+  background:
+    linear-gradient(145deg, rgba(201, 79, 79, 0.2), rgba(255, 255, 255, 0.05)) !important;
+}
+
+.workspace-shell .area-topbar-brand .brand-mark::before,
+.workspace-shell .area-topbar-brand .brand-mark span {
+  display: block !important;
+}
+
+.workspace-shell .area-brand-copy {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: 2px !important;
+  text-align: left !important;
+}
+
+.workspace-shell .area-brand-copy strong {
+  overflow: hidden !important;
+  color: #ffffff !important;
+  font-size: 0.96rem !important;
+  font-weight: 850 !important;
+  line-height: 1.05 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.workspace-shell .area-brand-copy small {
+  overflow: hidden !important;
+  color: rgba(248, 248, 250, 0.5) !important;
+  font-size: 0.54rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.13em !important;
+  line-height: 1 !important;
+  text-overflow: ellipsis !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.workspace-shell .area-topbar-logout {
+  position: static !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  min-width: 82px !important;
+  gap: 8px !important;
+  padding: 0 16px !important;
+  border: 1px solid rgba(201, 79, 79, 0.42) !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  font-size: 0.7rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.workspace-shell .area-workspace-frame {
+  display: block !important;
+  min-height: calc(100vh - 76px) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  transform: none !important;
+}
+
+.workspace-shell .app-sidebar {
+  position: relative !important;
+  top: auto !important;
+  z-index: 60 !important;
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(201, 79, 79, 0.22) !important;
+  background: rgba(8, 9, 12, 0.96) !important;
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34) !important;
+  overflow: hidden !important;
+}
+
+.workspace-shell .area-user-card {
+  display: none !important;
+}
+
+.workspace-shell .module-nav {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  max-width: none !important;
+  gap: 0 !important;
+  padding: 0 clamp(10px, 4vw, 72px) !important;
+  background: transparent !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin !important;
+}
+
+.workspace-shell .module-nav button {
+  flex: 0 0 124px !important;
+  width: 124px !important;
+  min-width: 124px !important;
+  min-height: 66px !important;
+  display: grid !important;
+  place-items: center !important;
+  gap: 4px !important;
+  padding: 8px 8px 7px !important;
+  border: 0 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 0 !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  background: transparent !important;
+  font-size: 0.66rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.04em !important;
+  line-height: 1.05 !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+}
+
+.workspace-shell .module-nav button.active {
+  color: #ffffff !important;
+  background:
+    linear-gradient(180deg, rgba(201, 79, 79, 0.3), rgba(201, 79, 79, 0.08)),
+    rgba(255, 255, 255, 0.035) !important;
+  box-shadow: inset 0 -3px 0 var(--red) !important;
+}
+
+.workspace-shell .module-nav svg {
+  width: 23px !important;
+  height: 23px !important;
+  margin: 0 !important;
+  color: currentColor !important;
+}
+
+.workspace-shell .module-nav span {
+  display: block !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+}
+
+.workspace-shell .area-side-pages {
+  display: flex !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+  padding: 0 clamp(10px, 4vw, 72px) 10px !important;
+  border: 0 !important;
+  background: transparent !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+}
+
+.workspace-shell .area-side-pages::-webkit-scrollbar {
+  display: none !important;
+}
+
+.workspace-shell .area-side-pages button {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 96px !important;
+  min-height: 36px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  padding: 0 13px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 999px !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  font-size: 0.61rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.06em !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+}
+
+.workspace-shell .area-side-pages button.active {
+  border-color: rgba(201, 79, 79, 0.54) !important;
+  color: #ffffff !important;
+  background: rgba(201, 79, 79, 0.18) !important;
+}
+
+.workspace-shell .area-side-pages svg {
+  display: none !important;
+}
+
+.workspace-shell .workspace-content {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: calc(100vh - 142px) !important;
+  padding: 20px clamp(18px, 4vw, 72px) 52px !important;
+  background:
+    radial-gradient(circle at 16% 0, rgba(201, 79, 79, 0.18), transparent 320px),
+    #08090c !important;
+  color: #f8f8fa !important;
+  overflow: visible !important;
+}
+
+.workspace-shell .workspace-status {
+  position: relative !important;
+  top: auto !important;
+  z-index: 45 !important;
+  display: flex !important;
+  gap: 10px !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  min-height: 44px !important;
+  margin: 0 0 16px !important;
+  padding: 9px 14px !important;
+  border: 1px solid rgba(201, 79, 79, 0.32) !important;
+  border-radius: 14px !important;
+  color: #ffffff !important;
+  background:
+    linear-gradient(135deg, rgba(201, 79, 79, 0.18), transparent 58%),
+    rgba(16, 17, 22, 0.96) !important;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.24) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+.workspace-shell .workspace-status span {
+  display: inline-flex !important;
+  gap: 7px !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  color: #ffffff !important;
+  font-size: 0.78rem !important;
+  font-weight: 760 !important;
+  line-height: 1.25 !important;
+}
+
+.workspace-shell .workspace-status small {
+  flex: 0 0 auto !important;
+  max-width: 38% !important;
+  overflow: hidden !important;
+  color: rgba(248, 248, 250, 0.56) !important;
+  font-size: 0.6rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  text-overflow: ellipsis !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.workspace-shell .module-heading {
+  color: #f8f8fa !important;
+}
+
+.workspace-shell .module-heading h1,
+.workspace-shell .module-heading h2,
+.workspace-shell .module-heading h3 {
+  color: #ffffff !important;
+  letter-spacing: 0 !important;
+}
+
+.workspace-shell .module-heading p,
+.workspace-shell .module-heading small {
+  color: rgba(248, 248, 250, 0.64) !important;
+}
+
+.workspace-shell .area-dashboard {
+  display: grid !important;
+  grid-template-columns: minmax(320px, 0.95fr) minmax(420px, 1.1fr) minmax(320px, 0.95fr) !important;
+  grid-template-areas:
+    "news objectives recensus"
+    "agenda nominativi recensus" !important;
+  align-items: start !important;
+  gap: 18px !important;
+  padding-top: 0 !important;
+}
+
+.workspace-shell .area-card,
+.workspace-shell .workspace-panel,
+.workspace-shell .route-summary,
+.workspace-shell .kpi-card,
+.workspace-shell .pipeline,
+.workspace-shell .month-board,
+.workspace-shell .quick-form,
+.workspace-shell .account-form {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 18px !important;
+  color: #f8f8fa !important;
+  background:
+    linear-gradient(135deg, rgba(201, 79, 79, 0.09), transparent 46%),
+    rgba(16, 17, 22, 0.94) !important;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.34) !important;
+}
+
+.workspace-shell .area-card-header,
+.workspace-shell .workspace-panel header {
+  min-height: 60px !important;
+  padding: 15px 16px 13px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: transparent !important;
+}
+
+.workspace-shell .area-card-header h3,
+.workspace-shell .workspace-panel h2,
+.workspace-shell .workspace-panel h3 {
+  color: rgba(248, 248, 250, 0.94) !important;
+  font-size: clamp(1rem, 1.25vw, 1.18rem) !important;
+  font-weight: 860 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.15 !important;
+}
+
+.workspace-shell .area-card-body,
+.workspace-shell .workspace-panel > :not(header) {
+  padding: 16px !important;
+}
+
+.workspace-shell .area-card-body,
+.workspace-shell .workspace-panel,
+.workspace-shell .workspace-panel p,
+.workspace-shell .workspace-panel small,
+.workspace-shell .compact-list,
+.workspace-shell .empty-state,
+.workspace-shell .pipeline,
+.workspace-shell .month-board,
+.workspace-shell td {
+  color: rgba(248, 248, 250, 0.72) !important;
+}
+
+.workspace-shell .area-card-body h4,
+.workspace-shell .workspace-panel h4,
+.workspace-shell .area-card-body strong,
+.workspace-shell .workspace-panel strong,
+.workspace-shell .kpi-card strong,
+.workspace-shell .pipeline strong,
+.workspace-shell .month-board strong {
+  color: rgba(248, 248, 250, 0.92) !important;
+}
+
+.workspace-shell .area-card-header select,
+.workspace-shell .quick-form input,
+.workspace-shell .quick-form select,
+.workspace-shell .quick-form textarea,
+.workspace-shell .account-form input,
+.workspace-shell .account-form select,
+.workspace-shell .account-form textarea,
+.workspace-shell .workspace-panel input,
+.workspace-shell .workspace-panel select,
+.workspace-shell .workspace-panel textarea {
+  min-height: 44px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 14px !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.075) !important;
+  font-size: 0.92rem !important;
+  font-weight: 650 !important;
+}
+
+.workspace-shell select option {
+  color: #14151a !important;
+}
+
+.workspace-shell .quick-form label,
+.workspace-shell .account-form label,
+.workspace-shell .workspace-panel label {
+  color: rgba(248, 248, 250, 0.62) !important;
+  font-size: 0.66rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.workspace-shell .quick-form button,
+.workspace-shell .tool-button,
+.workspace-shell .account-form button,
+.workspace-shell .workspace-panel button:not(.button-reset),
+.workspace-shell .route-summary button {
+  min-height: 46px !important;
+  border: 1px solid rgba(201, 79, 79, 0.4) !important;
+  border-radius: 14px !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #e45c61, #a73339) !important;
+  box-shadow: 0 16px 32px rgba(201, 79, 79, 0.22) !important;
+  font-size: 0.72rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.workspace-shell .table-wrap {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+}
+
+.workspace-shell .table-wrap table {
+  color: rgba(248, 248, 250, 0.84) !important;
+  background: transparent !important;
+}
+
+.workspace-shell th {
+  color: rgba(248, 248, 250, 0.62) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.workspace-shell td {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+  background: transparent !important;
+}
+
+.workspace-shell tbody tr:hover {
+  background: rgba(201, 79, 79, 0.1) !important;
+}
+
+.workspace-shell .census-ring strong,
+.workspace-shell .census-ring span {
+  color: #20232a !important;
+}
+
+@media (max-width: 1180px) {
+  .workspace-shell .area-dashboard {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-areas:
+      "news objectives"
+      "agenda recensus"
+      "nominativi recensus" !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .workspace-shell .area-topbar {
+    height: 64px !important;
+    min-height: 64px !important;
+    padding: 9px 82px 9px 14px !important;
+  }
+
+  .workspace-shell .area-topbar-brand {
+    height: 46px !important;
+    max-width: calc(100vw - 116px) !important;
+    padding: 5px 13px 5px 9px !important;
+    border-radius: 16px !important;
+  }
+
+  .workspace-shell .area-topbar-brand .brand-mark {
+    flex-basis: 34px !important;
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 11px !important;
+  }
+
+  .workspace-shell .area-brand-copy strong {
+    font-size: 0.84rem !important;
+  }
+
+  .workspace-shell .area-brand-copy small {
+    display: none !important;
+  }
+
+  .workspace-shell .area-topbar-logout {
+    position: absolute !important;
+    top: 12px !important;
+    right: 14px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    min-width: 62px !important;
+    padding: 0 10px !important;
+  }
+
+  .workspace-shell .area-workspace-frame {
+    min-height: calc(100vh - 64px) !important;
+  }
+
+  .workspace-shell .app-sidebar {
+    top: auto !important;
+  }
+
+  .workspace-shell .module-nav {
+    padding: 0 !important;
+  }
+
+  .workspace-shell .module-nav button {
+    flex-basis: 78px !important;
+    width: 78px !important;
+    min-width: 78px !important;
+    min-height: 62px !important;
+    padding: 7px 5px 6px !important;
+    font-size: 0.6rem !important;
+  }
+
+  .workspace-shell .module-nav svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .workspace-shell .module-nav span {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .workspace-shell .area-side-pages {
+    padding: 0 10px 9px !important;
+  }
+
+  .workspace-shell .area-side-pages button {
+    min-width: 86px !important;
+    min-height: 34px !important;
+    padding: 0 11px !important;
+    font-size: 0.59rem !important;
+  }
+
+  .workspace-shell .workspace-content {
+    min-height: calc(100vh - 126px) !important;
+    padding: 12px 12px 30px !important;
+  }
+
+  .workspace-shell .workspace-status {
+    top: auto !important;
+    margin-bottom: 12px !important;
+  }
+
+  .workspace-shell .workspace-status small {
+    max-width: 34% !important;
+  }
+
+  .workspace-shell .area-dashboard {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas:
+      "news"
+      "objectives"
+      "recensus"
+      "agenda"
+      "nominativi" !important;
+    gap: 14px !important;
+  }
+
+  .workspace-shell .area-card,
+  .workspace-shell .workspace-panel,
+  .workspace-shell .route-summary {
+    border-radius: 16px !important;
+  }
+
+  .workspace-shell .area-card-header,
+  .workspace-shell .workspace-panel header {
+    min-height: 58px !important;
+    padding: 14px 15px 12px !important;
+  }
+
+  .workspace-shell .area-card-header h3,
+  .workspace-shell .workspace-panel h2,
+  .workspace-shell .workspace-panel h3 {
+    font-size: clamp(1rem, 4.4vw, 1.2rem) !important;
+  }
+
+  .workspace-shell .area-card-body,
+  .workspace-shell .workspace-panel > :not(header) {
+    padding: 14px 15px !important;
+  }
+
+  .workspace-shell .table-wrap table {
+    min-width: 620px !important;
+  }
+}
