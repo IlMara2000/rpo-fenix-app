@@ -284,6 +284,15 @@ type CrmData = {
 
 type CrmCommit = (updater: (data: CrmData) => CrmData, message: string) => void;
 
+type CensusRingSegment = {
+  key: string;
+  label: string;
+  value: number;
+  color: string;
+  moduleKey: ModuleKey;
+  pageKey?: string;
+};
+
 const accountEmail = "daniele.marangoni@grfenix.com";
 const accountPasswordHash =
   "35b47eca325c70ec48ba4d8489301c7ee82b6a50ac330938158dcfe1a5fded11";
@@ -512,6 +521,12 @@ const modules: ModuleItem[] = [
     label: "Attivita",
     description: "Telefonate, esiti, follow-up, note e storico operativo.",
     Icon: ClipboardCheck,
+  },
+  {
+    key: "obiettivi",
+    label: "Obiettivi",
+    description: "Avanzamento giornaliero e mensile per operatori e agenzia.",
+    Icon: Target,
   },
   {
     key: "utilita",
@@ -910,12 +925,46 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
   ],
 };
 
+function isValidModuleKey(value: string): value is ModuleKey {
+  return Object.prototype.hasOwnProperty.call(modulePages, value);
+}
+
+function readWorkspaceRoute() {
+  const hash = window.location.hash.replace(/^#/, "");
+  const [moduleKey, pageKey] = hash.split("/").filter(Boolean);
+
+  if (moduleKey && isValidModuleKey(moduleKey)) {
+    return {
+      moduleKey,
+      pageKey,
+    };
+  }
+
+  const storedModule = localStorage.getItem("fenix-suite-active-module") || "";
+  const storedPage = localStorage.getItem("fenix-suite-active-page") || "";
+
+  return {
+    moduleKey: isValidModuleKey(storedModule) ? storedModule : "start",
+    pageKey: storedPage,
+  };
+}
+
+function writeWorkspaceRoute(moduleKey: ModuleKey, pageKey: string) {
+  const nextHash = `#${moduleKey}/${pageKey}`;
+  if (window.location.pathname.startsWith("/crm") && window.location.hash !== nextHash) {
+    window.history.replaceState(null, "", `${window.location.pathname}${nextHash}`);
+  }
+}
+
 function getInitialModule(): ModuleKey {
-  return "start";
+  return readWorkspaceRoute().moduleKey;
 }
 
 function getInitialPage(moduleKey: ModuleKey) {
-  return modulePages[moduleKey][0].key;
+  const route = readWorkspaceRoute();
+  return modulePages[moduleKey].some((page) => page.key === route.pageKey)
+    ? route.pageKey
+    : modulePages[moduleKey][0].key;
 }
 
 function isValidRole(role: string): role is UserRole {
@@ -1947,6 +1996,28 @@ function Workspace({
   );
   const reduceMotion = useReducedMotion();
 
+  useEffect(() => {
+    const syncFromHash = () => {
+      const route = readWorkspaceRoute();
+      if (!getVisibleModules(currentUser).some((item) => item.key === route.moduleKey)) {
+        return;
+      }
+      const visiblePages = getVisibleModulePages(route.moduleKey, currentUser);
+      const page = visiblePages.find((item) => item.key === route.pageKey) ?? visiblePages[0];
+      setActiveModule(route.moduleKey);
+      setActivePage(page.key);
+    };
+
+    window.addEventListener("hashchange", syncFromHash);
+    return () => window.removeEventListener("hashchange", syncFromHash);
+  }, [currentUser]);
+
+  useEffect(() => {
+    localStorage.setItem("fenix-suite-active-module", safeActiveModule);
+    localStorage.setItem("fenix-suite-active-page", currentPage.key);
+    writeWorkspaceRoute(safeActiveModule, currentPage.key);
+  }, [safeActiveModule, currentPage.key]);
+
   function runAction(message: string) {
     setNotice(message);
   }
@@ -1990,6 +2061,7 @@ function Workspace({
     setActivePage(page.key);
     localStorage.setItem("fenix-suite-active-module", moduleKey);
     localStorage.setItem("fenix-suite-active-page", page.key);
+    writeWorkspaceRoute(moduleKey, page.key);
     setNotice(`${module?.label ?? "Modulo"} / ${page.label}: pronto.`);
   }
 
@@ -2036,6 +2108,7 @@ function Workspace({
                       setActivePage(key);
                       localStorage.setItem("fenix-suite-active-module", safeActiveModule);
                       localStorage.setItem("fenix-suite-active-page", key);
+                      writeWorkspaceRoute(safeActiveModule, key);
                       setNotice(`${currentModule.label} / ${label}: pronto.`);
                     }}
                   >
@@ -2089,6 +2162,7 @@ function Workspace({
               setActivePage(pageKey);
               localStorage.setItem("fenix-suite-active-module", safeActiveModule);
               localStorage.setItem("fenix-suite-active-page", pageKey);
+              writeWorkspaceRoute(safeActiveModule, pageKey);
               const page = currentPages.find((item) => item.key === pageKey);
               setNotice(`${currentModule.label} / ${page?.label ?? "Sezione"}: pronto.`);
             }}
@@ -2326,6 +2400,49 @@ function StartView({
     .slice(0, 12);
   const censusTotal = Math.max(0, data.censusAreas.reduce((sum, area) => sum + area.contacts, 0) || censusRecallRows.length);
   const overdueCensus = Math.max(0, censusRecallRows.filter((contact) => /ricontattare|valutazione/i.test(contact.status)).length || censusTotal);
+  const censusDueSoon = Math.max(0, censusRecallRows.filter((contact) => /lead|nuovo|da qualificare/i.test(`${contact.status} ${contact.nextStep}`)).length);
+  const censusOwnersCount = Math.max(0, data.contacts.filter((contact) => isOwnerContact(contact, data.properties)).length);
+  const censusCompleted = Math.max(
+    0,
+    Math.min(
+      censusTotal,
+      censusTotal - Math.min(censusTotal, overdueCensus + censusDueSoon) || data.censusComplexes.length,
+    ),
+  );
+  const censusSegments: CensusRingSegment[] = [
+    {
+      key: "overdue",
+      label: "In scadenza oltre 7 gg",
+      value: overdueCensus,
+      color: "#72cf45",
+      moduleKey: "censimento",
+      pageKey: "censimento-contatti",
+    },
+    {
+      key: "due",
+      label: "Da lavorare",
+      value: censusDueSoon,
+      color: "#ff9f0a",
+      moduleKey: "attivita",
+      pageKey: "attivita-elenco",
+    },
+    {
+      key: "owners",
+      label: "Proprietari",
+      value: censusOwnersCount,
+      color: "#ff675d",
+      moduleKey: "proprietari",
+      pageKey: "proprietari-elenco",
+    },
+    {
+      key: "done",
+      label: "Completati",
+      value: censusCompleted,
+      color: "#555555",
+      moduleKey: "censimento",
+      pageKey: "censimento-zone",
+    },
+  ];
   const objectives = data.goals.filter((goal) => isInScope(goal.owner));
 
   return (
@@ -2334,7 +2451,22 @@ function StartView({
         <AreaCardHeader title="Notizie Censimento" filter={accountScope.label} />
         <div className="area-card-body">
           <div className="area-total">Totale: {censusTotal}</div>
-          <CensusRing value={overdueCensus} />
+          <CensusRing
+            segments={censusSegments}
+            value={overdueCensus}
+            onSegmentSelect={(segment) => onOpenModule(segment.moduleKey, segment.pageKey)}
+          />
+          <div className="dashboard-link-row" aria-label="Azioni censimento">
+            <button type="button" onClick={() => onOpenModule("censimento", "censimento-zone")}>
+              Zone
+            </button>
+            <button type="button" onClick={() => onOpenModule("censimento", "censimento-vie")}>
+              Vie
+            </button>
+            <button type="button" onClick={() => onOpenModule("censimento", "censimento-proprietari")}>
+              Proprietari
+            </button>
+          </div>
         </div>
       </section>
 
@@ -2350,6 +2482,9 @@ function StartView({
           ) : (
             <span>Nessun obiettivo presente per i filtri selezionati</span>
           )}
+          <button className="dashboard-panel-link" type="button" onClick={() => onOpenModule("obiettivi", "obiettivi-elenco")}>
+            Apri obiettivi
+          </button>
         </div>
       </section>
 
@@ -2364,7 +2499,7 @@ function StartView({
                 <span>Telefono</span>
               </div>
               {censusRecallRows.map((contact) => (
-                <button key={contact.id} type="button" onClick={() => onOpenModule("proprietari", "proprietari-elenco")}>
+                <button key={contact.id} type="button" onClick={() => onOpenModule("censimento", "censimento-contatti")}>
                   <span>{contact.name}</span>
                   <b>{contact.phone || "-"}</b>
                 </button>
@@ -2382,6 +2517,9 @@ function StartView({
           <AgendaColumn title="Oggi" items={agendaToday} empty="Non hai nessun appuntamento per oggi" />
           <AgendaColumn title="Domani" items={agendaTomorrow} empty="Non hai nessun appuntamento per domani" />
           <AgendaColumn title="Questa settimana" items={agendaWeek} empty="Non hai nessun appuntamento per i prossimi giorni della settimana" />
+          <button className="dashboard-panel-link" type="button" onClick={() => onOpenModule("agenda", "agenda-calendario")}>
+            Apri agenda
+          </button>
         </div>
       </section>
 
@@ -2409,6 +2547,9 @@ function StartView({
               )}
             </section>
           ))}
+          <button className="dashboard-panel-link" type="button" onClick={() => onOpenModule("nominativi", "nominativi-elenco")}>
+            Apri clienti
+          </button>
         </div>
       </section>
     </div>
@@ -2428,12 +2569,90 @@ function AreaCardHeader({ title, filter }: { title: string; filter?: string }) {
   );
 }
 
-function CensusRing({ value }: { value: number }) {
+function describeArc(cx: number, cy: number, radius: number, startAngle: number, endAngle: number) {
+  const start = polarToCartesian(cx, cy, radius, endAngle);
+  const end = polarToCartesian(cx, cy, radius, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+  return ["M", start.x, start.y, "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y].join(" ");
+}
+
+function polarToCartesian(cx: number, cy: number, radius: number, angleInDegrees: number) {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180;
+  return {
+    x: cx + radius * Math.cos(angleInRadians),
+    y: cy + radius * Math.sin(angleInRadians),
+  };
+}
+
+function CensusRing({
+  value,
+  segments,
+  onSegmentSelect,
+}: {
+  value: number;
+  segments: CensusRingSegment[];
+  onSegmentSelect: (segment: CensusRingSegment) => void;
+}) {
+  const [activeKey, setActiveKey] = useState(segments.find((segment) => segment.value > 0)?.key ?? segments[0]?.key ?? "");
+  const total = Math.max(0, segments.reduce((sum, segment) => sum + segment.value, 0));
+  const activeSegment = segments.find((segment) => segment.key === activeKey) ?? segments[0];
+  let angleCursor = 0;
+
   return (
     <div className="census-ring" aria-label={`In scadenza oltre 7 giorni: ${value}`}>
+      <svg viewBox="0 0 220 220" role="img" aria-label="Grafico interattivo censimento">
+        <circle className="census-ring-track" cx="110" cy="110" r="82" />
+        {segments.map((segment) => {
+          const percent = total > 0 ? segment.value / total : 1 / Math.max(segments.length, 1);
+          const startAngle = angleCursor;
+          const endAngle = angleCursor + percent * 360;
+          angleCursor = endAngle;
+          const isActive = segment.key === activeSegment?.key;
+
+          return (
+            <motion.path
+              aria-label={`${segment.label}: ${segment.value}`}
+              className={isActive ? "active" : ""}
+              d={describeArc(110, 110, isActive ? 86 : 82, startAngle, endAngle)}
+              fill="none"
+              key={segment.key}
+              role="button"
+              stroke={segment.color}
+              strokeLinecap="butt"
+              strokeWidth={isActive ? 32 : 27}
+              tabIndex={0}
+              initial={false}
+              animate={{ opacity: segment.value || total === 0 ? 1 : 0.36 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => onSegmentSelect(segment)}
+              onFocus={() => setActiveKey(segment.key)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSegmentSelect(segment);
+                }
+              }}
+              onMouseEnter={() => setActiveKey(segment.key)}
+            />
+          );
+        })}
+      </svg>
+      {segments.map((segment, index) => (
+        <button
+          aria-label={`${segment.label}: ${segment.value}`}
+          className={`census-ring-hotspot census-ring-hotspot-${index}`}
+          key={`hotspot-${segment.key}`}
+          type="button"
+          onClick={() => onSegmentSelect(segment)}
+          onFocus={() => setActiveKey(segment.key)}
+          onMouseEnter={() => setActiveKey(segment.key)}
+        />
+      ))}
       <div>
-        <strong>In scadenza oltre 7 gg</strong>
-        <span>{value.toLocaleString("it-IT")}</span>
+        <strong>{activeSegment?.label ?? "Censimento"}</strong>
+        <span>{(activeSegment?.value ?? value).toLocaleString("it-IT")}</span>
+        <small>clicca per aprire</small>
       </div>
     </div>
   );

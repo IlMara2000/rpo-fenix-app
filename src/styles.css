@@ -8940,6 +8940,186 @@ tbody tr:hover {
   }
 }
 
+/* CRM completion pass: interactive operational dashboard */
+.workspace-shell .census-ring {
+  position: relative !important;
+  display: grid !important;
+  width: min(250px, 72vw) !important;
+  aspect-ratio: 1 !important;
+  margin: 22px auto 12px !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.08), transparent 58%),
+    rgba(255, 255, 255, 0.02) !important;
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.2) !important;
+}
+
+.workspace-shell .census-ring svg {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+
+.workspace-shell .census-ring path {
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.18)) !important;
+  outline: none !important;
+  pointer-events: none !important;
+  transition: stroke-width 0.18s ease, filter 0.18s ease, opacity 0.18s ease !important;
+}
+
+.workspace-shell .census-ring path:hover,
+.workspace-shell .census-ring path:focus,
+.workspace-shell .census-ring path.active {
+  filter: drop-shadow(0 13px 16px rgba(0, 0, 0, 0.28)) !important;
+}
+
+.workspace-shell .census-ring-track {
+  fill: none !important;
+  stroke: rgba(255, 255, 255, 0.08) !important;
+  stroke-width: 28 !important;
+  pointer-events: none !important;
+}
+
+.workspace-shell .census-ring > div {
+  position: relative !important;
+  z-index: 1 !important;
+  display: grid !important;
+  width: 128px !important;
+  height: 128px !important;
+  place-items: center !important;
+  align-content: center !important;
+  gap: 6px !important;
+  border: 3px solid rgba(255, 255, 255, 0.86) !important;
+  border-radius: 50% !important;
+  color: #15171d !important;
+  background: #f8f8f5 !important;
+  text-align: center !important;
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.18) !important;
+  pointer-events: none !important;
+}
+
+.workspace-shell .census-ring-hotspot {
+  position: absolute !important;
+  z-index: 2 !important;
+  width: 50% !important;
+  height: 50% !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  cursor: pointer !important;
+}
+
+.workspace-shell .census-ring-hotspot:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.72) !important;
+  outline-offset: -8px !important;
+}
+
+.workspace-shell .census-ring-hotspot-0 {
+  top: 0 !important;
+  right: 0 !important;
+}
+
+.workspace-shell .census-ring-hotspot-1 {
+  right: 0 !important;
+  bottom: 0 !important;
+}
+
+.workspace-shell .census-ring-hotspot-2 {
+  bottom: 0 !important;
+  left: 0 !important;
+}
+
+.workspace-shell .census-ring-hotspot-3 {
+  top: 0 !important;
+  left: 0 !important;
+}
+
+.workspace-shell .census-ring strong {
+  max-width: 108px !important;
+  color: #15171d !important;
+  font-size: 0.78rem !important;
+  font-weight: 880 !important;
+  line-height: 1.08 !important;
+}
+
+.workspace-shell .census-ring span {
+  color: #15171d !important;
+  font-size: 1.54rem !important;
+  font-weight: 820 !important;
+  line-height: 0.95 !important;
+}
+
+.workspace-shell .census-ring small {
+  color: rgba(21, 23, 29, 0.56) !important;
+  font-size: 0.54rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.workspace-shell .dashboard-link-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  margin-top: 12px !important;
+}
+
+.workspace-shell .dashboard-link-row button,
+.workspace-shell .dashboard-panel-link {
+  min-height: 34px !important;
+  border: 1px solid rgba(201, 79, 79, 0.34) !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background: rgba(201, 79, 79, 0.12) !important;
+  font-size: 0.64rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  cursor: pointer !important;
+}
+
+.workspace-shell .dashboard-link-row button {
+  padding: 0 12px !important;
+}
+
+.workspace-shell .dashboard-panel-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  margin-top: 12px !important;
+  padding: 0 14px !important;
+}
+
+.workspace-shell .dashboard-link-row button:hover,
+.workspace-shell .dashboard-panel-link:hover {
+  border-color: rgba(201, 79, 79, 0.72) !important;
+  background: rgba(201, 79, 79, 0.22) !important;
+}
+
+.workspace-shell .area-contact-table button:hover,
+.workspace-shell .area-mini-list button:hover {
+  color: #ffffff !important;
+  background: rgba(201, 79, 79, 0.1) !important;
+}
+
+@media (max-width: 760px) {
+  .workspace-shell .census-ring {
+    width: min(292px, 82vw) !important;
+  }
+
+  .workspace-shell .census-ring > div {
+    width: 118px !important;
+    height: 118px !important;
+  }
+}
+
 @media (max-width: 420px) {
   .workspace-shell .area-topbar-brand {
     width: 178px !important;
