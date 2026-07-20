@@ -22,6 +22,553 @@
   --radius-sm: 14px;
 }
 
+/* Telefonista tool */
+.telefonista-shell {
+  min-height: 100vh;
+  padding: 34px clamp(18px, 4vw, 52px) 44px;
+  color: #f8f8fa;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(130, 31, 36, 0.34), transparent 34rem),
+    radial-gradient(circle at 84% 14%, rgba(255, 255, 255, 0.08), transparent 24rem),
+    linear-gradient(180deg, #17090d 0%, #09090c 42%, #060608 100%);
+}
+
+.telefonista-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: clamp(34px, 6vw, 70px);
+}
+
+.telefonista-header img {
+  width: clamp(150px, 18vw, 240px);
+  max-width: 100%;
+}
+
+.telefonista-header .telefonista-ghost-button:last-child {
+  justify-self: end;
+}
+
+.telefonista-ghost-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 17px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.telefonista-hero {
+  max-width: 850px;
+  margin-bottom: 28px;
+}
+
+.telefonista-hero span,
+.telefonista-section-title span,
+.telefonista-script-head span,
+.telefonista-history span {
+  color: #ff595d;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.telefonista-hero h1 {
+  margin: 8px 0 14px;
+  font-size: clamp(3.2rem, 10vw, 7rem);
+  line-height: 0.9;
+  letter-spacing: 0;
+}
+
+.telefonista-hero p {
+  max-width: 760px;
+  margin: 0;
+  color: rgba(248, 248, 250, 0.74);
+  font-size: clamp(1rem, 1.8vw, 1.22rem);
+  line-height: 1.65;
+}
+
+.telefonista-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.82fr) minmax(420px, 1.5fr) minmax(300px, 0.95fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.telefonista-card,
+.telefonista-history,
+.telefonista-call-list article {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  background: rgba(18, 18, 23, 0.84);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.34);
+}
+
+.telefonista-card {
+  padding: 20px;
+}
+
+.telefonista-section-title,
+.telefonista-script-head,
+.telefonista-checklist-head,
+.telefonista-history {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.telefonista-section-title {
+  justify-content: flex-start;
+  margin-bottom: 17px;
+}
+
+.telefonista-section-title svg,
+.telefonista-notice svg,
+.telefonista-call-list svg {
+  color: #ff595d;
+  flex: 0 0 auto;
+}
+
+.telefonista-fields {
+  display: grid;
+  gap: 11px;
+}
+
+.telefonista-fields label,
+.telefonista-outcome {
+  display: grid;
+  gap: 7px;
+  color: rgba(248, 248, 250, 0.66);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.telefonista-fields input,
+.telefonista-notes-panel textarea,
+.telefonista-outcome select {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.065);
+  font: inherit;
+  font-weight: 750;
+  outline: none;
+}
+
+.telefonista-fields input,
+.telefonista-outcome select {
+  min-height: 46px;
+  padding: 0 13px;
+}
+
+.telefonista-fields input:focus,
+.telefonista-notes-panel textarea:focus,
+.telefonista-outcome select:focus {
+  border-color: rgba(255, 89, 93, 0.78);
+  box-shadow: 0 0 0 3px rgba(255, 89, 93, 0.14);
+}
+
+.telefonista-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.telefonista-mode-switch button,
+.telefonista-timer button,
+.telefonista-actions button,
+.telefonista-history button,
+.telefonista-phase-nav button,
+.telefonista-checklist button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.telefonista-mode-switch button {
+  min-height: 42px;
+  font-size: 0.68rem;
+}
+
+.telefonista-mode-switch button.active,
+.telefonista-phase-nav button.active,
+.telefonista-checklist button.checked {
+  border-color: rgba(255, 89, 93, 0.72);
+  background: linear-gradient(135deg, rgba(255, 75, 78, 0.28), rgba(120, 28, 33, 0.5));
+}
+
+.telefonista-timer {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.telefonista-timer small {
+  color: rgba(248, 248, 250, 0.62);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.telefonista-timer strong {
+  font-size: clamp(2.6rem, 4vw, 3.8rem);
+  line-height: 1;
+}
+
+.telefonista-timer div,
+.telefonista-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.telefonista-timer button,
+.telefonista-actions button,
+.telefonista-history button {
+  min-height: 43px;
+  font-size: 0.7rem;
+}
+
+.telefonista-script-panel {
+  min-height: 690px;
+}
+
+.telefonista-script-head {
+  margin-bottom: 16px;
+}
+
+.telefonista-script-head h2 {
+  margin: 5px 0 0;
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  line-height: 1;
+}
+
+.telefonista-script-head strong {
+  padding: 10px 13px;
+  border: 1px solid rgba(255, 89, 93, 0.44);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 89, 93, 0.12);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.telefonista-phase-nav {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.telefonista-phase-nav button {
+  min-height: 58px;
+  padding: 8px;
+  font-size: 0.62rem;
+}
+
+.telefonista-script-lines {
+  display: grid;
+  gap: 12px;
+}
+
+.telefonista-script-lines article {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 14px;
+  align-items: start;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.048);
+}
+
+.telefonista-script-lines span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  color: #fff;
+  background: #c93438;
+  font-weight: 950;
+}
+
+.telefonista-script-lines p,
+.telefonista-objections p {
+  margin: 0;
+  color: rgba(248, 248, 250, 0.86);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.telefonista-objections {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.telefonista-objections h3 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.telefonista-objections div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.telefonista-objections details {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.telefonista-objections summary {
+  padding: 13px;
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.telefonista-objections p {
+  padding: 0 13px 13px;
+  font-size: 0.9rem;
+}
+
+.telefonista-notes-panel textarea {
+  min-height: 178px;
+  padding: 14px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.telefonista-checklist-head {
+  margin: 17px 0 8px;
+  color: rgba(248, 248, 250, 0.76);
+  font-weight: 900;
+}
+
+.telefonista-progress-bar {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.telefonista-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff595d, #b5161d);
+}
+
+.telefonista-checklist {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.telefonista-checklist button {
+  justify-content: flex-start;
+  min-height: 42px;
+  padding: 0 12px;
+  font-size: 0.66rem;
+}
+
+.telefonista-outcome {
+  margin: 14px 0;
+}
+
+.telefonista-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.telefonista-actions button:first-child,
+.telefonista-history button {
+  background: #c93438;
+  border-color: #e1494d;
+}
+
+.telefonista-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 14px;
+  padding: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  color: rgba(248, 248, 250, 0.78);
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.telefonista-history {
+  margin-top: 18px;
+  padding: 16px 18px;
+}
+
+.telefonista-history strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.8rem;
+}
+
+.telefonista-history button {
+  min-width: 190px;
+}
+
+.telefonista-call-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.telefonista-call-list article {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 14px;
+  color: rgba(248, 248, 250, 0.75);
+  line-height: 1.35;
+}
+
+.telefonista-call-list strong {
+  display: block;
+  color: #fff;
+}
+
+@media (max-width: 1180px) {
+  .telefonista-grid {
+    grid-template-columns: minmax(270px, 0.8fr) minmax(0, 1.2fr);
+  }
+
+  .telefonista-notes-panel {
+    grid-column: 1 / -1;
+  }
+
+  .telefonista-call-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .telefonista-shell {
+    padding: 18px 14px 30px;
+  }
+
+  .telefonista-header {
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    margin-bottom: 34px;
+  }
+
+  .telefonista-header img {
+    justify-self: center;
+    width: 128px;
+  }
+
+  .telefonista-ghost-button {
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 0.62rem;
+  }
+
+  .telefonista-hero h1 {
+    font-size: clamp(3.25rem, 18vw, 4.8rem);
+  }
+
+  .telefonista-hero p {
+    font-size: 1rem;
+  }
+
+  .telefonista-grid,
+  .telefonista-call-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .telefonista-card {
+    padding: 15px;
+    border-radius: 18px;
+  }
+
+  .telefonista-script-panel {
+    min-height: auto;
+  }
+
+  .telefonista-phase-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+
+  .telefonista-phase-nav button {
+    flex: 0 0 120px;
+  }
+
+  .telefonista-script-lines article {
+    grid-template-columns: 34px 1fr;
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .telefonista-script-lines span {
+    width: 30px;
+    height: 30px;
+  }
+
+  .telefonista-objections div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .telefonista-actions,
+  .telefonista-timer div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .telefonista-history {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .telefonista-history button {
+    width: 100%;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -8214,8 +8761,7 @@ tbody tr:hover {
     color: #111111 !important;
   }
 
-  .workspace-shell .workspace-status,
-  .workspace-shell .module-heading {
+  .workspace-shell .workspace-status {
     display: none !important;
   }
 

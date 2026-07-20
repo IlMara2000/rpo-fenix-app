@@ -53,6 +53,24 @@ import {
 import "./styles.css";
 import { PlanimetrieTool } from "./PlanimetrieTool";
 import { RpoTool } from "./RpoTool";
+import { TelefonistaTool } from "./TelefonistaTool";
+import { StructuredQuickForm } from "./crm/components/StructuredQuickForm";
+import {
+  activityFormSections,
+  censusContactFormSections,
+  contactFilterSections,
+  contactFormSections,
+  propertyFilterSections,
+  propertyFormSections,
+  requestFormSections,
+} from "./crm/featureForms";
+import type {
+  ActivityDetails,
+  CensusContactDetails,
+  ContactDetails,
+  PropertyDetails,
+  RequestDetails,
+} from "./crm/domain";
 
 declare global {
   interface Window {
@@ -131,6 +149,7 @@ type PropertyRecord = {
   cadastralCategory?: string;
   rooms?: string;
   source?: string;
+  details?: PropertyDetails;
   updatedAt: string;
 };
 
@@ -142,6 +161,7 @@ type RequestRecord = {
   match: string;
   proposal: string;
   status: string;
+  details?: RequestDetails;
   updatedAt: string;
 };
 
@@ -165,6 +185,7 @@ type ContactRecord = {
   property?: string;
   note: string;
   nextStep: string;
+  details?: ContactDetails | CensusContactDetails;
   updatedAt: string;
 };
 
@@ -178,7 +199,8 @@ type ActivityRecord = {
   property: string;
   status: string;
   note: string;
-  day: "Oggi" | "Domani" | "Settimana";
+  day: "Oggi" | "Domani" | "Settimana" | "Passate" | "Future";
+  details?: ActivityDetails;
   updatedAt: string;
 };
 
@@ -450,6 +472,13 @@ const selectorPrograms: ProgramCard[] = [
       "Suite completa per l'estrazione, il taglio e la bonifica dei numeri di telefono con il portale del Registro Pubblico delle Opposizioni.",
     path: "/rpo",
     Icon: PhoneCall,
+  },
+  {
+    title: "TELEFONISTA",
+    description:
+      "Script guidato per chiamare proprietari censiti, raccogliere note e fissare perizie immobiliari.",
+    path: "/telefonista",
+    Icon: MessageSquareText,
   },
   {
     title: "PLANIMETRIE",
@@ -1482,6 +1511,10 @@ function AppRouter() {
     return <RpoTool onNavigate={navigate} />;
   }
 
+  if (path.startsWith("/telefonista")) {
+    return <TelefonistaTool onNavigate={navigate} />;
+  }
+
   return <ProgramSelector onNavigate={navigate} />;
 }
 
@@ -2155,19 +2188,6 @@ function Workspace({
             ) : null}
           </section>
 
-          <ModuleTabs
-            pages={currentPages}
-            activePage={currentPage.key}
-            onSelect={(pageKey) => {
-              setActivePage(pageKey);
-              localStorage.setItem("fenix-suite-active-module", safeActiveModule);
-              localStorage.setItem("fenix-suite-active-page", pageKey);
-              writeWorkspaceRoute(safeActiveModule, pageKey);
-              const page = currentPages.find((item) => item.key === pageKey);
-              setNotice(`${currentModule.label} / ${page?.label ?? "Sezione"}: pronto.`);
-            }}
-          />
-
           <AnimatePresence mode="wait">
             <motion.div
               key={`${safeActiveModule}-${currentPage.key}`}
@@ -2240,36 +2260,6 @@ function CrmTopbar({
         Esci
       </button>
     </header>
-  );
-}
-
-function ModuleTabs({
-  pages,
-  activePage,
-  onSelect,
-}: {
-  pages: ModulePage[];
-  activePage: string;
-  onSelect: (pageKey: string) => void;
-}) {
-  if (pages.length <= 1) {
-    return null;
-  }
-
-  return (
-    <nav className="submodule-nav" aria-label="Sottomenu modulo">
-      {pages.map(({ key, label, Icon }) => (
-        <button
-          className={key === activePage ? "active" : ""}
-          key={key}
-          type="button"
-          onClick={() => onSelect(key)}
-        >
-          <Icon size={16} />
-          {label}
-        </button>
-      ))}
-    </nav>
   );
 }
 
@@ -2726,6 +2716,8 @@ function PropertiesView({
   onAction: (message: string) => void;
 }) {
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [propertyView, setPropertyView] = useState<"list" | "map">("list");
+  const [showPropertyDetails, setShowPropertyDetails] = useState(false);
   const baseRows = data.properties.filter((item) => {
     if (pageKey === "immobili-vendite") {
       return item.kind === "vendita";
@@ -2737,7 +2729,17 @@ function PropertiesView({
   });
   const filteredBaseRows = baseRows.filter((item) => {
     const ownerName = splitFullName(item.owner);
-    return matchesStructuredFilters(filters, {
+    const details = item.details ?? {};
+    const selectedFilters = activeDomainFilters(filters);
+    const {
+      minimumPrice,
+      maximumPrice,
+      minimumArea,
+      maximumArea,
+      minimumRooms,
+      ...textFilters
+    } = selectedFilters;
+    const textMatches = matchesStructuredFilters(textFilters, {
       Nome: ownerName.firstName || item.owner || item.title,
       Cognome: ownerName.lastName || item.owner,
       Numero: item.phone || "",
@@ -2747,7 +2749,39 @@ function PropertiesView({
       Subalterno: item.subaltern || "",
       "Categoria catastale": item.cadastralCategory || "",
       Vani: item.rooms || "",
+      referenceCode: details.referenceCode || item.code,
+      title: item.title,
+      managementType: details.managementType || item.kind,
+      propertyType: details.propertyType || "",
+      commercialStatus: details.commercialStatus || item.status,
+      assignedAgent: details.assignedAgent || "",
+      municipality: details.municipality || item.zone,
+      district: details.district || item.zone,
+      street: details.street || "",
+      ownerName: item.owner,
+      ownerPhone: item.phone || "",
+      cadastralSheet: item.sheet || details.cadastralSheet || "",
+      cadastralParcel: item.parcel || details.cadastralParcel || "",
+      cadastralSubaltern: item.subaltern || details.cadastralSubaltern || "",
+      cadastralCategory: item.cadastralCategory || details.cadastralCategory || "",
+      energyClass: details.energyClass || "",
+      isAuction: details.isAuction || "No",
+      publishedOnly:
+        details.publishOnWebsite === "Si" || !/bozza|privato/i.test(item.portals)
+          ? "Si"
+          : "No",
     });
+    const price = parseNumericValue(item.price || details.askingPrice);
+    const area = parseNumericValue(details.commercialArea);
+    const rooms = parseNumericValue(item.rooms || details.rooms);
+    return (
+      textMatches &&
+      (!minimumPrice || price >= parseNumericValue(minimumPrice)) &&
+      (!maximumPrice || price <= parseNumericValue(maximumPrice)) &&
+      (!minimumArea || area >= parseNumericValue(minimumArea)) &&
+      (!maximumArea || area <= parseNumericValue(maximumArea)) &&
+      (!minimumRooms || rooms >= parseNumericValue(minimumRooms))
+    );
   });
   const rows = useFilteredRows(filteredBaseRows, query, (item) =>
     [
@@ -2789,6 +2823,27 @@ function PropertiesView({
           />
         </Panel>
       ) : null}
+      {!newMode ? (
+        <Panel className="span-12" title="Vista e operazioni elenco">
+          <div className="tool-grid">
+            <ToolButton
+              label={showPropertyDetails ? "Nascondi dettagli" : "Mostra dettagli"}
+              Icon={PanelsTopLeft}
+              onClick={() => setShowPropertyDetails((visible) => !visible)}
+            />
+            <ToolButton
+              label={propertyView === "map" ? "Visualizza elenco" : "Visualizza mappa"}
+              Icon={propertyView === "map" ? ListChecks : MapPinned}
+              onClick={() => setPropertyView((view) => (view === "map" ? "list" : "map"))}
+            />
+            <ToolButton
+              label="Stampa elenco"
+              Icon={FileBadge}
+              onClick={() => window.print()}
+            />
+          </div>
+        </Panel>
+      ) : null}
       <Panel
         className={searchMode ? "span-7" : "span-8"}
         title={newMode ? "Schede recenti" : "Archivio immobili"}
@@ -2798,109 +2853,111 @@ function PropertiesView({
           onAction("Filtri immobili azzerati.");
         }}
       >
-        <DataTable
-          columns={["Codice", "Immobile", "Zona", "Stato", "Prezzo", "Catasto", "Portali"]}
-          rows={rows.map((item) => [
-            item.code,
-            item.title,
-            item.zone,
-            item.status,
-            item.price,
-            cadastralLabel(item),
-            item.portals,
-          ])}
-          actions={[
-            {
-              label: "Apri",
-              onClick: (rowIndex) => {
-                const property = rows[rowIndex];
-                if (!property) {
-                  return;
-                }
-                onCommit(
-                  (currentData) => ({
-                    ...currentData,
-                    properties: currentData.properties.map((item) =>
-                      item.id === property.id
-                        ? { ...item, status: "Scheda aperta", updatedAt: nowLabel() }
-                        : item,
-                    ),
-                  }),
-                  `Scheda ${property.code} aperta e aggiornata.`,
-                );
+        {propertyView === "map" && !newMode ? (
+          <div className="map-strip">
+            {rows.length ? rows.map((item) => (
+              <button key={item.id} type="button" onClick={() => onAction(`Immobile ${item.code} selezionato sulla mappa.`)}>
+                <MapPinned size={18} />
+                <strong>{item.title}</strong>
+                <span>{item.zone} / {item.price}</span>
+              </button>
+            )) : (
+              <EmptyState title="Nessun immobile da mostrare" text="Modifica i filtri per popolare la vista mappa." />
+            )}
+          </div>
+        ) : (
+          <DataTable
+            columns={showPropertyDetails
+              ? ["Codice", "Immobile", "Zona", "Stato", "Prezzo", "Catasto", "Superficie", "Locali", "Portali"]
+              : ["Codice", "Immobile", "Zona", "Stato", "Prezzo", "Catasto", "Portali"]}
+            rows={rows.map((item) => showPropertyDetails
+              ? [
+                  item.code,
+                  item.title,
+                  item.zone,
+                  item.status,
+                  item.price,
+                  cadastralLabel(item),
+                  item.details?.commercialArea ? `${item.details.commercialArea} m²` : "-",
+                  item.rooms || item.details?.rooms || "-",
+                  item.portals,
+                ]
+              : [
+                  item.code,
+                  item.title,
+                  item.zone,
+                  item.status,
+                  item.price,
+                  cadastralLabel(item),
+                  item.portals,
+                ])}
+            actions={[
+              {
+                label: "Apri",
+                onClick: (rowIndex) => {
+                  const property = rows[rowIndex];
+                  if (!property) {
+                    return;
+                  }
+                  onCommit(
+                    (currentData) => ({
+                      ...currentData,
+                      properties: currentData.properties.map((item) =>
+                        item.id === property.id
+                          ? { ...item, status: "Scheda aperta", updatedAt: nowLabel() }
+                          : item,
+                      ),
+                    }),
+                    `Scheda ${property.code} aperta e aggiornata.`,
+                  );
+                },
               },
-            },
-          ]}
-        />
+            ]}
+          />
+        )}
       </Panel>
-      <Panel className={newMode ? "span-4 crm-form-panel" : "span-4"} title={newMode ? "Nuovo immobile" : "Azioni scheda"}>
-        <QuickForm
-          button={newMode ? "Crea scheda" : "Salva filtro"}
-          fields={newMode
-            ? [
-                { name: "Riferimento", required: false },
-                "Titolo immobile",
-                { name: "Tipologia", options: ["Appartamento", "Attico", "Villa", "Box", "Negozio", "Ufficio", "Terreno"], required: false },
-                "Zona",
-                { name: "Tipo gestione", options: ["Vendita", "Affitto"] },
-                { name: "Stato trattativa", options: ["Bozza", "Notizia", "In valutazione", "In gestione", "Sospeso", "Venduto", "Affittato"], required: false },
-                "Prezzo richiesto",
-                "Proprietario",
-                { name: "Numero", required: false },
-                { name: "Codice fiscale", required: false },
-                { name: "Foglio", required: false },
-                { name: "Particella", required: false },
-                { name: "Subalterno", required: false },
-                { name: "Categoria catastale", options: cadastralCategoryOptions, required: false },
-                { name: "Vani", options: roomOptions, required: false },
-                { name: "Tipo incarico", options: ["Non indicato", "Esclusiva", "Non esclusiva", "Collaborazione"], required: false },
-                { name: "Occupazione", options: ["Non indicato", "Libero", "Occupato", "Locato"], required: false },
-                { name: "Stato conservazione", options: ["Non indicato", "Nuovo", "Buono", "Da ristrutturare", "Ristrutturato"], required: false },
-                { name: "Pubblica sito", options: ["No", "Si"], required: false },
-                { name: "Occasione", options: ["No", "Si"], required: false },
-                { name: "Last minute", options: ["No", "Si"], required: false },
-                { name: "Descrizione", required: false },
-              ]
-            : searchFilterFields}
-          required={newMode}
+      <Panel
+        className={newMode ? "span-12 crm-form-panel" : "span-4"}
+        title={newMode ? "Scheda immobile completa" : "Filtri avanzati"}
+      >
+        <StructuredQuickForm
+          requiredDefault={false}
+          sections={newMode ? propertyFormSections : propertyFilterSections}
+          submitLabel={newMode ? "Crea scheda" : "Applica filtri"}
           onSubmit={(values) => {
             if (!newMode) {
-              setFilters(values);
-              onAction(`Filtro immobili applicato: ${valuesSummary(values)}.`);
+              setFilters(activeDomainFilters(values));
+              onAction(`Filtro immobili applicato: ${valuesSummary(activeDomainFilters(values))}.`);
               return;
             }
-            const title = fieldValue(values, "Titolo immobile", "Nuovo immobile");
-            const price = fieldValue(values, "Prezzo richiesto", "Da valutare");
-            const kind = fieldValue(values, "Tipo gestione", "Vendita").toLowerCase().includes("affitto") ? "affitto" : "vendita";
+            const managementType = fieldValue(values, "managementType", "Vendita");
             const newProperty: PropertyRecord = {
               id: makeId("property"),
-              code: `FS-${String(250 + data.properties.length).padStart(3, "0")}`,
-              title,
-              zone: fieldValue(values, "Zona", "Zona da definire"),
-              status: fieldValue(values, "Stato trattativa", "Bozza"),
-              price,
-              owner: fieldValue(values, "Proprietario", "Proprietario da associare"),
-              portals: "Bozza",
-              kind,
-              phone: fieldValue(values, "Numero"),
-              taxCode: fieldValue(values, "Codice fiscale"),
-              sheet: fieldValue(values, "Foglio"),
-              parcel: fieldValue(values, "Particella"),
-              subaltern: fieldValue(values, "Subalterno"),
-              cadastralCategory: fieldValue(values, "Categoria catastale"),
-              rooms: fieldValue(values, "Vani"),
-              source: [
-                "Inserimento manuale",
-                fieldValue(values, "Riferimento"),
-                fieldValue(values, "Tipologia"),
-                fieldValue(values, "Tipo incarico"),
-                fieldValue(values, "Occupazione"),
-                fieldValue(values, "Stato conservazione"),
-                fieldValue(values, "Pubblica sito") === "Si" ? "Pubblica sito" : "",
-                fieldValue(values, "Occasione") === "Si" ? "Occasione" : "",
-                fieldValue(values, "Last minute") === "Si" ? "Last minute" : "",
-                fieldValue(values, "Descrizione"),
-              ].filter(Boolean).join(" - "),
+              code: fieldValue(
+                values,
+                "referenceCode",
+                `FS-${String(250 + data.properties.length).padStart(3, "0")}`,
+              ),
+              title: fieldValue(values, "title", "Nuovo immobile"),
+              zone: fieldValue(
+                values,
+                "district",
+                fieldValue(values, "municipality", "Zona da definire"),
+              ),
+              status: fieldValue(values, "commercialStatus", "Bozza"),
+              price: fieldValue(values, "askingPrice", "Da valutare"),
+              owner: fieldValue(values, "ownerName", "Proprietario da associare"),
+              portals: fieldValue(values, "publishOnPortals") === "Si" ? "Da sincronizzare" : "Bozza",
+              kind: managementType.toLowerCase().includes("affitto") ? "affitto" : "vendita",
+              phone: fieldValue(values, "ownerPhone"),
+              taxCode: fieldValue(values, "ownerTaxCode"),
+              sheet: fieldValue(values, "cadastralSheet"),
+              parcel: fieldValue(values, "cadastralParcel"),
+              subaltern: fieldValue(values, "cadastralSubaltern"),
+              cadastralCategory: fieldValue(values, "cadastralCategory"),
+              rooms: fieldValue(values, "cadastralRooms", fieldValue(values, "rooms")),
+              source: fieldValue(values, "acquisitionSource", "Inserimento manuale"),
+              details: values,
               updatedAt: nowLabel(),
             };
             onCommit(
@@ -3016,13 +3073,25 @@ function RequestsView({
           onCommit(
             (currentData) => ({
               ...currentData,
-              requests: currentData.requests.map((request, index) => ({
-                ...request,
-                match: `${Math.max(72, 95 - index * 4)}%`,
-                proposal: currentData.properties[index % Math.max(currentData.properties.length, 1)]?.title || request.proposal,
-                status: request.status === "Nuova" ? "Qualificata" : request.status,
-                updatedAt: nowLabel(),
-              })),
+              requests: currentData.requests.map((request) => {
+                const rankedProperties = currentData.properties
+                  .map((property) => ({
+                    property,
+                    score: calculateRequestMatch(request, property),
+                  }))
+                  .sort((first, second) => second.score - first.score);
+                const bestMatch = rankedProperties.find(({ score }) => score > 0);
+                return {
+                  ...request,
+                  match: bestMatch ? `${bestMatch.score}%` : "0%",
+                  proposal: bestMatch?.property.title || "Da abbinare",
+                  status:
+                    request.status === "Nuova" && bestMatch && bestMatch.score >= 60
+                      ? "Qualificata"
+                      : request.status,
+                  updatedAt: nowLabel(),
+                };
+              }),
             }),
             "Matching automatico aggiornato su tutte le richieste.",
           )
@@ -3072,85 +3141,84 @@ function RequestsView({
           ]}
         />
       </Panel>
-      <Panel className={pageKey === "richieste-nuova" ? "span-4 crm-form-panel" : "span-4"} title={pageKey === "richieste-nuova" ? "Nuova richiesta" : "Filtro richieste"}>
-        <QuickForm
-          button={pageKey === "richieste-nuova" ? "Salva richiesta" : "Applica filtro"}
-          fields={pageKey === "richieste-nuova"
-            ? [
-                "Cliente",
-                { name: "Stato trattativa", options: ["Nuova", "Qualificata", "Visita", "Trattativa", "Chiusa"], required: false },
-                { name: "Tipo gestione", options: ["Vendita", "Affitto", "Vendita e affitto"], required: false },
-                { name: "Tipologia ottimale", options: ["Appartamento", "Attico", "Villa", "Box", "Negozio", "Ufficio"], required: false },
-                { name: "Tipologie tollerate", required: false },
-                { name: "Zone preferite", required: false },
-                { name: "Zone tollerate", required: false },
-                "Budget",
-                { name: "Prezzo minimo", required: false },
-                { name: "Prezzo massimo", required: false },
-                { name: "Stato conservazione", options: ["Qualsiasi", "Nuovo", "Buono", "Da ristrutturare", "Ristrutturato"], required: false },
-                { name: "Caratteristiche indispensabili", required: false },
-              ]
-            : searchFilterFields}
-          required={pageKey === "richieste-nuova"}
-          onSubmit={(values) => {
-            if (pageKey !== "richieste-nuova") {
-              onAction(`Filtro richieste applicato: ${valuesSummary(values)}.`);
-              return;
-            }
-            const proposal = data.properties[0]?.title || "Da abbinare";
-            const newRequest: RequestRecord = {
-              id: makeId("request"),
-              client: fieldValue(values, "Cliente", "Nuovo cliente"),
-              target: [
-                fieldValue(values, "Tipo gestione", "Vendita"),
-                fieldValue(values, "Tipologia ottimale", "Immobile"),
-                fieldValue(values, "Budget", "budget da definire"),
-                fieldValue(values, "Prezzo minimo") || fieldValue(values, "Prezzo massimo")
-                  ? `range ${fieldValue(values, "Prezzo minimo", "0")} - ${fieldValue(values, "Prezzo massimo", "n/d")}`
-                  : "",
-              ].filter(Boolean).join(" / "),
-              area: fieldValue(values, "Zone preferite", "Zona da definire"),
-              match: proposal === "Da abbinare" ? "0%" : "91%",
-              proposal,
-              status: fieldValue(values, "Stato trattativa", "Nuova"),
-              updatedAt: nowLabel(),
-            };
-            onCommit(
-              (currentData) => ({
-                ...currentData,
-                requests: [newRequest, ...currentData.requests],
-                contacts: currentData.contacts.some((contact) => contact.name === newRequest.client)
-                  ? currentData.contacts
-                  : [
-                      {
-                        id: makeId("contact"),
-                        name: newRequest.client,
-                        type: "Acquirente",
-                        status: "Richiesta inserita",
-                        source: "Richieste",
-                        owner: "Daniele",
-                        phone: "",
-                        note: newRequest.target,
-                        nextStep: "Matching immobili",
-                        updatedAt: nowLabel(),
-                      },
-                      ...currentData.contacts,
-                    ],
-                activities: [
-                  createActivity({
-                    title: `Nuova richiesta ${newRequest.client}`,
-                    type: "Richiesta",
-                    contact: newRequest.client,
-                    property: newRequest.proposal,
-                    note: `${newRequest.target} - ${newRequest.area}.`,
-                  }),
-                  ...currentData.activities,
-                ],
-              }),
-              `Richiesta salvata per ${newRequest.client}.`,
-            );
-          }}
-        />
+      <Panel
+        className={pageKey === "richieste-nuova" ? "span-12 crm-form-panel" : "span-4"}
+        title={pageKey === "richieste-nuova" ? "Preferenza completa" : "Filtro richieste"}
+      >
+        {pageKey === "richieste-nuova" ? (
+          <StructuredQuickForm
+            requiredDefault={false}
+            sections={requestFormSections}
+            submitLabel="Salva richiesta"
+            onSubmit={(values) => {
+              const rankedProperties = data.properties
+                .map((property) => ({
+                  property,
+                  score: calculateRequestMatch({ details: values }, property),
+                }))
+                .sort((first, second) => second.score - first.score);
+              const bestMatch = rankedProperties.find(({ score }) => score > 0);
+              const newRequest: RequestRecord = {
+                id: makeId("request"),
+                client: fieldValue(values, "contactId", "Nuovo cliente"),
+                target: [
+                  fieldValue(values, "managementType", "Acquisto"),
+                  fieldValue(values, "preferredPropertyTypes", "Immobile"),
+                  fieldValue(values, "maximumBudget")
+                    ? `fino a ${fieldValue(values, "maximumBudget")}`
+                    : "budget da definire",
+                ].join(" / "),
+                area: fieldValue(values, "preferredAreas", "Zona da definire"),
+                match: bestMatch ? `${bestMatch.score}%` : "0%",
+                proposal: bestMatch?.property.title || "Da abbinare",
+                status: fieldValue(values, "requestStatus", "Nuova"),
+                details: values,
+                updatedAt: nowLabel(),
+              };
+              onCommit(
+                (currentData) => ({
+                  ...currentData,
+                  requests: [newRequest, ...currentData.requests],
+                  contacts: currentData.contacts.some((contact) => sameLabel(contact.name, newRequest.client))
+                    ? currentData.contacts
+                    : [
+                        {
+                          id: makeId("contact"),
+                          name: newRequest.client,
+                          type: "Acquirente",
+                          status: "Richiesta inserita",
+                          source: "Richieste",
+                          owner: fieldValue(values, "assignedAgent", "Daniele"),
+                          phone: "",
+                          note: newRequest.target,
+                          nextStep: "Matching immobili",
+                          updatedAt: nowLabel(),
+                        },
+                        ...currentData.contacts,
+                      ],
+                  activities: [
+                    createActivity({
+                      title: `Nuova richiesta ${newRequest.client}`,
+                      type: "Richiesta",
+                      contact: newRequest.client,
+                      property: newRequest.proposal,
+                      note: `${newRequest.target} - ${newRequest.area}.`,
+                    }),
+                    ...currentData.activities,
+                  ],
+                }),
+                `Richiesta salvata per ${newRequest.client}.`,
+              );
+            }}
+          />
+        ) : (
+          <QuickForm
+            button="Applica filtro"
+            fields={searchFilterFields}
+            required={false}
+            onSubmit={(values) => onAction(`Filtro richieste applicato: ${valuesSummary(values)}.`)}
+          />
+        )}
       </Panel>
       <Panel className="span-12" title="Pipeline richieste">
         <div className="pipeline">
@@ -3183,7 +3251,16 @@ function ContactsView({
   const [filters, setFilters] = useState<Record<string, string>>({});
   const filteredContacts = data.contacts.filter((item) => {
     const splitName = splitFullName(item.name);
-    return matchesStructuredFilters(filters, {
+    const details = item.details ?? {};
+    const selectedFilters = activeDomainFilters(filters);
+    const {
+      nextContactFrom,
+      nextContactTo,
+      includeDoNotContact,
+      ...textFilters
+    } = selectedFilters;
+    const nextContactDate = details.nextContactDate || "";
+    return matchesStructuredFilters(textFilters, {
       Nome: item.firstName || splitName.firstName || item.name,
       Cognome: item.lastName || splitName.lastName || item.name,
       Numero: item.phone || "",
@@ -3193,7 +3270,25 @@ function ContactsView({
       Subalterno: item.subaltern || "",
       "Categoria catastale": item.cadastralCategory || "",
       Vani: item.rooms || "",
-    });
+      firstName: item.firstName || splitName.firstName || item.name,
+      lastName: item.lastName || splitName.lastName || item.name,
+      companyName: details.companyName || "",
+      phone: item.phone || details.primaryPhone || "",
+      email: item.email || details.primaryEmail || "",
+      taxCode: item.taxCode || details.taxCode || "",
+      primaryRole: details.primaryRole || item.type,
+      contactStatus: details.contactStatus || item.status,
+      acquisitionSource: details.acquisitionSource || item.source,
+      assignedAgent: details.assignedAgent || item.owner,
+      tag: details.tags || "",
+      hasPrivacyConsent:
+        details.privacyLegalBasis === "Consenso" && !details.privacyRevocationDate
+          ? "Si"
+          : "No",
+    }) &&
+      (!nextContactFrom || (!!nextContactDate && nextContactDate >= nextContactFrom)) &&
+      (!nextContactTo || (!!nextContactDate && nextContactDate <= nextContactTo)) &&
+      (includeDoNotContact === "Si" || details.doNotContact !== "Si");
   });
   const rows = useFilteredRows(filteredContacts, query, (item) =>
     [
@@ -3238,14 +3333,25 @@ function ContactsView({
         }}
       >
         <DataTable
-          columns={["Nome", "Tipo", "Stato", "Numero", "Catasto"]}
-          rows={rows.map((item) => [
-            item.name,
-            item.type,
-            item.status,
-            item.phone || "-",
-            cadastralLabel(item),
-          ])}
+          columns={["Nominativo", "Tipologia", "Contatti", "Ultima attività", "Operatore", "Ricontatto", "Privacy", "Stato"]}
+          rows={rows.map((item) => {
+            const latestActivity = data.activities.find((activity) => sameLabel(activity.contact, item.name));
+            const details = item.details ?? {};
+            return [
+              item.name,
+              item.type,
+              [item.phone, item.email].filter(Boolean).join(" / ") || "-",
+              latestActivity?.updatedAt || "-",
+              item.owner || "-",
+              details.nextContactDate || item.nextStep || "-",
+              details.privacyRevocationDate
+                ? "Revocata"
+                : details.doNotContact === "Si"
+                ? "Non contattare"
+                : details.privacyLegalBasis || "Da verificare",
+              item.status,
+            ];
+          })}
           actions={[
             {
               label: "Chiama",
@@ -3279,66 +3385,43 @@ function ContactsView({
           ]}
         />
       </Panel>
-      <Panel className={pageKey === "nominativi-nuovo" ? "span-4 crm-form-panel" : "span-4"} title={pageKey === "nominativi-nuovo" ? "Nuovo cliente" : "Filtro clienti"}>
-        <QuickForm
-          button={pageKey === "nominativi-nuovo" ? "Aggiungi cliente" : "Filtra"}
-          fields={pageKey === "nominativi-nuovo"
-            ? [
-                "Nome",
-                "Cognome",
-                { name: "Data nascita", required: false },
-                { name: "Luogo nascita", required: false },
-                { name: "Sesso", options: ["Non indicato", "M", "F"], required: false },
-                "Numero",
-                { name: "Email", required: false },
-                { name: "Codice fiscale", required: false },
-                { name: "Tipologia nominativo", options: ["Generico", "Proprietario", "Proprietario affitti", "Acquirente", "Locatario", "Inserzionista", "Segnalatore"], required: false },
-                { name: "Azienda", required: false },
-                { name: "Data acquisizione", required: false },
-                { name: "Data ricontatto", required: false },
-                { name: "Motivo ricontatto", required: false },
-                { name: "Cittadinanza", required: false },
-                { name: "Lingua", required: false },
-                "Esigenza",
-                "Provenienza",
-                { name: "Prossimo passo", required: false },
-              ]
-            : searchFilterFields}
-          required={pageKey === "nominativi-nuovo"}
+      <Panel
+        className={pageKey === "nominativi-nuovo" ? "span-12 crm-form-panel" : "span-4"}
+        title={pageKey === "nominativi-nuovo" ? "Anagrafica completa" : "Filtri nominativi"}
+      >
+        <StructuredQuickForm
+          requiredDefault={false}
+          sections={pageKey === "nominativi-nuovo" ? contactFormSections : contactFilterSections}
+          submitLabel={pageKey === "nominativi-nuovo" ? "Aggiungi nominativo" : "Applica filtri"}
           onSubmit={(values) => {
             if (pageKey !== "nominativi-nuovo") {
-              setFilters(values);
-              onAction(`Filtro clienti applicato: ${valuesSummary(values)}.`);
+              const selectedFilters = activeDomainFilters(values);
+              setFilters(selectedFilters);
+              onAction(`Filtro clienti applicato: ${valuesSummary(selectedFilters)}.`);
               return;
             }
-            const firstName = fieldValue(values, "Nome");
-            const lastName = fieldValue(values, "Cognome");
+            const firstName = fieldValue(values, "firstName");
+            const lastName = fieldValue(values, "lastName");
             const fullName = formatFullName(firstName, lastName);
             const newContact: ContactRecord = {
               id: makeId("contact"),
               name: fullName,
               firstName,
               lastName,
-              type: fieldValue(values, "Tipologia nominativo", fieldValue(values, "Esigenza", "Da qualificare")),
-              status: "Nuovo cliente",
-              source: fieldValue(values, "Provenienza", "Manuale"),
-              owner: "Daniele",
-              phone: fieldValue(values, "Numero"),
-              email: fieldValue(values, "Email"),
-              taxCode: fieldValue(values, "Codice fiscale"),
-              note: [
-                fieldValue(values, "Esigenza"),
-                fieldValue(values, "Data nascita"),
-                fieldValue(values, "Luogo nascita"),
-                fieldValue(values, "Sesso"),
-                fieldValue(values, "Azienda"),
-                fieldValue(values, "Data acquisizione"),
-                fieldValue(values, "Data ricontatto"),
-                fieldValue(values, "Motivo ricontatto"),
-                fieldValue(values, "Cittadinanza"),
-                fieldValue(values, "Lingua"),
-              ].filter(Boolean).join(" - ") || "Inserito manualmente.",
-              nextStep: fieldValue(values, "Prossimo passo", "Primo contatto"),
+              type: fieldValue(values, "primaryRole", "Da qualificare"),
+              status: fieldValue(values, "contactStatus", "Nuovo cliente"),
+              source: fieldValue(values, "acquisitionSource", "Manuale"),
+              owner: fieldValue(values, "assignedAgent", "Daniele"),
+              phone: fieldValue(values, "primaryPhone"),
+              email: fieldValue(values, "primaryEmail"),
+              taxCode: fieldValue(values, "taxCode"),
+              note: fieldValue(values, "contactNotes", "Inserito manualmente."),
+              nextStep: [
+                fieldValue(values, "nextContactDate"),
+                fieldValue(values, "nextContactTime"),
+                fieldValue(values, "nextContactReason"),
+              ].filter(Boolean).join(" / ") || "Primo contatto",
+              details: values,
               updatedAt: nowLabel(),
             };
             onCommit(
@@ -3347,7 +3430,7 @@ function ContactsView({
                 contacts: [newContact, ...currentData.contacts],
                 activities: [
                   createActivity({
-                    title: `Nuovo cliente ${newContact.name}`,
+                    title: `Nuovo nominativo ${newContact.name}`,
                     type: "Anagrafica",
                     contact: newContact.name,
                     note: `${newContact.type} da ${newContact.source}.`,
@@ -3355,7 +3438,7 @@ function ContactsView({
                   ...currentData.activities,
                 ],
               }),
-              `Cliente ${newContact.name} aggiunto.`,
+              `Nominativo ${newContact.name} aggiunto.`,
             );
           }}
         />
@@ -3592,7 +3675,7 @@ function OwnersView({
                   price: "Da valutare",
                   owner: ownerName,
                   portals: "Privato",
-                  kind: "vendita",
+                  kind: "vendita" as const,
                   phone,
                   taxCode,
                   sheet,
@@ -3865,57 +3948,60 @@ function ActivityCenterView({
           ]}
         />
       </Panel>
-      <Panel className={newMode ? "span-4 crm-form-panel" : "span-12"} title={newMode ? "Nuova attivita" : "Filtro attivita"}>
-        <QuickForm
-          button={newMode ? "Salva attivita" : "Filtra attivita"}
-          fields={newMode
-            ? [
-                { name: "Tipo attività", options: ["Telefonata", "WhatsApp", "Email", "Appuntamento", "Visita immobile", "Nota", "Censimento"] },
-                "Cliente / Proprietario",
-                { name: "Immobile", required: false },
-                { name: "Giorno", options: ["Oggi", "Domani", "Settimana"] },
-                "Ora",
-                { name: "Stato", options: ["Aperta", "Da richiamare", "Confermato", "Completata", "Annullata"], required: false },
-                { name: "Esito / Note", required: false },
-                { name: "Prossimo passo", required: false },
-              ]
-            : searchFilterFields}
-          required={newMode}
-          onSubmit={(values) => {
-            if (!newMode) {
+      <Panel className={newMode ? "span-12 crm-form-panel" : "span-12"} title={newMode ? "Nuova attività completa" : "Filtro attività"}>
+        {newMode ? (
+          <StructuredQuickForm
+            requiredDefault={false}
+            sections={activityFormSections}
+            submitLabel="Salva attività"
+            onSubmit={(values) => {
+              const contactName = fieldValue(values, "contactId", "Contatto da definire");
+              const activityType = fieldValue(values, "activityType", "Telefonata");
+              const startDate = fieldValue(values, "startDate");
+              const startTime = fieldValue(values, "startTime", currentTimeLabel());
+              const day = activityDayForDate(startDate);
+              const nextStep = [
+                fieldValue(values, "nextStep"),
+                fieldValue(values, "nextStepDate"),
+                fieldValue(values, "nextStepTime"),
+              ].filter(Boolean).join(" / ") || (day === "Oggi" ? "Aggiornare esito" : day);
+              const newActivity = createActivity({
+                time: [startDate, startTime].filter(Boolean).join(" "),
+                title: fieldValue(values, "title", `${activityType} ${contactName}`),
+                type: activityType,
+                contact: contactName,
+                property: fieldValue(values, "propertyId"),
+                owner: fieldValue(values, "assignedOperator", "Daniele"),
+                status: fieldValue(values, "activityStatus", "Da confermare"),
+                note: [fieldValue(values, "outcome"), fieldValue(values, "notes")].filter(Boolean).join(" - "),
+                day,
+                details: values,
+              });
+              onCommit(
+                (currentData) => ({
+                  ...currentData,
+                  activities: [newActivity, ...currentData.activities],
+                  contacts: currentData.contacts.map((contact) =>
+                    sameLabel(contact.name, contactName)
+                      ? { ...contact, status: newActivity.status, nextStep, updatedAt: nowLabel() }
+                      : contact,
+                  ),
+                }),
+                `Attività salvata per ${contactName}.`,
+              );
+            }}
+          />
+        ) : (
+          <QuickForm
+            button="Filtra attività"
+            fields={searchFilterFields}
+            required={false}
+            onSubmit={(values) => {
               setFilters(values);
-              onAction(`Filtro attivita applicato: ${valuesSummary(values)}.`);
-              return;
-            }
-            const contactName = fieldValue(values, "Cliente / Proprietario", "Contatto da definire");
-            const activityType = fieldValue(values, "Tipo attività", "Telefonata");
-            const day = fieldValue(values, "Giorno", "Oggi") as ActivityRecord["day"];
-            const note = fieldValue(values, "Esito / Note");
-            const nextStep = fieldValue(values, "Prossimo passo", day === "Oggi" ? "Aggiornare esito" : day);
-            const newActivity = createActivity({
-              time: fieldValue(values, "Ora", currentTimeLabel()),
-              title: `${activityType} ${contactName}`,
-              type: activityType,
-              contact: contactName,
-              property: fieldValue(values, "Immobile"),
-              status: fieldValue(values, "Stato", "Aperta"),
-              note,
-              day,
-            });
-            onCommit(
-              (currentData) => ({
-                ...currentData,
-                activities: [newActivity, ...currentData.activities],
-                contacts: currentData.contacts.map((contact) =>
-                  sameLabel(contact.name, contactName)
-                    ? { ...contact, status: newActivity.status, nextStep, updatedAt: nowLabel() }
-                    : contact,
-                ),
-              }),
-              `Attivita salvata per ${contactName}.`,
-            );
-          }}
-        />
+              onAction(`Filtro attività applicato: ${valuesSummary(values)}.`);
+            }}
+          />
+        )}
       </Panel>
     </div>
   );
@@ -3936,7 +4022,7 @@ function AgendaView({
   onAction: (message: string) => void;
   resetVersion: number;
 }) {
-  const [calendarMode, setCalendarMode] = useState<"week" | "month">("week");
+  const [calendarMode, setCalendarMode] = useState<"week" | "month" | "day">("week");
   const [filters, setFilters] = useState<Record<string, string>>({});
   const newMode = pageKey === "agenda-nuova";
   const filteredActivities = data.activities.filter((item) => {
@@ -3958,11 +4044,39 @@ function AgendaView({
   const rows = useFilteredRows(filteredActivities, query, (item) =>
     [item.time, item.title, item.type, item.owner, item.contact, item.property, item.status, item.note, item.day].join(" "),
   );
+  const today = new Date();
+  const tomorrow = new Date(today);
+  const weekEnd = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  weekEnd.setDate(today.getDate() + 6);
+  const todayIso = localIsoDate(today);
+  const tomorrowIso = localIsoDate(tomorrow);
+  const weekEndIso = localIsoDate(weekEnd);
+  const currentMonth = todayIso.slice(0, 7);
+  const rowsForCalendarColumn = (column: "Oggi" | "Domani" | "Settimana") =>
+    rows.filter((item) => {
+      const activityDate = activityIsoDate(item);
+      if (!activityDate) {
+        return item.day === column;
+      }
+      if (column === "Oggi") {
+        return activityDate === todayIso;
+      }
+      if (column === "Domani") {
+        return activityDate === tomorrowIso;
+      }
+      return activityDate > tomorrowIso && activityDate <= weekEndIso;
+    });
+  const currentMonthRows = rows.filter((item) => {
+    const activityDate = activityIsoDate(item);
+    return activityDate ? activityDate.startsWith(currentMonth) : true;
+  });
+  const todayRows = rowsForCalendarColumn("Oggi");
   const monthStats = [
-    { label: "Attivita mese", value: rows.length, detail: "tutte le attivita registrate" },
-    { label: "Telefonate", value: rows.filter((item) => /telefonata/i.test(item.type)).length, detail: "contatti telefonici" },
-    { label: "Visite", value: rows.filter((item) => /visita|appuntamento/i.test(item.type)).length, detail: "visite e appuntamenti" },
-    { label: "Completate", value: rows.filter((item) => /completata/i.test(item.status)).length, detail: "attivita chiuse" },
+    { label: "Attivita mese", value: currentMonthRows.length, detail: "mese corrente" },
+    { label: "Telefonate", value: currentMonthRows.filter((item) => /telefonata/i.test(item.type)).length, detail: "contatti telefonici" },
+    { label: "Visite", value: currentMonthRows.filter((item) => /visita|appuntamento/i.test(item.type)).length, detail: "visite e appuntamenti" },
+    { label: "Completate", value: currentMonthRows.filter((item) => /completata/i.test(item.status)).length, detail: "attivita chiuse" },
   ];
 
   useEffect(() => {
@@ -4025,11 +4139,11 @@ function AgendaView({
           <>
             <div className="agenda-modebar" aria-label="Visualizzazione agenda">
               <button
-                className={calendarMode === "week" ? "active" : ""}
+                aria-label="Vai a oggi"
                 type="button"
-                onClick={() => setCalendarMode("week")}
+                onClick={() => setCalendarMode("day")}
               >
-                Settimana
+                Oggi
               </button>
               <button
                 className={calendarMode === "month" ? "active" : ""}
@@ -4038,14 +4152,28 @@ function AgendaView({
               >
                 Mese
               </button>
+              <button
+                className={calendarMode === "week" ? "active" : ""}
+                type="button"
+                onClick={() => setCalendarMode("week")}
+              >
+                Settimana
+              </button>
+              <button
+                className={calendarMode === "day" ? "active" : ""}
+                type="button"
+                onClick={() => setCalendarMode("day")}
+              >
+                Giorno
+              </button>
             </div>
             {calendarMode === "week" ? (
               <div className="agenda-board">
-                {(["Oggi", "Domani", "Settimana"] as ActivityRecord["day"][]).map((column) => (
+                {(["Oggi", "Domani", "Settimana"] as const).map((column) => (
                   <div key={column}>
                     <h3>{column}</h3>
-                    {rows.filter((item) => item.day === column).length ? (
-                      rows.filter((item) => item.day === column).slice(0, 6).map((item) => (
+                    {rowsForCalendarColumn(column).length ? (
+                      rowsForCalendarColumn(column).slice(0, 6).map((item) => (
                         <article key={`${column}-${item.id}`}>
                           <span>{item.time}</span>
                           <strong>{item.title}</strong>
@@ -4058,7 +4186,7 @@ function AgendaView({
                   </div>
                 ))}
               </div>
-            ) : (
+            ) : calendarMode === "month" ? (
               <div className="month-board">
                 {monthStats.map((item) => (
                   <article key={item.label}>
@@ -4068,72 +4196,78 @@ function AgendaView({
                   </article>
                 ))}
               </div>
+            ) : (
+              <div className="agenda-board">
+                <div>
+                  <h3>Oggi</h3>
+                  {todayRows.length ? (
+                    todayRows.map((item) => (
+                      <article key={`day-${item.id}`}>
+                        <span>{item.time}</span>
+                        <strong>{item.title}</strong>
+                        <small>{item.owner} - {item.type} - {item.status}</small>
+                      </article>
+                    ))
+                  ) : (
+                    <EmptyState title="Nessuna attività per oggi" />
+                  )}
+                </div>
+              </div>
             )}
           </>
         )}
       </Panel>
-      <Panel className={newMode ? "span-4 crm-form-panel" : "span-4"} title={newMode ? "Nuova attivita" : "Filtro agenda"}>
-        <QuickForm
-          button={newMode ? "Pianifica" : "Cerca"}
-          fields={newMode
-            ? [
-                { name: "Tipo attività", options: ["Appuntamento", "Telefonata", "Visita immobile", "E-mail", "WhatsApp", "Promemoria"] },
-                "Titolo",
-                "Cliente / Nominativo",
-                { name: "Immobile", required: false },
-                "Data inizio",
-                "Ora inizio",
-                { name: "Data fine", required: false },
-                { name: "Ora fine", required: false },
-                { name: "Dove", required: false },
-                { name: "Operatore", required: false },
-                { name: "Stato appuntamento", options: ["Da confermare", "Confermato", "Sospeso", "Annullato", "Completato"], required: false },
-                { name: "Visualizza in agenda", options: ["Si", "No"], required: false },
-                { name: "Attività ricorrente", options: ["No", "Giornaliera", "Settimanale", "Mensile"], required: false },
-                { name: "Note", required: false },
-              ]
-            : searchFilterFields}
-          required={newMode}
-          onSubmit={(values) => {
-            if (!newMode) {
+      <Panel className={newMode ? "span-12 crm-form-panel" : "span-4"} title={newMode ? "Nuova attività completa" : "Filtro agenda"}>
+        {newMode ? (
+          <StructuredQuickForm
+            requiredDefault={false}
+            sections={activityFormSections}
+            submitLabel="Pianifica"
+            onSubmit={(values) => {
+              const client = fieldValue(values, "contactId", "Cliente da definire");
+              const date = fieldValue(values, "startDate");
+              const hour = fieldValue(values, "startTime", currentTimeLabel());
+              const dateTime = [date, hour].filter(Boolean).join(" ");
+              const activityType = fieldValue(values, "activityType", "Appuntamento");
+              const newActivity = createActivity({
+                time: dateTime,
+                title: fieldValue(values, "title", `${activityType} ${client}`),
+                type: activityType,
+                owner: fieldValue(values, "assignedOperator", "Daniele"),
+                contact: client,
+                property: fieldValue(values, "propertyId"),
+                note: [fieldValue(values, "location"), fieldValue(values, "outcome"), fieldValue(values, "notes")]
+                  .filter(Boolean)
+                  .join(" - "),
+                status: fieldValue(values, "activityStatus", "Da confermare"),
+                day: activityDayForDate(date),
+                details: values,
+              });
+              onCommit(
+                (currentData) => ({
+                  ...currentData,
+                  activities: [newActivity, ...currentData.activities],
+                  contacts: currentData.contacts.map((contact) =>
+                    sameLabel(contact.name, client)
+                      ? { ...contact, status: "Appuntamento pianificato", nextStep: dateTime, updatedAt: nowLabel() }
+                      : contact,
+                  ),
+                }),
+                `Appuntamento inserito per ${client}.`,
+              );
+            }}
+          />
+        ) : (
+          <QuickForm
+            button="Cerca"
+            fields={searchFilterFields}
+            required={false}
+            onSubmit={(values) => {
               setFilters(values);
               onAction(`Ricerca agenda eseguita: ${valuesSummary(values)}.`);
-              return;
-            }
-            const client = fieldValue(values, "Cliente / Nominativo", "Cliente da definire");
-            const date = fieldValue(values, "Data inizio");
-            const hour = fieldValue(values, "Ora inizio", currentTimeLabel());
-            const dateTime = [date, hour].filter(Boolean).join(" ");
-            const activityType = fieldValue(values, "Tipo attività", "Appuntamento");
-            const newActivity = createActivity({
-              time: dateTime,
-              title: fieldValue(values, "Titolo", `${activityType} ${client}`),
-              type: activityType,
-              contact: client,
-              property: fieldValue(values, "Immobile"),
-              note: [
-                fieldValue(values, "Dove"),
-                fieldValue(values, "Operatore"),
-                fieldValue(values, "Attività ricorrente"),
-                fieldValue(values, "Note"),
-              ].filter(Boolean).join(" - "),
-              status: fieldValue(values, "Stato appuntamento", "Da confermare"),
-              day: /domani/i.test(dateTime) ? "Domani" : /settimana/i.test(dateTime) ? "Settimana" : "Oggi",
-            });
-            onCommit(
-              (currentData) => ({
-                ...currentData,
-                activities: [newActivity, ...currentData.activities],
-                contacts: currentData.contacts.map((contact) =>
-                  contact.name === client
-                    ? { ...contact, status: "Appuntamento pianificato", nextStep: dateTime, updatedAt: nowLabel() }
-                    : contact,
-                ),
-              }),
-              `Appuntamento inserito per ${client}.`,
-            );
-          }}
-        />
+            }}
+          />
+        )}
       </Panel>
       <Panel className="span-12" title="Promemoria automatici">
         <Checklist
@@ -4786,13 +4920,19 @@ function CensusView({
     properties: PropertyRecord[],
     propertyLabel: string,
     zone: string,
-    ownerName: string,
+    contactName: string,
     details: Partial<PropertyRecord> = {},
-  ) {
+    linkAsOwner = true,
+  ): PropertyRecord[] {
     if (!propertyLabel) {
       return properties;
     }
 
+    const {
+      phone: contactPhone,
+      taxCode: contactTaxCode,
+      ...propertyDetails
+    } = details;
     const existing = properties.some((property) => sameLabel(property.title, propertyLabel) || sameLabel(property.code, propertyLabel));
     if (!existing) {
       return [
@@ -4803,39 +4943,66 @@ function CensusView({
           zone,
           status: "Censito",
           price: "Da valutare",
-          owner: ownerName,
+          owner: linkAsOwner ? contactName : "Proprietario da associare",
           portals: "Privato",
           kind: "vendita",
-          ...details,
+          ...(linkAsOwner ? details : propertyDetails),
           updatedAt: nowLabel(),
         },
         ...properties,
       ];
     }
 
-    return properties.map((property) =>
-      sameLabel(property.title, propertyLabel) || sameLabel(property.code, propertyLabel)
-        ? {
-            ...property,
-            owner: appendOwnerLabel(property.owner, ownerName),
-            status: "Proprietario collegato",
-            phone: details.phone || property.phone,
-            taxCode: details.taxCode || property.taxCode,
-            sheet: details.sheet || property.sheet,
-            parcel: details.parcel || property.parcel,
-            subaltern: details.subaltern || property.subaltern,
-            cadastralCategory: details.cadastralCategory || property.cadastralCategory,
-            rooms: details.rooms || property.rooms,
-            updatedAt: nowLabel(),
-          }
-        : property,
-    );
+    return properties.map((property) => {
+      if (!sameLabel(property.title, propertyLabel) && !sameLabel(property.code, propertyLabel)) {
+        return property;
+      }
+
+      const nextOwner = linkAsOwner
+        ? appendOwnerLabel(property.owner, contactName)
+        : removeOwnerLabel(property.owner, contactName);
+      const ownerWasRemoved = !linkAsOwner && nextOwner === "Proprietario da associare";
+
+      return {
+        ...property,
+        owner: nextOwner,
+        status: linkAsOwner
+          ? "Proprietario collegato"
+          : ownerWasRemoved && property.status === "Proprietario collegato"
+            ? "Censito"
+            : property.status,
+        phone: linkAsOwner
+          ? contactPhone || property.phone
+          : ownerWasRemoved
+            ? ""
+            : property.phone,
+        taxCode: linkAsOwner
+          ? contactTaxCode || property.taxCode
+          : ownerWasRemoved
+            ? ""
+            : property.taxCode,
+        sheet: details.sheet || property.sheet,
+        parcel: details.parcel || property.parcel,
+        subaltern: details.subaltern || property.subaltern,
+        cadastralCategory: details.cadastralCategory || property.cadastralCategory,
+        rooms: details.rooms || property.rooms,
+        source: details.source || property.source,
+        details: {
+          ...property.details,
+          ...details.details,
+        },
+        updatedAt: nowLabel(),
+      };
+    });
   }
 
   function saveCensus(values: Record<string, string>) {
-    const zone = fieldValue(values, "Zona", "Zona da definire");
-    const street = fieldValue(values, "Via", "Via da definire");
-    const complexName = fieldValue(values, "Palazzo / Complesso") || fieldValue(values, "Complesso", "Complesso da definire");
+    const zone = fieldValue(values, "Zona", fieldValue(values, "area", "Zona da definire"));
+    const street = fieldValue(values, "Via", fieldValue(values, "street", "Via da definire"));
+    const complexName =
+      fieldValue(values, "Palazzo / Complesso") ||
+      fieldValue(values, "Complesso") ||
+      fieldValue(values, "buildingName", "Complesso da definire");
     const unitsValue = Number.parseInt(fieldValue(values, "Unita", "0"), 10);
     const units = Number.isFinite(unitsValue) && unitsValue > 0 ? unitsValue : 0;
 
@@ -4926,7 +5093,7 @@ function CensusView({
                     price: "Da valutare",
                     owner: "Proprietario da associare",
                     portals: "Privato",
-                    kind: "vendita",
+                    kind: "vendita" as const,
                     sheet,
                     parcel,
                     subaltern,
@@ -4956,28 +5123,60 @@ function CensusView({
       return;
     }
 
-    const firstName = fieldValue(values, "Nome");
-    const lastName = fieldValue(values, "Cognome");
-    const ownerName = formatFullName(firstName, lastName, fieldValue(values, "Proprietario", "Proprietario da definire"));
-    const phone = fieldValue(values, "Numero") || fieldValue(values, "Telefono");
-    const taxCode = fieldValue(values, "Codice fiscale");
-    const sheet = fieldValue(values, "Foglio");
-    const parcel = fieldValue(values, "Particella");
-    const subaltern = fieldValue(values, "Subalterno");
-    const cadastralCategory = fieldValue(values, "Categoria catastale");
-    const rooms = fieldValue(values, "Vani");
-    const propertyLabel = fieldValue(values, "Immobile collegato");
+    const firstName = fieldValue(values, "Nome", fieldValue(values, "ownerFirstName"));
+    const lastName = fieldValue(values, "Cognome", fieldValue(values, "ownerLastName"));
+    const ownerName = formatFullName(firstName, lastName, fieldValue(values, "Proprietario", "Referente da definire"));
+    const phone =
+      fieldValue(values, "Numero") ||
+      fieldValue(values, "Telefono") ||
+      fieldValue(values, "primaryPhone");
+    const email = fieldValue(values, "Email", fieldValue(values, "email"));
+    const taxCode = fieldValue(values, "Codice fiscale", fieldValue(values, "ownerTaxCode"));
+    const sheet = fieldValue(values, "Foglio", fieldValue(values, "cadastralSheet"));
+    const parcel = fieldValue(values, "Particella", fieldValue(values, "cadastralParcel"));
+    const subaltern = fieldValue(values, "Subalterno", fieldValue(values, "cadastralSubaltern"));
+    const cadastralCategory = fieldValue(values, "Categoria catastale", fieldValue(values, "cadastralCategory"));
+    const rooms = fieldValue(values, "Vani", fieldValue(values, "cadastralRooms", fieldValue(values, "rooms")));
+    const propertyLabel = fieldValue(values, "Immobile collegato", fieldValue(values, "propertyLabel"));
+    const contactType = fieldValue(values, "contactRole", "Referente");
+    const isOwnerRole = /^(proprietario|comproprietario)$/i.test(contactType.trim());
+    const contactStatus = fieldValue(
+      values,
+      "surveyStatus",
+      isOwnerRole ? "Proprietario censito" : "Referente censito",
+    );
+    const censusNote = fieldValue(values, "surveyNotes");
+    const nextContact = [
+      fieldValue(values, "nextContactDate"),
+      fieldValue(values, "nextContactTime"),
+      fieldValue(values, "nextContactReason"),
+    ].filter(Boolean).join(" / ");
     const ownerPath = `Zona: ${zone} / Via: ${street} / Complesso: ${complexName}`;
 
     onCommit(
       (currentData) => {
-        const linkedAlready = currentData.contacts.some(
-          (contact) =>
-            sameLabel(contact.name, ownerName) &&
-            /proprietario/i.test(contact.type) &&
-            contact.note.toLowerCase().includes(complexName.toLowerCase()),
+        const existingContact = currentData.contacts.find((contact) =>
+          sameLabel(contact.name, ownerName),
         );
-        const ownerDelta = linkedAlready ? 0 : 1;
+        const existingProperty = currentData.properties.find(
+          (property) =>
+            sameLabel(property.title, propertyLabel) ||
+            sameLabel(property.code, propertyLabel),
+        );
+        const linkedAlready =
+          !!existingContact &&
+          /proprietario/i.test(existingContact.type) &&
+          !!existingProperty &&
+          propertyOwnerNames(existingProperty).some((owner) =>
+            sameLabel(owner, ownerName),
+          );
+        const ownerDelta = isOwnerRole
+          ? linkedAlready
+            ? 0
+            : 1
+          : linkedAlready
+            ? -1
+            : 0;
         const complexExists = (currentData.censusComplexes ?? []).some(
           (item) => sameLabel(item.zone, zone) && sameLabel(item.street, street) && sameLabel(item.name, complexName),
         );
@@ -4990,9 +5189,10 @@ function CensusView({
                     ...contact,
                     firstName: firstName || contact.firstName,
                     lastName: lastName || contact.lastName,
-                    type: /proprietario/i.test(contact.type) ? contact.type : `${contact.type} / Proprietario`,
-                    status: "Proprietario collegato",
+                    type: contactType,
+                    status: contactStatus,
                     phone: phone || contact.phone,
+                    email: email || contact.email,
                     taxCode: taxCode || contact.taxCode,
                     sheet: sheet || contact.sheet,
                     parcel: parcel || contact.parcel,
@@ -5000,8 +5200,9 @@ function CensusView({
                     cadastralCategory: cadastralCategory || contact.cadastralCategory,
                     rooms: rooms || contact.rooms,
                     property: propertyLabel || contact.property,
-                    note: ownerPath,
-                    nextStep: propertyLabel ? `Collegato a ${propertyLabel}` : "Associare immobile",
+                    note: censusNote || ownerPath,
+                    nextStep: nextContact || (propertyLabel ? `Collegato a ${propertyLabel}` : "Associare immobile"),
+                    details: values,
                     updatedAt: nowLabel(),
                   }
                 : contact,
@@ -5012,11 +5213,12 @@ function CensusView({
                 name: ownerName,
                 firstName,
                 lastName,
-                type: "Proprietario",
-                status: "Proprietario censito",
+                type: contactType,
+                status: contactStatus,
                 source: "Censimento",
-                owner: "Daniele",
+                owner: fieldValue(values, "surveyOperator", "Daniele"),
                 phone,
+                email,
                 taxCode,
                 sheet,
                 parcel,
@@ -5024,8 +5226,9 @@ function CensusView({
                 cadastralCategory,
                 rooms,
                 property: propertyLabel,
-                note: ownerPath,
-                nextStep: propertyLabel ? `Collegato a ${propertyLabel}` : "Associare immobile",
+                note: censusNote || ownerPath,
+                nextStep: nextContact || (propertyLabel ? `Collegato a ${propertyLabel}` : "Associare immobile"),
+                details: values,
                 updatedAt: nowLabel(),
               },
               ...currentData.contacts,
@@ -5034,22 +5237,30 @@ function CensusView({
         return {
           ...currentData,
           contacts: updatedContacts,
-          properties: linkOwnerToProperty(currentData.properties, propertyLabel, zone, ownerName, {
-            phone,
-            taxCode,
-            sheet,
-            parcel,
-            subaltern,
-            cadastralCategory,
-            rooms,
-            source: "Censimento",
-          }),
+          properties: linkOwnerToProperty(
+            currentData.properties,
+            propertyLabel,
+            zone,
+            ownerName,
+            {
+              phone,
+              taxCode,
+              sheet,
+              parcel,
+              subaltern,
+              cadastralCategory,
+              rooms,
+              source: "Censimento",
+              details: values,
+            },
+            isOwnerRole,
+          ),
           censusAreas: ensureArea(currentData.censusAreas, zone, ownerDelta, complexDelta),
           censusStreets: ensureStreet(currentData.censusStreets ?? [], zone, street, complexDelta),
           censusComplexes: ensureComplex(currentData.censusComplexes ?? [], zone, street, complexName, 0, ownerDelta),
           activities: [
             createActivity({
-              title: `Proprietario ${ownerName}`,
+              title: `${isOwnerRole ? "Proprietario" : "Referente"} ${ownerName}`,
               type: "Censimento",
               contact: ownerName,
               property: propertyLabel,
@@ -5060,8 +5271,8 @@ function CensusView({
         };
       },
       propertyLabel
-        ? `${ownerName} collegato come proprietario a ${propertyLabel}.`
-        : `${ownerName} salvato come proprietario censito.`,
+        ? `${ownerName} collegato come ${contactType.toLowerCase()} a ${propertyLabel}.`
+        : `${ownerName} salvato come ${contactType.toLowerCase()} censito.`,
     );
   }
 
@@ -5151,20 +5362,32 @@ function CensusView({
           ]}
         />
       </Panel>
-      <Panel className="span-4 crm-form-panel" title={formTitle}>
-        <QuickForm
-          button={pageKey === "censimento-contatti" ? "Filtra" : "Salva"}
-          fields={formFields}
-          required={pageKey !== "censimento-contatti"}
-          onSubmit={(values) => {
-            if (pageKey === "censimento-contatti") {
-              setFilters(values);
-              onAction(`Filtro contatti censimento applicato: ${valuesSummary(values)}.`);
-              return;
-            }
-            saveCensus(values);
-          }}
-        />
+      <Panel
+        className={pageKey === "censimento-nuovo-contatto" ? "span-12 crm-form-panel" : "span-4 crm-form-panel"}
+        title={formTitle}
+      >
+        {pageKey === "censimento-nuovo-contatto" ? (
+          <StructuredQuickForm
+            requiredDefault={false}
+            sections={censusContactFormSections}
+            submitLabel="Salva contatto censimento"
+            onSubmit={saveCensus}
+          />
+        ) : (
+          <QuickForm
+            button={pageKey === "censimento-contatti" ? "Filtra" : "Salva"}
+            fields={formFields}
+            required={pageKey !== "censimento-contatti"}
+            onSubmit={(values) => {
+              if (pageKey === "censimento-contatti") {
+                setFilters(values);
+                onAction(`Filtro contatti censimento applicato: ${valuesSummary(values)}.`);
+                return;
+              }
+              saveCensus(values);
+            }}
+          />
+        )}
       </Panel>
 
       <Panel className="span-12" title="Mappa censimento">
@@ -6423,6 +6646,46 @@ function currentTimeLabel() {
   }).format(new Date());
 }
 
+function localIsoDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function activityIsoDate(activity: ActivityRecord) {
+  const detailedDate = activity.details?.startDate?.trim();
+  if (detailedDate && /^\d{4}-\d{2}-\d{2}$/.test(detailedDate)) {
+    return detailedDate;
+  }
+  return activity.time.match(/\b(\d{4}-\d{2}-\d{2})\b/)?.[1] || "";
+}
+
+function activityDayForDate(value: string): ActivityRecord["day"] {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return "Oggi";
+  }
+  const today = new Date();
+  const tomorrow = new Date(today);
+  const weekEnd = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  weekEnd.setDate(today.getDate() + 6);
+  const todayIso = localIsoDate(today);
+  if (value < todayIso) {
+    return "Passate";
+  }
+  if (value === todayIso) {
+    return "Oggi";
+  }
+  if (value === localIsoDate(tomorrow)) {
+    return "Domani";
+  }
+  if (value <= localIsoDate(weekEnd)) {
+    return "Settimana";
+  }
+  return "Future";
+}
+
 function makeId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -6437,6 +6700,112 @@ function normalizeSearchValue(value: string) {
 
 function activeFilters(filters: Record<string, string>) {
   return Object.entries(filters).filter(([, value]) => normalizeSearchValue(value));
+}
+
+function activeDomainFilters(filters: Record<string, string>) {
+  return Object.fromEntries(
+    Object.entries(filters).filter(([, value]) => {
+      const normalized = normalizeSearchValue(value);
+      return normalized && normalized !== "no";
+    }),
+  );
+}
+
+function parseNumericValue(value: string | undefined) {
+  if (!value) {
+    return 0;
+  }
+  const normalized = value
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\.(?=\d{3}(?:\D|$))/g, "")
+    .replace(",", ".");
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function normalizedTokens(value: string | undefined) {
+  return String(value || "")
+    .toLowerCase()
+    .split(/[,;/|]+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function calculateRequestMatch(request: Pick<RequestRecord, "details">, property: PropertyRecord) {
+  const criteria = request.details ?? {};
+  const propertyDetails = property.details ?? {};
+  let score = 0;
+  let possible = 0;
+
+  const management = normalizeSearchValue(criteria.managementType || "");
+  if (management) {
+    possible += 15;
+    const propertyManagement = normalizeSearchValue(propertyDetails.managementType || property.kind);
+    const compatible =
+      (management.includes("acquist") && propertyManagement.includes("vend")) ||
+      (management.includes("affitt") && propertyManagement.includes("affitt")) ||
+      management.includes(propertyManagement) ||
+      propertyManagement.includes(management);
+    if (compatible) {
+      score += 15;
+    }
+  }
+
+  const preferredTypes = normalizedTokens(criteria.preferredPropertyTypes);
+  if (preferredTypes.length) {
+    possible += 20;
+    const candidate = normalizeSearchValue(`${propertyDetails.propertyType || ""} ${property.title}`);
+    if (preferredTypes.some((type) => candidate.includes(type))) {
+      score += 20;
+    }
+  }
+
+  const preferredAreas = normalizedTokens(criteria.preferredAreas);
+  const acceptedAreas = normalizedTokens(criteria.acceptedAreas);
+  if (preferredAreas.length || acceptedAreas.length) {
+    possible += 20;
+    const candidate = normalizeSearchValue(
+      `${property.zone} ${propertyDetails.municipality || ""} ${propertyDetails.district || ""} ${propertyDetails.street || ""}`,
+    );
+    if (preferredAreas.some((area) => candidate.includes(area))) {
+      score += 20;
+    } else if (acceptedAreas.some((area) => candidate.includes(area))) {
+      score += 10;
+    }
+  }
+
+  const maximumBudget = parseNumericValue(criteria.maximumBudget);
+  if (maximumBudget) {
+    possible += 15;
+    const price = parseNumericValue(property.price || propertyDetails.askingPrice);
+    if (price && price <= maximumBudget) {
+      score += 15;
+    } else if (price && price <= maximumBudget * 1.1) {
+      score += 7;
+    }
+  }
+
+  const minimumArea = parseNumericValue(criteria.minimumArea || criteria.preferredMinimumArea);
+  if (minimumArea) {
+    possible += 5;
+    if (parseNumericValue(propertyDetails.commercialArea) >= minimumArea) {
+      score += 5;
+    }
+  }
+
+  const minimumRooms = parseNumericValue(criteria.minimumRooms);
+  if (minimumRooms) {
+    possible += 5;
+    if (parseNumericValue(property.rooms || propertyDetails.rooms) >= minimumRooms) {
+      score += 5;
+    }
+  }
+
+  if (!possible) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, Math.round((score / possible) * 100)));
 }
 
 function matchesStructuredFilters(filters: Record<string, string>, fields: Record<string, string>) {
@@ -6489,6 +6858,20 @@ function appendOwnerLabel(currentOwner: string, ownerName: string) {
   return owners.join(", ");
 }
 
+function removeOwnerLabel(currentOwner: string, ownerName: string) {
+  const owners = currentOwner
+    .split(",")
+    .map((owner) => owner.trim())
+    .filter(
+      (owner) =>
+        owner &&
+        !sameLabel(owner, ownerName) &&
+        !/proprietario da associare/i.test(owner),
+    );
+
+  return owners.join(", ") || "Proprietario da associare";
+}
+
 function cadastralLabel(record: {
   sheet?: string;
   parcel?: string;
@@ -6518,6 +6901,7 @@ function createActivity(input: Partial<ActivityRecord> & Pick<ActivityRecord, "t
     status: input.status || "Aperta",
     note: input.note || "",
     day: input.day || "Oggi",
+    details: input.details,
     updatedAt,
   };
 }
