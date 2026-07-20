@@ -101,7 +101,7 @@
 
 .telefonista-grid {
   display: grid;
-  grid-template-columns: minmax(260px, 0.82fr) minmax(420px, 1.5fr) minmax(300px, 0.95fr);
+  grid-template-columns: minmax(230px, 0.58fr) minmax(460px, 1.58fr) minmax(300px, 0.95fr);
   gap: 18px;
   align-items: start;
 }
@@ -329,6 +329,7 @@
   color: rgba(248, 248, 250, 0.86);
   font-size: 1rem;
   line-height: 1.55;
+  white-space: pre-line;
 }
 
 .telefonista-objections {
@@ -472,7 +473,7 @@
 
 @media (max-width: 1180px) {
   .telefonista-grid {
-    grid-template-columns: minmax(270px, 0.8fr) minmax(0, 1.2fr);
+    grid-template-columns: minmax(230px, 0.72fr) minmax(0, 1.28fr);
   }
 
   .telefonista-notes-panel {

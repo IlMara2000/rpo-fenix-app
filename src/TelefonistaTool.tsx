@@ -19,7 +19,6 @@ import {
   Sparkles,
   Target,
   TimerReset,
-  UserRound,
 } from "lucide-react";
 
 type TelefonistaMode = "principiante" | "esperto";
@@ -188,83 +187,96 @@ function downloadTextFile(filename: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-function buildScript(context: CallContext) {
-  const owner = context.owner || "il proprietario";
-  const operator = context.operator || "Fenix Group";
-  const location = [context.zone, context.street, context.building].filter(Boolean).join(", ") || "la sua zona";
-  const property = context.property || "l'immobile censito";
-
+function buildScript() {
   return [
     {
       key: "apertura" as const,
       title: "Apertura",
       icon: PhoneCall,
       beginner: [
-        `Buongiorno, parlo con ${owner}? Sono ${operator} di Fenix Group Real Estate.`,
-        `La chiamo in modo rapido per un aggiornamento su ${property} in ${location}.`,
-        "Le rubo meno di un minuto: se non e' il momento giusto mi dice lei quando richiamarla.",
+        "Telefonista: Buongiorno, parlo con il proprietario dell'immobile? Sono di Fenix Group Real Estate, la disturbo solo per un aggiornamento rapido.",
+        "Se risponde: \"Dipende, per cosa?\"\nTelefonista: Le spiego subito: stiamo aggiornando le situazioni degli immobili gia' censiti in zona e vorrei capire se i dati che abbiamo sono ancora corretti.",
+        "Se risponde: \"Non ho tempo\"\nTelefonista: Ha ragione, le faccio una sola domanda e poi decida lei: l'immobile e' ancora suo oppure la situazione e' cambiata?",
       ],
-      expert: ["Conferma proprietario.", "Presentazione breve Fenix.", "Motivo: aggiornamento immobile censito."],
+      expert: [
+        "Apri con nome agenzia + motivo rapido.",
+        "Se chiede dettagli: aggiornamento immobili censiti.",
+        "Se ha fretta: una sola domanda di conferma proprieta.",
+      ],
     },
     {
       key: "aggancio" as const,
       title: "Aggancio",
       icon: Target,
       beginner: [
-        "Stiamo aggiornando i valori reali della zona e alcune situazioni sono cambiate parecchio negli ultimi mesi.",
-        "Prima di proporle qualsiasi cosa, devo capire se i dati che abbiamo sono ancora corretti.",
-        "L'obiettivo e' valutare se ha senso farle avere una perizia gratuita e senza impegno.",
+        "Telefonista: Non la chiamo per venderle qualcosa al telefono. Prima mi serve capire se la situazione dell'immobile e' ancora quella registrata.",
+        "Se risponde: \"Non vendo\"\nTelefonista: Perfetto, infatti non le sto chiedendo di vendere. Anche chi non vende spesso vuole sapere quanto vale oggi casa sua, soprattutto se il mercato della zona si muove.",
+        "Telefonista: Se ha senso, le propongo una perizia gratuita. Se non ha senso, chiudiamo qui e aggiorno semplicemente la scheda.",
       ],
-      expert: ["Crea contesto di mercato.", "Spiega utilita della verifica.", "Non vendere subito: prima qualifica."],
+      expert: [
+        "Disinnesca: non sto vendendo nulla.",
+        "Aggancia al valore reale dell'immobile.",
+        "Obiettivo: capire se proporre perizia o solo aggiornare scheda.",
+      ],
     },
     {
       key: "indagine" as const,
       title: "Indagine",
       icon: ClipboardCheck,
       beginner: [
-        "L'immobile e' ancora di sua proprieta?",
-        "Oggi e' abitato, libero o locato?",
-        "Ha gia' una stima recente o non viene valutato da tempo?",
-        "Nei prossimi mesi pensa di vendere, affittare, sistemare o semplicemente capire quanto vale?",
-        "Nel palazzo o nella via conosce qualcuno che sta valutando di vendere o che vorrebbe una stima?",
+        "Telefonista: L'immobile e' ancora di sua proprieta? E oggi e' abitato da lei, affittato, libero o gestito da qualcun altro?",
+        "Se risponde in modo chiuso\nTelefonista: Le chiedo solo per non richiamarla con informazioni sbagliate. Se mi dice lo stato attuale, aggiorno la scheda e non le faccio perdere tempo.",
+        "Telefonista: Ha mai fatto una valutazione recente o si basa ancora su una stima vecchia?",
+        "Telefonista: Nel palazzo o nella via conosce qualcuno che sta pensando di vendere, affittare o semplicemente capire il valore del proprio immobile?",
+        "Nota per il telefonista: scrivi subito ogni dettaglio utile nel blocchetto note: stato immobile, tempi, obiezioni, nomi di vicini o conoscenti, prossimo ricontatto.",
       ],
-      expert: ["Proprieta confermata.", "Stato: abitato/libero/locato.", "Stima recente.", "Tempi e motivazione.", "Segnalazioni vicini."],
+      expert: [
+        "Conferma proprieta e stato immobile.",
+        "Capisci stima recente o vecchia.",
+        "Chiedi segnali su vicini/conoscenti.",
+        "Annota subito: situazione, interesse, prossimo passo.",
+      ],
     },
     {
       key: "perizia" as const,
       title: "Perizia",
       icon: Gauge,
       beginner: [
-        "Per darle un numero serio serve vedere pochi dettagli: stato interno, esposizione, piano e situazione del palazzo.",
-        "La perizia e' gratuita e senza impegno. Serve a lei per avere un valore realistico, non una promessa generica.",
-        "Meglio fissare un passaggio breve questa settimana o preferisce la prossima?",
+        "Telefonista: Per darle un valore serio non basta guardare i metri quadri. Servono stato interno, piano, esposizione, palazzo e domanda reale della zona.",
+        "Se risponde: \"Quanto vale?\"\nTelefonista: Al telefono rischierei di darle un numero poco serio. La cosa corretta e' far passare un tecnico per una perizia gratuita e senza impegno.",
+        "Telefonista: Le torna meglio un passaggio breve questa settimana oppure la prossima? Anche solo 15 minuti per raccogliere i dati corretti.",
       ],
-      expert: ["Valore serio solo con verifica.", "Perizia gratuita.", "Proponi due alternative concrete."],
+      expert: [
+        "Non dare prezzi al telefono.",
+        "Spiega perizia gratuita come dato utile, non pressione alla vendita.",
+        "Chiudi proponendo due finestre temporali.",
+      ],
     },
     {
       key: "obiezioni" as const,
       title: "Obiezioni",
       icon: MessageSquareText,
-      beginner: objections.map((item) => `${item.label}: ${item.answer}`),
-      expert: objections.map((item) => `${item.label}: risposta breve, poi domanda di controllo.`),
+      beginner: objections.map((item) => `Cliente: \"${item.label}\"\nTelefonista: ${item.answer}`),
+      expert: objections.map((item) => `${item.label}: rispondi breve, poi fai una domanda che riporta la chiamata su immobile/perizia.`),
     },
     {
       key: "chiusura" as const,
       title: "Chiusura",
       icon: CheckCircle2,
       beginner: [
-        "Perfetto, allora segno tutto in scheda cosi' il prossimo contatto parte gia' ordinato.",
-        "Le confermo: motivo della chiamata, situazione dell'immobile, eventuale disponibilita per perizia e prossimo passo.",
-        "Grazie per il tempo. Se ha altri immobili o conoscenti in zona, puo' segnarmeli anche in modo indicativo.",
+        "Telefonista: Perfetto, allora le confermo cosa segno: situazione dell'immobile, eventuale interesse alla perizia e prossimo ricontatto.",
+        "Se la perizia e' fissata\nTelefonista: Le mando conferma e faccio passare il tecnico preparato sui dati corretti. Se cambia qualcosa, ci avvisa prima dell'appuntamento.",
+        "Se non fissa\nTelefonista: Va bene, aggiorno la scheda. Posso richiamarla piu' avanti o preferisce che la lasci tranquillo per ora?",
+        "Dopo la chiamata: salva l'esito, scrivi le note essenziali e passa subito al prossimo contatto senza perdere il ritmo.",
       ],
-      expert: ["Riepiloga.", "Conferma prossimo passo.", "Scrivi note subito.", "Salva esito."],
+      expert: ["Riepiloga dati.", "Conferma appuntamento o ricontatto.", "Chiedi consenso al prossimo contatto.", "Salva note e riparti."],
     },
   ];
 }
 
 export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
   const draft = useMemo(loadDraft, []);
-  const [context, setContext] = useState<CallContext>(() => ({ ...emptyContext, ...(draft.context || {}) }));
+  const [context] = useState<CallContext>(() => ({ ...emptyContext, ...(draft.context || {}) }));
   const [notes, setNotes] = useState(typeof draft.notes === "string" ? draft.notes : "");
   const [mode, setMode] = useState<TelefonistaMode>(
     draft.mode === "esperto" || draft.mode === "principiante" ? draft.mode : "principiante",
@@ -285,7 +297,7 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
   const [calls, setCalls] = useState<CallLog[]>(loadCalls);
   const [notice, setNotice] = useState("Pronto per iniziare la telefonata.");
 
-  const script = useMemo(() => buildScript(context), [context]);
+  const script = useMemo(() => buildScript(), []);
   const activePhase = script.find((item) => item.key === phase) || script[0];
   const activeLines = mode === "principiante" ? activePhase.beginner : activePhase.expert;
   const progress = Math.round((checked.length / checklistItems.length) * 100);
@@ -310,10 +322,6 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
   useEffect(() => {
     localStorage.setItem(draftStorageKey, JSON.stringify({ context, notes, outcome, checked, mode, phase }));
   }, [checked, context, mode, notes, outcome, phase]);
-
-  function updateContext(key: keyof CallContext, value: string) {
-    setContext((current) => ({ ...current, [key]: value }));
-  }
 
   function toggleCheck(item: string) {
     setChecked((current) =>
@@ -392,35 +400,8 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
       <section className="telefonista-grid">
         <aside className="telefonista-card telefonista-control-panel">
           <div className="telefonista-section-title">
-            <UserRound size={18} />
-            <span>Dati chiamata</span>
-          </div>
-
-          <div className="telefonista-fields">
-            <label>
-              Proprietario
-              <input value={context.owner} onChange={(event) => updateContext("owner", event.target.value)} placeholder="Nome proprietario" />
-            </label>
-            <label>
-              Operatore
-              <input value={context.operator} onChange={(event) => updateContext("operator", event.target.value)} placeholder="Nome telefonista" />
-            </label>
-            <label>
-              Zona
-              <input value={context.zone} onChange={(event) => updateContext("zone", event.target.value)} placeholder="Zona censita" />
-            </label>
-            <label>
-              Via
-              <input value={context.street} onChange={(event) => updateContext("street", event.target.value)} placeholder="Via" />
-            </label>
-            <label>
-              Complesso
-              <input value={context.building} onChange={(event) => updateContext("building", event.target.value)} placeholder="Palazzo o complesso" />
-            </label>
-            <label>
-              Immobile
-              <input value={context.property} onChange={(event) => updateContext("property", event.target.value)} placeholder="Interno, piano o nota rapida" />
-            </label>
+            <Gauge size={18} />
+            <span>Modalita chiamata</span>
           </div>
 
           <div className="telefonista-mode-switch" aria-label="Modalita script">
