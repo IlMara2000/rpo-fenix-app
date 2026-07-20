@@ -474,7 +474,7 @@ const selectorPrograms: ProgramCard[] = [
     Icon: PhoneCall,
   },
   {
-    title: "TELEFONISTA",
+    title: "PROGRAMMA TELEFONISTA",
     description:
       "Script guidato per chiamare proprietari censiti, raccogliere note e fissare perizie immobiliari.",
     path: "/telefonista",
