@@ -25,6 +25,14 @@
     {
       "source": "/crm/(.*)",
       "destination": "/index.html"
+    },
+    {
+      "source": "/PWS",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/pws",
+      "destination": "/index.html"
     }
   ]
 }

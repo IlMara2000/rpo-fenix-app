@@ -51,9 +51,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import "./styles.css";
+import "./presentation.css";
 import { PlanimetrieTool } from "./PlanimetrieTool";
 import { RpoTool } from "./RpoTool";
 import { TelefonistaTool } from "./TelefonistaTool";
+import { PwsTool } from "./PwsTool";
 import { StructuredQuickForm } from "./crm/components/StructuredQuickForm";
 import {
   activityFormSections,
@@ -276,6 +278,7 @@ type SessionUser = {
   name: string;
   email: string;
   role: UserRole;
+  source?: "local" | "supabase";
 };
 
 type ClientContext = {
@@ -442,6 +445,20 @@ const defaultAccount: AccountRecord = {
 
 const externalTools = [
   {
+    title: "PWS",
+    description:
+      "Organizza il piano giornaliero personale a partire dalle priorita suggerite dal CRM.",
+    href: "/PWS",
+    Icon: ListChecks,
+  },
+  {
+    title: "TELEFONISTA",
+    description:
+      "Apri lo script operativo per chiamate, note ed esiti dell'attivita telefonica.",
+    href: "/telefonista",
+    Icon: MessageSquareText,
+  },
+  {
     title: "RPO",
     description:
       "Accedi al modulo Registro Pubblico delle Opposizioni per bonifica e gestione liste.",
@@ -464,7 +481,12 @@ const selectorPrograms: ProgramCard[] = [
       "Gestionale operativo per clienti, immobili, agenda, censimento e attivita di agenzia.",
     path: "/crm",
     Icon: Gauge,
-    hiddenInSelector: true,
+  },
+  {
+    title: "PWS",
+    description: "Piano giornaliero personale alimentato dal GPS lavorativo del CRM.",
+    path: "/PWS",
+    Icon: ListChecks,
   },
   {
     title: "PROGRAMMA RPO",
@@ -486,7 +508,6 @@ const selectorPrograms: ProgramCard[] = [
       "Modulo per generare e gestire planimetrie arredate partendo da immagini, schizzi o documentazione grafica.",
     path: "/planimetrie",
     Icon: PanelsTopLeft,
-    hiddenInSelector: true,
   },
 ];
 
@@ -1102,6 +1123,7 @@ function toSessionUser(account: AccountRecord): SessionUser {
     name: account.name,
     email: account.email,
     role: account.role,
+    source: "local",
   };
 }
 
@@ -1227,6 +1249,7 @@ function getStoredSessionUser(): SessionUser | null {
       name: String((parsedSession as SessionUser).name || defaultAccount.name),
       email: String((parsedSession as SessionUser).email || defaultAccount.email).toLowerCase(),
       role: (parsedSession as SessionUser).role,
+      source: (parsedSession as SessionUser).source,
     };
   }
 
@@ -1499,6 +1522,10 @@ function AppRouter() {
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
+  if (path.toLowerCase().startsWith("/pws")) {
+    return <PwsTool onNavigate={navigate} />;
+  }
+
   if (path.startsWith("/crm")) {
     return <CrmApp />;
   }
@@ -1578,7 +1605,7 @@ function CrmApp() {
     const currentAccount = loadAccounts().find(
       (account) => account.id === sessionUser.id || account.email === sessionUser.email,
     );
-    if (!currentAccount || !isAccountOnline(currentAccount, clock)) {
+    if (sessionUser.source !== "supabase" && (!currentAccount || !isAccountOnline(currentAccount, clock))) {
       clearSessionUser();
       setSessionUser(null);
       setLoginNotice(currentAccount ? accountOfflineMessage(currentAccount, clock) : "Account non disponibile.");
@@ -1601,7 +1628,7 @@ function CrmApp() {
 
   function openWorkspace(user: SessionUser) {
     const account = loadAccounts().find((item) => item.id === user.id || item.email === user.email);
-    if (!account || !isAccountOnline(account)) {
+    if (user.source !== "supabase" && (!account || !isAccountOnline(account))) {
       clearSessionUser();
       setSessionUser(null);
       setLoginNotice(account ? accountOfflineMessage(account) : "Account non disponibile.");
@@ -1621,6 +1648,7 @@ function CrmApp() {
   }
 
   function logout() {
+    void import("./lib/supabase").then(({ supabase }) => supabase?.auth.signOut());
     clearSessionUser();
     setSessionUser(null);
     setLoginNotice("");
@@ -1909,6 +1937,56 @@ function LoginScreen({
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email") || "").trim().toLowerCase();
     const password = String(form.get("password") || "");
+    const { isSupabaseConfigured, supabase } = await import("./lib/supabase");
+    if (isSupabaseConfigured && supabase) {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      if (authError || !authData.user) {
+        setLoading(false);
+        setError(authError?.message || "Credenziali Supabase non valide.");
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id,email,full_name,role,status")
+        .eq("id", authData.user.id)
+        .maybeSingle();
+
+      const safeRole = isValidRole(String(profile?.role || "")) ? profile!.role as UserRole : "AGENTE";
+      const user: SessionUser = {
+        id: authData.user.id,
+        name: String(profile?.full_name || authData.user.user_metadata?.full_name || email.split("@")[0]),
+        email,
+        role: safeRole,
+        source: "supabase",
+      };
+
+      if (!profile) {
+        const { error: profileError } = await supabase.from("profiles").insert({
+          id: user.id,
+          email,
+          full_name: user.name,
+          role: user.role,
+          status: "Attivo",
+        });
+        if (profileError) {
+          await supabase.auth.signOut();
+          setLoading(false);
+          setError(`Profilo non inizializzato: ${profileError.message}`);
+          return;
+        }
+      } else if (profile.status !== "Attivo") {
+        await supabase.auth.signOut();
+        setLoading(false);
+        setError("Account sospeso: contatta un responsabile.");
+        return;
+      }
+
+      setLoading(false);
+      onSuccess(user);
+      return;
+    }
+
     const passwordHash = await sha256Hex(password);
     setLoading(false);
 
