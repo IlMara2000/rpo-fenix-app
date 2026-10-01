@@ -3,6 +3,7 @@
 ## Interventi eseguiti
 
 - Resi visibili CRM, PWS, RPO, Telefonista e Planimetrie nel selettore principale.
+- Rimossa la condizione che nascondeva CRM, PWS e Planimetrie dal selettore: la home elenca ora direttamente tutti e cinque i programmi.
 - Collegati PWS e Telefonista anche tra gli strumenti accessibili dal CRM.
 - Separata la validazione delle sessioni Supabase da quella degli account locali.
 - Corretto il calcolo della data PWS affinche usi il giorno locale dell'agente.
@@ -10,6 +11,14 @@
 - Allineati i conteggi PWS escludendo le attivita rifiutate dalle pianificate.
 - Aggiunte etichette accessibili ai controlli delle attivita.
 - Inserito un foglio CSS finale dedicato alla prevenzione di overflow e sovrapposizioni sui breakpoint desktop, tablet e mobile.
+- Limitate a due righe le etichette dei moduli CRM e mantenuto il tema scuro anche nei menu a tendina e nel grafico del censimento.
+
+## Revisione di presentazione (2026-10-01)
+
+- La build pubblicata prima di questa revisione marcava esplicitamente CRM, PWS e Planimetrie come nascosti (`hiddenInSelector`); il selettore mostrava perciò solo RPO e Telefonista. Il filtro è stato rimosso alla fonte.
+- Le verifiche HTTP locali rispondono 200 per `/`, `/crm`, `/PWS`, `/planimetrie`, `/rpo` e `/telefonista`.
+- `npm run build` e `git diff --check` completati con successo. Resta l’avviso Vite non bloccante sul bundle principale da circa 529 kB.
+- La verifica visuale automatizzata non è disponibile: il runner Playwright non trova Chrome installato.
 
 ## Verifiche
 

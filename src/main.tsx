@@ -130,7 +130,6 @@ type ProgramCard = {
   description: string;
   path: string;
   Icon: LucideIcon;
-  hiddenInSelector?: boolean;
 };
 
 type PropertyRecord = {
@@ -1546,7 +1545,7 @@ function AppRouter() {
 }
 
 function ProgramSelector({ onNavigate }: { onNavigate: (path: string) => void }) {
-  const visiblePrograms = selectorPrograms.filter((program) => !program.hiddenInSelector);
+  const visiblePrograms = selectorPrograms;
 
   useEffect(() => {
     document.title = "Fenix Group | Suite";

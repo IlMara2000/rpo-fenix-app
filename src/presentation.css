@@ -53,6 +53,78 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
 }
 
+/* Presentation polish: keep the CRM navigation and cards readable at every width. */
+.suite-program-card {
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.suite-program-card strong,
+.suite-program-card small {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.workspace-shell {
+  color-scheme: dark;
+}
+
+.workspace-shell .module-nav button {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.workspace-shell .module-nav button span {
+  display: -webkit-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: ellipsis !important;
+  white-space: normal !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+.workspace-shell .workspace-panel,
+.workspace-shell .area-card,
+.workspace-shell .quick-form,
+.workspace-shell .account-form {
+  min-width: 0;
+}
+
+.workspace-shell .workspace-panel button:not(.button-reset),
+.workspace-shell .quick-form button,
+.workspace-shell .account-form button,
+.workspace-shell .tool-button {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.workspace-shell select option {
+  color: #f8f8fa !important;
+  background: #17181d !important;
+}
+
+.workspace-shell .census-ring > div {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #f8f8fa !important;
+  background: #17181d !important;
+}
+
+.workspace-shell .census-ring strong,
+.workspace-shell .census-ring span {
+  color: #f8f8fa !important;
+}
+
+.workspace-shell .census-ring small {
+  color: rgba(248, 248, 250, 0.62) !important;
+}
+
 @media (max-width: 720px) {
   .pws-header {
     margin-bottom: 28px;
