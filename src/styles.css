@@ -10544,17 +10544,3 @@ tbody tr:hover {
   outline: 2px solid var(--red) !important;
   outline-offset: -3px !important;
 }
-
-.workspace-shell .secondary-modules {
-  display: flex; flex-wrap: wrap; gap: 8px;
-  padding: 12px clamp(10px, 4vw, 72px);
-  background: #111216; border-bottom: 1px solid rgba(255,255,255,.12);
-}
-.workspace-shell .secondary-modules button {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 14px; border: 1px solid rgba(255,255,255,.18);
-  border-radius: 10px; background: #202126; color: #fff; cursor: pointer;
-}
-.workspace-shell .secondary-modules button:hover,
-.workspace-shell .secondary-modules button[aria-current="page"] { background: #49272c; }
-.workspace-shell .secondary-modules button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
