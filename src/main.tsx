@@ -2070,7 +2070,11 @@ function Workspace({
   const [crmData, setCrmData] = usePersistentCrmData();
   const [accounts, setAccounts] = usePersistentAccounts();
   const [agendaResetVersion, setAgendaResetVersion] = useState(0);
+  const [showOtherModules, setShowOtherModules] = useState(false);
   const visibleModules = getVisibleModules(currentUser);
+  const primaryModuleKeys = ["start", "agenda", "censimento", "nominativi", "immobili"];
+  const mainModules = visibleModules.filter(module => primaryModuleKeys.includes(module.key));
+  const otherModules = visibleModules.filter(module => !primaryModuleKeys.includes(module.key));
   const safeActiveModule = visibleModules.some((item) => item.key === activeModule)
     ? activeModule
     : "start";
@@ -2173,7 +2177,7 @@ function Workspace({
               </span>
             </button>
             <nav className="module-nav" aria-label="Moduli gestionale">
-              {visibleModules.map(({ key, label, Icon }) => (
+              {mainModules.map(({ key, label, Icon }) => (
                 <button
                   className={key === safeActiveModule ? "active" : ""}
                   key={key}
@@ -2187,7 +2191,24 @@ function Workspace({
                   <span aria-hidden="true">{label}</span>
                 </button>
               ))}
+              {otherModules.length > 0 && (
+                <button type="button" className={!primaryModuleKeys.includes(safeActiveModule) ? "active" : ""}
+                  aria-label="Altro" title="Altro" aria-expanded={showOtherModules}
+                  aria-controls="other-crm-modules" onClick={() => setShowOtherModules(value => !value)}>
+                  <Blocks size={19} aria-hidden="true" /><span aria-hidden="true">Altro</span>
+                </button>
+              )}
             </nav>
+            {showOtherModules && (
+              <nav id="other-crm-modules" className="secondary-modules" aria-label="Altre sezioni">
+                {otherModules.map(({ key, label, Icon }) => (
+                  <button key={key} type="button" aria-current={key === safeActiveModule ? "page" : undefined}
+                    onClick={() => { openModule(key); setShowOtherModules(false); }}>
+                    <Icon size={17} aria-hidden="true" /><span>{label}</span>
+                  </button>
+                ))}
+              </nav>
+            )}
             {currentPages.length > 1 ? (
               <nav className="area-side-pages" aria-label={`Sottomenu ${currentModule.label}`}>
                 {currentPages.map(({ key, label, Icon }) => (
@@ -2297,7 +2318,7 @@ function CrmTopbar({
   onLogout: () => void;
 }) {
   const primaryModules = modules.filter((module) =>
-    ["immobili", "richieste", "nominativi", "agenda", "pubblicita", "censimento", "contattiPubblicita"].includes(module.key),
+    ["start", "agenda", "censimento", "nominativi", "immobili"].includes(module.key),
   );
 
   return (
