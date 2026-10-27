@@ -1,3 +1,4 @@
+import { readJsonBody as readBoundedJson } from "../../server/security.js";
 import crypto from "node:crypto";
 
 export const config = {
@@ -43,37 +44,7 @@ function readToken(req) {
   return bearerMatch?.[1] || (Array.isArray(headerToken) ? headerToken[0] : headerToken) || "";
 }
 
-async function readJsonBody(req) {
-  if (req.body && typeof req.body === "object") {
-    return req.body;
-  }
-
-  const chunks = [];
-  let totalBytes = 0;
-
-  for await (const chunk of req) {
-    totalBytes += chunk.length;
-    if (totalBytes > maxBodyBytes) {
-      const error = new Error("Payload troppo grande.");
-      error.statusCode = 413;
-      throw error;
-    }
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-
-  const rawBody = Buffer.concat(chunks).toString("utf8");
-  if (!rawBody.trim()) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(rawBody);
-  } catch {
-    const error = new Error("JSON non valido.");
-    error.statusCode = 400;
-    throw error;
-  }
-}
+const readJsonBody = (req) => readBoundedJson(req, maxBodyBytes);
 
 function cleanString(value) {
   return String(value ?? "").trim();
@@ -180,6 +151,11 @@ function normalizeCensusRecord(record, index) {
 
 function normalizePayload(body) {
   const censusRecords = asArray(body.records || body.census || body.items);
+  for (const records of [censusRecords, asArray(body.contacts), asArray(body.properties || body.immobili), asArray(body.activities || body.attivita)]) {
+    if (records.some(record => !record || typeof record !== "object" || Array.isArray(record))) {
+      throw Object.assign(new Error("Record non valido."), { statusCode: 400 });
+    }
+  }
   const normalizedFromRecords = censusRecords.map(normalizeCensusRecord);
   const contacts = [
     ...asArray(body.contacts).map(normalizeContact),
@@ -230,6 +206,8 @@ async function upsertCensusData(payload) {
   }
 
   const response = await fetch(forwardUrl, {
+    signal: AbortSignal.timeout(20000),
+    redirect: "error",
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -242,8 +220,8 @@ async function upsertCensusData(payload) {
   const text = await response.text();
 
   if (!response.ok) {
-    const error = new Error(`Upsert CRM fallito: ${text.slice(0, 500)}`);
-    error.statusCode = response.status;
+    const error = new Error("Servizio CRM temporaneamente non disponibile.");
+    error.statusCode = 502;
     throw error;
   }
 
@@ -256,6 +234,7 @@ async function upsertCensusData(payload) {
 
 export default async function handler(req, res) {
   sendCors(req, res);
+  res.setHeader("Cache-Control", "no-store");
 
   if (req.method === "OPTIONS") {
     return res.status(204).end();
@@ -291,7 +270,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     return res.status(error.statusCode || 500).json({
-      error: error instanceof Error ? error.message : "Errore import censimento.",
+      error: error.statusCode ? error.message : "Errore import censimento.",
       details: error.details || undefined,
     });
   }

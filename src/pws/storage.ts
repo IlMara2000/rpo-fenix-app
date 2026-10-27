@@ -1,3 +1,4 @@
+import { privateStorage } from "../lib/privateStorage";
 import type { CrmSnapshot, DailyPlan, SessionUser } from "./domain";
 
 export const crmStorageKey = "fenix-suite-crm-data-v2";
@@ -18,7 +19,7 @@ export function loadSession(): SessionUser | null {
 }
 
 export function loadCrmSnapshot(): CrmSnapshot {
-  const data = parse<Partial<CrmSnapshot>>(localStorage.getItem(crmStorageKey), {});
+  const data = parse<Partial<CrmSnapshot>>(privateStorage.getItem(crmStorageKey), {});
   return {
     properties: Array.isArray(data.properties) ? data.properties : [],
     requests: Array.isArray(data.requests) ? data.requests : [],
@@ -30,7 +31,7 @@ export function loadCrmSnapshot(): CrmSnapshot {
 }
 
 export function loadPlans(): DailyPlan[] {
-  const plans = parse<DailyPlan[]>(localStorage.getItem(pwsStorageKey), []);
+  const plans = parse<DailyPlan[]>(privateStorage.getItem(pwsStorageKey), []);
   return Array.isArray(plans) ? plans : [];
 }
 
@@ -48,7 +49,7 @@ export function loadPlan(userId: string, date: string): DailyPlan {
 export function savePlan(plan: DailyPlan) {
   const plans = loadPlans();
   const next = plans.filter((item) => !(item.userId === plan.userId && item.date === plan.date));
-  localStorage.setItem(pwsStorageKey, JSON.stringify([{ ...plan, updatedAt: new Date().toISOString() }, ...next]));
+  privateStorage.setItem(pwsStorageKey, JSON.stringify([{ ...plan, updatedAt: new Date().toISOString() }, ...next]));
 }
 
 export function updateCrmActivity(sourceId: string, status: string, outcome: string) {
@@ -60,5 +61,5 @@ export function updateCrmActivity(sourceId: string, status: string, outcome: str
       : activity,
   );
   data.activityLog = [`${now} · Esito PWS sincronizzato: ${outcome || status}`, ...data.activityLog].slice(0, 80);
-  localStorage.setItem(crmStorageKey, JSON.stringify(data));
+  privateStorage.setItem(crmStorageKey, JSON.stringify(data));
 }

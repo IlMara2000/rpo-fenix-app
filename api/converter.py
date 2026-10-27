@@ -1,5 +1,5 @@
+from server.uploads import read_multipart, validate_xlsx
 from http.server import BaseHTTPRequestHandler
-import cgi
 import io
 import zipfile
 
@@ -31,6 +31,7 @@ def normalize_number(value):
 
 
 def numbers_from_excel(file_data):
+    validate_xlsx(file_data)
     df = pd.read_excel(io.BytesIO(file_data), engine="openpyxl", header=None, dtype=str)
     numbers = set()
 
@@ -74,11 +75,7 @@ def zip_text(text):
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
-            form = cgi.FieldStorage(
-                fp=self.rfile,
-                headers=self.headers,
-                environ={"REQUEST_METHOD": "POST"},
-            )
+            form = read_multipart(self)
 
             if "excel" not in form and "txt" not in form:
                 self.send_response(400)
@@ -109,11 +106,13 @@ class handler(BaseHTTPRequestHandler):
                     body = zip_buffer.read()
 
             self.send_response(200)
+            self.send_header("Cache-Control", "no-store")
             self.send_header("Content-type", content_type)
             self.send_header("Content-Disposition", disposition)
             self.end_headers()
             self.wfile.write(body)
         except Exception as error:
-            self.send_response(500)
+            self.send_response(400 if isinstance(error, ValueError) else 500)
+            self.send_header("Cache-Control", "no-store")
             self.end_headers()
-            self.wfile.write(f"Errore: {str(error)}".encode())
+            self.wfile.write("File non valido o impossibile da elaborare.".encode())

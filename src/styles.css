@@ -10511,3 +10511,11 @@ tbody tr:hover {
     min-width: 620px !important;
   }
 }
+
+/* Program shortcuts remain separate from CRM navigation. */
+.dashboard-programs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.dashboard-programs a { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px solid #d7e2df; border-radius: 12px; background: #fff; color: #254c43; font-size: 12px; font-weight: 700; text-decoration: none; transition: background .15s ease, border-color .15s ease; }
+.dashboard-programs a:hover { background: #edf5f1; border-color: #789f90; }
+.dashboard-programs a[aria-current="page"] { background: #254c43; border-color: #254c43; color: #fff; }
+.dashboard-programs a:focus-visible { outline: 3px solid #b89248; outline-offset: 3px; }
+@media (max-width: 600px) { .dashboard-programs a { flex: 1 1 130px; padding: 10px 12px; } }

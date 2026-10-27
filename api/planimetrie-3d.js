@@ -1,3 +1,4 @@
+import { requireActiveUser, readJsonBody } from "../server/security.js";
 import { InferenceClient } from "@huggingface/inference";
 
 export const config = {
@@ -14,18 +15,6 @@ const defaultImageModels = [
 ];
 const defaultImageToImageModels = ["timbrooks/instruct-pix2pix", "lllyasviel/sd-controlnet-depth"];
 const defaultTextToImageModels = ["black-forest-labs/FLUX.1-schnell", "stabilityai/stable-diffusion-xl-base-1.0"];
-
-const readJsonBody = async (req) => {
-  if (req.body && typeof req.body === "object") {
-    return req.body;
-  }
-
-  const chunks = [];
-  for await (const chunk of req) {
-    chunks.push(chunk);
-  }
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
-};
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -208,15 +197,8 @@ const dataUrlToBlob = async (dataUrl) => {
   return new Blob([Buffer.from(match[2], "base64")], { type: match[1] });
 };
 
-const shortError = (error) => {
-  const message = error instanceof Error ? error.message : String(error || "errore sconosciuto");
-  return message.replace(/\s+/g, " ").slice(0, 260);
-};
-
-const renderErrorMessage = (error) => {
-  const message = error instanceof Error ? error.message : String(error || "errore sconosciuto");
-  return message.replace(/\s+/g, " ").slice(0, 1400);
-};
+const shortError = () => "Servizio AI temporaneamente non disponibile.";
+const renderErrorMessage = shortError;
 
 const generateRenderImage = async (client, body) => {
   const prompt = buildRenderPrompt(body);
@@ -288,8 +270,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Metodo non consentito" });
   }
 
+  res.setHeader("Cache-Control", "no-store");
   try {
+    const { client: authClient } = await requireActiveUser(req);
     const body = await readJsonBody(req);
+    if (typeof body.prompt !== "string" || body.prompt.length > 10000 ||
+        (body.image !== undefined && (!isImageDataUrl(body.image) || body.image.length > 3500000))) {
+      return res.status(400).json({ error: "Prompt o immagine non validi." });
+    }
     const token = process.env.HF_TOKEN;
     const hasImage = isImageDataUrl(body.image);
     const model = hasImage
@@ -309,6 +297,9 @@ export default async function handler(req, res) {
       });
     }
 
+    const { data: quotaAllowed, error: quotaError } = await authClient.rpc("consume_generation_quota");
+    if (quotaError) return res.status(503).json({ error: "Limite utilizzo non disponibile: contatta un amministratore." });
+    if (!quotaAllowed) return res.status(429).json({ error: "Limite giornaliero di 10 generazioni raggiunto." });
     const client = new InferenceClient(token);
     let activeModel = model;
     let plan = createFallbackPlan(body, "layout-fallback");
@@ -391,8 +382,8 @@ export default async function handler(req, res) {
       },
     });
   } catch (error) {
-    return res.status(500).json({
-      error: error instanceof Error ? error.message : "Errore generazione planimetria 3D.",
+    return res.status(error.statusCode || 500).json({
+      error: error.statusCode ? error.message : "Errore generazione planimetria 3D.",
     });
   }
 }

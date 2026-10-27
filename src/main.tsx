@@ -1,3 +1,6 @@
+import { supabase } from "./lib/supabase";
+import { portalExport } from "./crm/portalExport";
+import { privateStorage, setStorageOwner, clearPrivateStorage } from "./lib/privateStorage";
 import { StrictMode, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -318,8 +321,7 @@ type CensusRingSegment = {
 };
 
 const accountEmail = "daniele.marangoni@grfenix.com";
-const accountPasswordHash =
-  "35b47eca325c70ec48ba4d8489301c7ee82b6a50ac330938158dcfe1a5fded11";
+const accountPasswordHash = ""; // Local password authentication is disabled.
 const accountsStorageKey = "fenix-suite-accounts-v1";
 const sessionStorageKey = "fenix-suite-current-user-v1";
 const legacySessionKey = "fenix-suite-session";
@@ -1203,7 +1205,7 @@ function normalizeAccount(input: Partial<AccountRecord>, index: number): Account
 }
 
 function loadAccounts(): AccountRecord[] {
-  const savedAccounts = localStorage.getItem(accountsStorageKey);
+  const savedAccounts = privateStorage.getItem(accountsStorageKey);
   const parsedAccounts = savedAccounts ? safeJsonParse(savedAccounts) : null;
   const normalized = Array.isArray(parsedAccounts)
     ? parsedAccounts
@@ -1229,42 +1231,22 @@ function loadAccounts(): AccountRecord[] {
 }
 
 function saveAccounts(accounts: AccountRecord[]) {
-  localStorage.setItem(accountsStorageKey, JSON.stringify(accounts));
+  privateStorage.setItem(accountsStorageKey, JSON.stringify(accounts));
 }
 
+let verifiedSessionUser: SessionUser | null = null;
 function getStoredSessionUser(): SessionUser | null {
-  const savedSession = localStorage.getItem(sessionStorageKey);
-  const parsedSession = savedSession ? safeJsonParse(savedSession) : null;
-
-  if (
-    parsedSession &&
-    typeof parsedSession === "object" &&
-    "email" in parsedSession &&
-    "role" in parsedSession &&
-    isValidRole(String((parsedSession as SessionUser).role))
-  ) {
-    return {
-      id: String((parsedSession as SessionUser).id || defaultAccount.id),
-      name: String((parsedSession as SessionUser).name || defaultAccount.name),
-      email: String((parsedSession as SessionUser).email || defaultAccount.email).toLowerCase(),
-      role: (parsedSession as SessionUser).role,
-      source: (parsedSession as SessionUser).source,
-    };
-  }
-
-  if (localStorage.getItem(legacySessionKey) === "active") {
-    return toSessionUser(defaultAccount);
-  }
-
-  return null;
+  return verifiedSessionUser;
 }
 
 function storeSessionUser(user: SessionUser) {
-  localStorage.setItem(legacySessionKey, "active");
+  verifiedSessionUser = user;
   localStorage.setItem(sessionStorageKey, JSON.stringify(user));
 }
 
 function clearSessionUser() {
+  verifiedSessionUser = null;
+  clearPrivateStorage();
   localStorage.removeItem(legacySessionKey);
   localStorage.removeItem(sessionStorageKey);
 }
@@ -1506,6 +1488,62 @@ async function updateMigrationClientContext(accountForMigration: string) {
   }
 }
 
+function AuthBoundary({ children, path, navigate }: {
+  children: ReactNode; path: string; navigate: (path: string, replace?: boolean) => void;
+}) {
+  const [returnTo, setReturnTo] = useState("/crm#start/start-dashboard");
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [revision, setRevision] = useState(0);
+  useEffect(() => {
+    let disposed = false;
+    let generation = 0;
+    async function verify() {
+      const attempt = ++generation;
+      let next: SessionUser | null = null;
+      try {
+        const result = await supabase?.auth.getUser();
+        if (result?.data.user && !result.error) {
+          const { data: profile, error } = await supabase!.from("profiles")
+            .select("id,email,full_name,role,status").eq("id", result.data.user.id).maybeSingle();
+          if (!error && profile?.status === "Attivo" && isValidRole(profile.role)) {
+            next = { id: result.data.user.id, email: result.data.user.email || "",
+              name: profile.full_name, role: profile.role, source: "supabase" };
+          }
+        }
+      } catch { /* Fail closed if identity cannot be verified. */ }
+      if (disposed || attempt !== generation) return;
+      if (verifiedSessionUser?.id !== next?.id) clearSessionUser();
+      if (next) { setStorageOwner(next.id); storeSessionUser(next); }
+      else clearSessionUser();
+      setUser(next);
+      setChecking(false);
+    }
+    void verify();
+    const subscription = supabase?.auth.onAuthStateChange(() => {
+      // Avoid awaiting Supabase operations inside its auth lock.
+      setTimeout(() => { if (!disposed) void verify(); }, 0);
+    });
+    const timer = window.setInterval(() => void verify(), 30000);
+    return () => { disposed = true; generation++; window.clearInterval(timer); subscription?.data.subscription.unsubscribe(); };
+  }, [revision]);
+  useEffect(() => {
+    if (checking) return;
+    if (!user && path !== "/login") {
+      if (/^\/(crm|pws|rpo|telefonista|planimetrie)(\/|$)/i.test(path)) {
+        setReturnTo(window.location.pathname + window.location.search + window.location.hash);
+      }
+      navigate("/login", true);
+    } else if (user && (path === "/login" || path === "/")) {
+      navigate(returnTo, true);
+    }
+  }, [checking, user, path, returnTo]);
+  if (checking || (user && (path === "/login" || path === "/"))) return <main className="login-screen">Verifica accesso…</main>;
+  if (!user) return <LoginScreen notice="Accedi per usare Fenix Suite."
+    onSuccess={() => setRevision(value => value + 1)} />;
+  return <div key={`${user.id}:${user.role}`}>{children}</div>;
+}
+
 function AppRouter() {
   const [path, setPath] = useState(() => window.location.pathname);
 
@@ -1515,72 +1553,22 @@ function AppRouter() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  function navigate(nextPath: string) {
-    window.history.pushState(null, "", nextPath);
+  function navigate(nextPath: string, replace = false) {
+    window.history[replace ? "replaceState" : "pushState"](null, "", nextPath);
     setPath(window.location.pathname);
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
-  if (path.toLowerCase().startsWith("/pws")) {
-    return <PwsTool onNavigate={navigate} />;
-  }
-
-  if (path.startsWith("/crm")) {
-    return <CrmApp />;
-  }
-
-  if (path.startsWith("/planimetrie")) {
-    return <PlanimetrieTool onNavigate={navigate} />;
-  }
-
-  if (path.startsWith("/rpo")) {
-    return <RpoTool onNavigate={navigate} />;
-  }
-
-  if (path.startsWith("/telefonista")) {
-    return <TelefonistaTool onNavigate={navigate} />;
-  }
-
-  return <ProgramSelector onNavigate={navigate} />;
-}
-
-function ProgramSelector({ onNavigate }: { onNavigate: (path: string) => void }) {
-  const visiblePrograms = selectorPrograms;
-
-  useEffect(() => {
-    document.title = "Fenix Group | Suite";
-  }, []);
-
-  return (
-    <main className="suite-selector-shell">
-      <section className="suite-selector" aria-label="Selezione programma">
-        <img className="suite-selector-logo" src="/logo.png" alt="Fenix Group Real Estate" />
-        <div className="suite-selector-label">Seleziona un programma</div>
-        <div className={`suite-program-grid ${visiblePrograms.length === 1 ? "single" : ""}`}>
-          {visiblePrograms.map(({ title, description, path, Icon }) => (
-            <button
-              className="suite-program-card"
-              key={path}
-              type="button"
-              onClick={() => onNavigate(path)}
-            >
-              <span className="suite-program-icon" aria-hidden="true">
-                <Icon size={34} strokeWidth={2.1} />
-              </span>
-              <strong>{title}</strong>
-              <small>{description}</small>
-            </button>
-          ))}
-        </div>
-        <footer>Realindidden System © 2026</footer>
-      </section>
-    </main>
-  );
+  let content: ReactNode = <CrmApp />;
+  if (/^\/pws(?:\/|$)/i.test(path)) content = <PwsTool onNavigate={navigate} />;
+  else if (/^\/planimetrie(?:\/|$)/.test(path)) content = <PlanimetrieTool onNavigate={navigate} />;
+  else if (/^\/rpo(?:\/|$)/.test(path)) content = <RpoTool onNavigate={navigate} />;
+  else if (/^\/telefonista(?:\/|$)/.test(path)) content = <TelefonistaTool onNavigate={navigate} />;
+  return <AuthBoundary path={path} navigate={navigate}>{content}</AuthBoundary>;
 }
 
 function CrmApp() {
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(() => {
-    runNonBlockingLocalMigration();
     return getStoredSessionUser();
   });
   const [screen, setScreen] = useState<Screen>(() => (sessionUser ? "workspace" : "marketing"));
@@ -1646,12 +1634,12 @@ function CrmApp() {
     setSessionUser(user);
   }
 
-  function logout() {
-    void import("./lib/supabase").then(({ supabase }) => supabase?.auth.signOut());
+  async function logout() {
     clearSessionUser();
     setSessionUser(null);
-    setLoginNotice("");
-    setScreen("marketing");
+    setScreen("login");
+    try { await supabase?.auth.signOut({ scope: "local" }); }
+    finally { window.location.replace("/login"); }
   }
 
   if (screen === "workspace" && sessionUser) {
@@ -1919,7 +1907,7 @@ function LoginScreen({
   onSuccess,
 }: {
   notice: string;
-  onBack: () => void;
+  onBack?: () => void;
   onSuccess: (user: SessionUser) => void;
 }) {
   const [error, setError] = useState(notice);
@@ -1945,12 +1933,18 @@ function LoginScreen({
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileLookupError } = await supabase
         .from("profiles")
         .select("id,email,full_name,role,status")
         .eq("id", authData.user.id)
         .maybeSingle();
 
+      if (profileLookupError) {
+        await supabase.auth.signOut();
+        setLoading(false);
+        setError("Impossibile verificare il profilo.");
+        return;
+      }
       const safeRole = isValidRole(String(profile?.role || "")) ? profile!.role as UserRole : "AGENTE";
       const user: SessionUser = {
         id: authData.user.id,
@@ -1965,8 +1959,7 @@ function LoginScreen({
           id: user.id,
           email,
           full_name: user.name,
-          role: user.role,
-          status: "Attivo",
+
         });
         if (profileError) {
           await supabase.auth.signOut();
@@ -1986,31 +1979,16 @@ function LoginScreen({
       return;
     }
 
-    const passwordHash = await sha256Hex(password);
     setLoading(false);
-
-    const account = loadAccounts().find(
-      (item) => item.email === email && item.passwordHash === passwordHash,
-    );
-
-    if (account) {
-      if (!isAccountOnline(account)) {
-        setError(accountOfflineMessage(account));
-        return;
-      }
-      onSuccess(toSessionUser(account));
-      return;
-    }
-
-    setError("Credenziali non valide per Fenix Suite.");
+    setError("Accesso non disponibile: configura Supabase.");
   }
 
   return (
     <main className="login-screen">
-      <button className="back-link button-reset" type="button" onClick={onBack}>
+      {onBack && <button className="back-link button-reset" type="button" onClick={onBack}>
         <ArrowLeft size={18} />
         Torna al sito
-      </button>
+      </button>}
       <section className="login-panel" aria-label="Accesso Fenix Suite">
         <div className="login-copy">
           <div className="login-brand">
@@ -2235,6 +2213,15 @@ function Workspace({
           animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
           transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
         >
+          <nav className="dashboard-programs" aria-label="Programmi Fenix">
+            {selectorPrograms.map(({ title, description, path, Icon }) => (
+              <a key={path} href={path === "/crm" ? "/crm#start/start-dashboard" : path}
+                title={description} aria-current={path === "/crm" ? "page" : undefined}>
+                <Icon size={18} aria-hidden="true" />
+                <span>{title.replace("PROGRAMMA ", "")}</span>
+              </a>
+            ))}
+          </nav>
           <div className="workspace-status" role="status">
             <span>
               <CheckCircle2 size={16} />
@@ -5635,10 +5622,7 @@ function UtilitiesView({
         <div className="tool-grid">
           <ToolButton label={pageKey === "utilita-portali" ? "Esporta portali" : "Importa Excel"} Icon={UploadCloud} onClick={() => {
             if (pageKey === "utilita-portali") {
-              downloadCrmData({
-                ...data,
-                properties: data.properties.filter((property) => property.portals !== "Privato"),
-              });
+              downloadCrmData(portalExport(data.properties), "portali");
               onCommit((currentData) => currentData, "Esportazione portali scaricata in JSON.");
               return;
             }
@@ -5716,6 +5700,15 @@ function AccountsView({
   const currentAccount = accounts.find((account) => account.id === currentUser.id);
   const availableRoles = getAssignableRoles(currentUser);
   const defaultNewRole = availableRoles.includes("AGENTE") ? "AGENTE" : availableRoles[0] ?? "TELEFONISTA";
+
+  if (currentUser.source === "supabase") {
+    return <div className="workspace-grid">
+      <Panel className="span-12" title="Profilo account">
+        <p>{currentUser.name} · {currentUser.email} · {currentUser.role}</p>
+        <p>Per creare utenti, cambiare ruoli, sospendere account o reimpostare password, contatta l’amministratore. La gestione account da questa schermata non è ancora disponibile.</p>
+      </Panel>
+    </div>;
+  }
 
   function canManageTarget(account: AccountRecord) {
     if (!manager) {
@@ -5877,7 +5870,7 @@ function AccountsView({
       onAction("Non puoi resettare la password di questo account.");
       return;
     }
-    const temporaryPassword = "Fenix2026!";
+    const temporaryPassword = crypto.randomUUID();
     const passwordHash = await sha256Hex(temporaryPassword);
     onAccountsChange(
       (currentAccounts) =>
@@ -5915,8 +5908,8 @@ function AccountsView({
             account.email === defaultAccount.email
               ? {
                   ...account,
-                  role: "SVILUPPATORE",
-                  status: "Attivo",
+                  role: "SVILUPPATORE" as UserRole,
+                  status: "Attivo" as AccountStatus,
                   passwordHash: accountPasswordHash,
                   accessLimitEnabled: account.accessLimitEnabled !== false,
                   accessStartHour: normalizeAccessHour(account.accessStartHour, defaultAccessStartHour),
@@ -6659,7 +6652,7 @@ function labelForPage(moduleKey: ModuleKey, pageKey: string) {
 
 function usePersistentCrmData() {
   const [data, setData] = useState<CrmData>(() => {
-    const savedData = localStorage.getItem(crmStorageKey);
+    const savedData = privateStorage.getItem(crmStorageKey);
     if (!savedData) {
       return initialCrmData;
     }
@@ -6672,7 +6665,7 @@ function usePersistentCrmData() {
   });
 
   useEffect(() => {
-    localStorage.setItem(crmStorageKey, JSON.stringify(data));
+    privateStorage.setItem(crmStorageKey, JSON.stringify(data));
   }, [data]);
 
   return [data, setData] as const;
@@ -6983,14 +6976,14 @@ function createActivity(input: Partial<ActivityRecord> & Pick<ActivityRecord, "t
   };
 }
 
-function downloadCrmData(data: CrmData) {
+function downloadCrmData(data: CrmData | ReturnType<typeof portalExport>, label = "backup") {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
     type: "application/json",
   });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `fenix-suite-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = `fenix-suite-${label}-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.append(link);
   link.click();
   link.remove();

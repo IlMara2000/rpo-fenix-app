@@ -1,3 +1,4 @@
+import { privateStorage } from "./lib/privateStorage";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -119,7 +120,7 @@ const objections = [
 
 function loadCalls() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(callStorageKey) || "[]") as CallLog[];
+    const parsed = JSON.parse(privateStorage.getItem(callStorageKey) || "[]") as CallLog[];
     return Array.isArray(parsed)
       ? parsed
           .filter((call) => call && typeof call === "object")
@@ -141,7 +142,7 @@ function loadCalls() {
 
 function loadDraft() {
   try {
-    return JSON.parse(localStorage.getItem(draftStorageKey) || "{}") as Partial<{
+    return JSON.parse(privateStorage.getItem(draftStorageKey) || "{}") as Partial<{
       context: CallContext;
       notes: string;
       outcome: CallOutcome;
@@ -320,7 +321,7 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
   }, [running]);
 
   useEffect(() => {
-    localStorage.setItem(draftStorageKey, JSON.stringify({ context, notes, outcome, checked, mode, phase }));
+    privateStorage.setItem(draftStorageKey, JSON.stringify({ context, notes, outcome, checked, mode, phase }));
   }, [checked, context, mode, notes, outcome, phase]);
 
   function toggleCheck(item: string) {
@@ -351,7 +352,7 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
     };
     const nextCalls = [log, ...safeCalls].slice(0, 8);
     setCalls(nextCalls);
-    localStorage.setItem(callStorageKey, JSON.stringify(nextCalls));
+    privateStorage.setItem(callStorageKey, JSON.stringify(nextCalls));
     setNotice("Chiamata salvata nello storico locale.");
   }
 

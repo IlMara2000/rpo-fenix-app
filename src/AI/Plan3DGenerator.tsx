@@ -1,3 +1,4 @@
+import { supabase } from "../lib/supabase";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Box, ImagePlus, Loader2, Trash2, WandSparkles } from "lucide-react";
 import { FloorPlan3DViewer } from "./FloorPlan3DViewer";
@@ -88,9 +89,12 @@ export function Plan3DGenerator() {
 
     try {
       const imagePayload = imageFile ? await prepareImagePayload(imageFile) : null;
+      const session = await supabase?.auth.getSession();
+      const token = session?.data.session?.access_token;
+      if (!token) throw new Error("Accedi al CRM per generare una planimetria.");
       const response = await fetch("/api/planimetrie-3d", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           ...request,
           prompt: mergedPrompt || "Planimetria residenziale caricata dall'utente.",

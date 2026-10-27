@@ -208,7 +208,7 @@ export function normalizeFloorPlan3D(input: unknown, fallbackRequest: FloorPlan3
   }
 
   const raw = input as Partial<FloorPlan3D>;
-  const rooms = Array.isArray(raw.rooms) ? raw.rooms : [];
+  const rooms = Array.isArray(raw.rooms) ? raw.rooms.filter(room => room && typeof room === "object" && !Array.isArray(room)) : [];
 
   if (rooms.length === 0) {
     return createFallbackFloorPlan(fallbackRequest);
@@ -224,7 +224,7 @@ export function normalizeFloorPlan3D(input: unknown, fallbackRequest: FloorPlan3
     rooms: rooms.slice(0, 14).map((room, index) => {
       const item = room as Partial<Room3D>;
       const type = typeof item.type === "string" ? item.type.toLowerCase() : "stanza";
-      const furniture = Array.isArray(item.furniture) ? item.furniture : [];
+      const furniture = Array.isArray(item.furniture) ? item.furniture.filter(piece => piece && typeof piece === "object" && !Array.isArray(piece)) : [];
 
       return {
         id: typeof item.id === "string" ? item.id : `room-${index + 1}`,
