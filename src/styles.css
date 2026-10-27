@@ -10519,3 +10519,28 @@ tbody tr:hover {
 .dashboard-programs a[aria-current="page"] { background: #254c43; border-color: #254c43; color: #fff; }
 .dashboard-programs a:focus-visible { outline: 3px solid #b89248; outline-offset: 3px; }
 @media (max-width: 600px) { .dashboard-programs a { flex: 1 1 130px; padding: 10px 12px; } }
+
+/* Compact module navigation; labels appear on hover and keyboard focus. */
+.workspace-shell .module-nav button {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 52px !important;
+  min-height: 52px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 12px 16px !important;
+}
+.workspace-shell .module-nav button span {
+  display: none !important;
+  white-space: nowrap !important;
+}
+.workspace-shell .module-nav button:hover span,
+.workspace-shell .module-nav button:focus-visible span {
+  display: inline !important;
+}
+.workspace-shell .module-nav button:focus-visible {
+  outline: 2px solid var(--red) !important;
+  outline-offset: -3px !important;
+}

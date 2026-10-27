@@ -2179,9 +2179,12 @@ function Workspace({
                   key={key}
                   type="button"
                   onClick={() => openModule(key)}
+                  aria-label={label}
+                  aria-current={key === safeActiveModule ? "page" : undefined}
+                  title={label}
                 >
-                  <Icon size={19} />
-                  <span>{label}</span>
+                  <Icon size={19} aria-hidden="true" />
+                  <span aria-hidden="true">{label}</span>
                 </button>
               ))}
             </nav>
