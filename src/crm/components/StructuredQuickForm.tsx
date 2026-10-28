@@ -60,12 +60,13 @@ export function StructuredQuickForm({
   }
 
   return (
-    <form className="quick-form" onSubmit={handleSubmit}>
+    <form className="quick-form structured-form" onSubmit={handleSubmit}>
       {sections.map((section, sectionIndex) => (
         <details key={`${section.title}-${sectionIndex}`} open>
           <summary>{section.title}</summary>
           {section.description ? <p>{section.description}</p> : null}
 
+          <div className="structured-fields">
           {section.fields.map((field) => {
             const type = field.type ?? "text";
             const required = field.required ?? requiredDefault;
@@ -108,6 +109,7 @@ export function StructuredQuickForm({
               </label>
             );
           })}
+          </div>
         </details>
       ))}
 

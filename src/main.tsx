@@ -55,6 +55,7 @@ import {
 } from "lucide-react";
 import "./styles.css";
 import "./presentation.css";
+import "./workspace.css";
 import { PlanimetrieTool } from "./PlanimetrieTool";
 import { RpoTool } from "./RpoTool";
 import { TelefonistaTool } from "./TelefonistaTool";
@@ -1676,9 +1677,7 @@ function CrmApp() {
 
 function BrandMark() {
   return (
-    <span className="brand-mark" aria-hidden="true">
-      <span />
-    </span>
+    <img className="fenix-official-logo" src="/logo.png" alt="Fenix Group" />
   );
 }
 
@@ -2162,6 +2161,7 @@ function Workspace({
   return (
     <main className="workspace-shell">
       <section className="app-main">
+        <div className="workspace-navigation">
         <CrmTopbar
           activeModule={safeActiveModule}
           modules={visibleModules}
@@ -2169,7 +2169,6 @@ function Workspace({
           onOpenModule={openModule}
         />
 
-        <div className="area-workspace-frame">
           <aside className="app-sidebar">
             <button className="area-user-card button-reset" type="button" onClick={() => openModule("start")}>
               <UserRound size={28} />
@@ -2216,6 +2215,8 @@ function Workspace({
               </nav>
             ) : null}
           </aside>
+        </div>
+        <div className="area-workspace-frame">
         <motion.section
           className={`workspace-content ${safeActiveModule === "start" ? "area-start-content" : ""}`}
           initial={reduceMotion ? false : { opacity: 0, y: 10 }}
@@ -2875,12 +2876,6 @@ function PropertiesView({
 
   return (
     <div className="workspace-grid">
-      <RouteSummary
-        module="Immobili"
-        page={labelForPage("immobili", pageKey)}
-        path={pathForPage(pageKey)}
-        items={["Nuovo immobile -> proprietario -> scheda", "Scheda -> clienti compatibili", "Scheda -> portali, cartelli, contratti"]}
-      />
       {searchMode ? (
         <Panel className="span-5" title={pageKey === "immobili-ricerca-op" ? "Ricerca proprietario" : "Ricerca cliente"}>
           <QuickForm
@@ -3130,12 +3125,6 @@ function RequestsView({
 
   return (
     <div className="workspace-grid">
-      <RouteSummary
-        module="Richieste"
-        page={labelForPage("richieste", pageKey)}
-        path={pathForPage(pageKey)}
-        items={["Nominativo -> richiesta", "Richiesta -> matching immobili", "Proposta -> agenda visita"]}
-      />
       <Panel
         className="span-8"
         title={pageKey === "richieste-matching" ? "Incroci automatici" : "Richieste clienti"}
@@ -3384,12 +3373,6 @@ function ContactsView({
 
   return (
     <div className="workspace-grid">
-      <RouteSummary
-        module="Clienti"
-        page={labelForPage("nominativi", pageKey)}
-        path={pathForPage(pageKey)}
-        items={["Cliente -> esigenza", "Cliente -> attivita", "Cliente -> immobili proprietario"]}
-      />
       {pageKey === "nominativi-richieste" ? (
         <RequestsView pageKey="richieste-elenco" query={query} data={data} onCommit={onCommit} onAction={onAction} />
       ) : (
@@ -3782,12 +3765,6 @@ function OwnersView({
 
   return (
     <div className="workspace-grid">
-      <RouteSummary
-        module="Proprietari"
-        page={labelForPage("proprietari", pageKey)}
-        path={pathForPage(pageKey)}
-        items={["Cliente -> immobile", "Immobile -> proprietari", "Proprietario -> attivita"]}
-      />
       <Panel className="span-12" title="Regola operativa">
         <div className="scope-strip">
           <span>
@@ -3934,12 +3911,6 @@ function ActivityCenterView({
 
   return (
     <div className="workspace-grid">
-      <RouteSummary
-        module="Attivita"
-        page={labelForPage("attivita", pageKey)}
-        path={pathForPage(pageKey)}
-        items={["Attivita -> esito", "Esito -> storico", "Follow-up -> agenda"]}
-      />
       <div className="kpi-row">
         <KpiCard label="Aperte" value={String(openRows.length)} trend="da lavorare" Icon={ClipboardCheck} />
         <KpiCard label="Telefonate" value={String(callRows.length)} trend="storico" Icon={PhoneCall} />
@@ -4158,12 +4129,6 @@ function AgendaView({
 
   return (
     <div className="workspace-grid">
-      <RouteSummary
-        module="Attivita"
-        page={labelForPage("agenda", pageKey)}
-        path={pathForPage(pageKey)}
-        items={["Nuova attivita -> agenda", "Agenda -> storico", "Storico -> esito e follow-up"]}
-      />
       <Panel
         className={newMode ? "span-8" : "span-8"}
         title={pageKey === "agenda-storico" ? "Ricerca storico attivita" : "Agenda operativa"}
@@ -4359,12 +4324,6 @@ function MarketingView({
 }) {
   return (
     <div className="workspace-grid">
-      <RouteSummary
-        module="Pubblicita"
-        page="Pubblicita"
-        path="/pubblicita"
-        items={["Immobile -> pubblicazione", "Pubblicazione -> portale", "Lead -> contatto pubblicita"]}
-      />
       <Panel
         className="span-7"
         title="Pubblicazioni e portali"
@@ -4507,12 +4466,6 @@ function AdvertisingContactsView({
 
   return (
     <div className="workspace-grid">
-      <RouteSummary
-        module="Contatti Pubblicita"
-        page={labelForPage("contattiPubblicita", pageKey)}
-        path={pathForPage(pageKey)}
-        items={["Lead -> nominativo", "Lead -> richiesta", "Lead -> attivita di ricontatto"]}
-      />
       <Panel className="span-8" title="Contatti pubblicitari">
         <DataTable
           columns={["Contatto", "Interesse", "Numero", "Stato", "Provenienza"]}
@@ -5349,12 +5302,6 @@ function CensusView({
 
   return (
     <div className="workspace-grid">
-      <RouteSummary
-        module="Censimento"
-        page={labelForPage("censimento", pageKey)}
-        path={pathForPage(pageKey)}
-        items={["Zona -> Via", "Via -> Complesso", "Complesso -> Immobili", "Immobile -> Proprietari"]}
-      />
 
       <Panel className="span-12" title="Fasi censimento">
         <div className="census-phase-grid">
@@ -5487,12 +5434,6 @@ function GoalsView({ query, data, onCommit }: { query: string; data: CrmData; on
 
   return (
     <div className="workspace-grid">
-      <RouteSummary
-        module="Obiettivi"
-        page="Elenco"
-        path="/obiettivi"
-        items={["Obiettivo -> periodo", "Obiettivo -> operatore", "Obiettivo -> cruscotto Start"]}
-      />
       <Panel className="span-8" title="Obiettivi agenzia" action="Mese corrente">
         <div className="goal-stack">
           {rows.length ? (
@@ -5605,12 +5546,6 @@ function UtilitiesView({
 
   return (
     <div className="workspace-grid">
-      <RouteSummary
-        module="Utilita"
-        page={labelForPage("utilita", pageKey)}
-        path={pathForPage(pageKey)}
-        items={["Preferenze -> interfaccia", "Backup -> archivio", "Portali -> esportazioni"]}
-      />
       <Panel className="span-6" title="Strumenti collegati">
         <div className="tool-grid compact-tools">
           {externalTools.map((tool) => (
@@ -6157,12 +6092,6 @@ function SettingsView({ pageKey, query, onCommit }: { pageKey: string; query: st
 
   return (
     <div className="workspace-grid">
-      <RouteSummary
-        module="Impostazioni"
-        page={settingLabel}
-        path={pathForPage(pageKey)}
-        items={settingConfig.flow}
-      />
       <Panel className="span-5 crm-form-panel" title={settingConfig.formTitle}>
         <QuickForm
           button={settingConfig.button}
@@ -6371,37 +6300,6 @@ function settingsConfigForPage(pageKey: string, settingLabel: string) {
   return base;
 }
 
-function RouteSummary({
-  module,
-  page,
-  path,
-  items,
-}: {
-  module: string;
-  page: string;
-  path: string;
-  items: string[];
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <section className="route-summary span-12">
-      <button type="button" onClick={() => setOpen((value) => !value)}>
-        <span>Mostra/nascondi filtri</span>
-        <small>{module} / {page} / {path}</small>
-        <ChevronRight className={open ? "open" : ""} size={17} />
-      </button>
-      {open ? (
-        <div>
-          {items.map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
 function WorkflowSteps({ steps }: { steps: string[] }) {
   return (
     <div className="workflow-steps">
@@ -6450,6 +6348,13 @@ function Panel({
   className?: string;
 }) {
   const reduceMotion = useReducedMotion();
+
+  if (/^filtr[oi]/i.test(title)) {
+    return <details className="workspace-panel panel-filter span-12">
+      <summary><Filter size={16} aria-hidden="true" /><span>{title}</span><ChevronRight size={16} aria-hidden="true" /></summary>
+      <div className="filter-content">{children}</div>
+    </details>;
+  }
 
   return (
     <motion.section

@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "project": {
+    "name": "fenix-suite",
+    "productType": "Real estate CRM",
+    "stack": [
+      "react",
+      "vite"
+    ]
+  },
+  "sources": {
+    "tokens": [],
+    "components": [],
+    "assets": [
+      "public/logo.png",
+      "public/fenix-emblem.png"
+    ],
+    "instructions": []
+  },
+  "design": {
+    "colorMode": "dark",
+    "colors": {},
+    "typography": {},
+    "spacing": {},
+    "radius": {},
+    "shadows": {},
+    "motion": {},
+    "density": "compact"
+  },
+  "components": {
+    "installed": [],
+    "preferredPrimitives": [
+      "Panel",
+      "StructuredQuickForm",
+      "QuickForm",
+      "DataTable"
+    ],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [
+      "Use the official Fenix Group artwork from grfenix.com unchanged",
+      "Keep navigation sticky and icon labels visible on hover or keyboard focus",
+      "Preserve field names and submit behavior"
+    ],
+    "avoid": [
+      "Generated replacement brand marks",
+      "Technical route labels in product screens",
+      "Nested grids without full-width spanning"
+    ]
+  },
+  "decisions": [
+    "2026-10-28: User requested compact forms and tables across all CRM sections, collapsible real filters and removal of route-summary bars."
+  ],
+  "evidence": [
+    {
+      "fact": "project.stack:react",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:vite",
+      "source": "package.json"
+    }
+  ],
+  "generatedAt": "2026-10-28T03:42:44.946Z"
+}

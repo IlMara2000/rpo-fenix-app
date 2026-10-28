@@ -8,15 +8,10 @@
   "theme_color": "#0a0a0c",
   "icons": [
     {
-      "src": "/favicon/favicon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    },
-    {
-      "src": "/favicon/apple-touch-icon.png",
-      "sizes": "180x180",
+      "src": "/fenix-emblem.png",
+      "sizes": "128x120",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

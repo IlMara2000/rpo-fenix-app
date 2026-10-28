@@ -70,23 +70,6 @@
   color-scheme: dark;
 }
 
-.workspace-shell .module-nav button {
-  min-width: 0 !important;
-  overflow: hidden !important;
-}
-
-.workspace-shell .module-nav button span {
-  display: -webkit-box !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow: hidden !important;
-  overflow-wrap: anywhere !important;
-  text-overflow: ellipsis !important;
-  white-space: normal !important;
-  -webkit-box-orient: vertical !important;
-  -webkit-line-clamp: 2 !important;
-}
-
 .workspace-shell .workspace-panel,
 .workspace-shell .area-card,
 .workspace-shell .quick-form,
