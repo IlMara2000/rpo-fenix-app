@@ -77,3 +77,34 @@
   .workspace-shell .dashboard-programs a { flex: 0 0 auto; }
 }
 @media(prefers-reduced-motion:reduce) { .workspace-shell .panel-filter > summary svg { transition: none; } }
+/* Override legacy direct-child spacing, which also affected disclosure summaries. */
+.workspace-shell .area-topbar-brand .area-brand-copy { display: none !important; }
+.workspace-shell .module-heading { min-height: 0 !important; }
+.workspace-shell .workspace-panel.panel-filter > summary {
+  margin: 0 !important; padding: 11px 14px !important;
+  color: #e4e9f0 !important; background: transparent !important; border-radius: 0 !important;
+}
+.workspace-shell .workspace-panel.panel-filter > .filter-content { margin: 0 !important; padding: 0 !important; color: inherit !important; }
+.workspace-shell .workspace-panel > .tool-grid { margin: 0 !important; padding: 12px 14px !important; }
+.workspace-shell .workspace-panel .tool-grid .tool-button {
+  display: inline-flex !important; align-items: center; gap: 8px;
+  min-height: 34px !important; background: #242b36 !important; border: 1px solid #ffffff26 !important;
+}
+.workspace-shell .workspace-panel .tool-grid .tool-button > svg:last-child { display: none; }
+.workspace-shell .workspace-panel > .quick-form { margin: 0 !important; padding: 14px !important; }
+.workspace-shell .workspace-panel > .table-wrap { margin: 0 !important; padding: 0 !important; }
+.workspace-shell .workspace-panel > header { margin: 0 !important; }
+.workspace-shell .workspace-panel > .pipeline { margin: 0 !important; padding: 14px !important; gap: 10px !important; }
+.workspace-shell .pipeline > div { min-width: 0; padding: 12px !important; border-radius: 8px !important; background: #1d232d !important; color: #e4e9f0 !important; border: 1px solid #ffffff18 !important; box-shadow: none !important; }
+.workspace-shell .pipeline span, .workspace-shell .pipeline small { color: #bec6d2 !important; }
+.workspace-shell .pipeline strong { color: #f8f8fa !important; }
+@media(max-width:600px) {
+  .workspace-shell .quick-form input, .workspace-shell .quick-form select, .workspace-shell .quick-form textarea { font-size: 16px !important; min-height: 40px !important; }
+  .workspace-shell .quick-form input[type=checkbox] { min-height: 18px !important; }
+}
+.workspace-shell .workspace-panel > .census-phase-grid { padding: 12px 14px !important; margin: 0 !important; display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 10px; }
+.workspace-shell .census-phase-grid > article { padding: 12px !important; min-height: 0 !important; background: #1d232d !important; border: 1px solid #ffffff18 !important; border-radius: 8px !important; box-shadow: none !important; }
+.workspace-shell .census-phase-grid > article.active { border-color: var(--red) !important; background: #322128 !important; }
+.workspace-shell .census-phase-grid strong { color: #f8f8fa !important; font-size: 22px !important; }
+.workspace-shell .census-phase-grid small { color: #bec6d2 !important; font-size: 12px !important; line-height: 1.4; }
+.workspace-shell .filter-content > .filter-reset { margin: 12px 14px 0; }

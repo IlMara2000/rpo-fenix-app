@@ -5306,7 +5306,7 @@ function CensusView({
       <Panel className="span-12" title="Fasi censimento">
         <div className="census-phase-grid">
           {phaseCards.map((phase, index) => (
-            <article className={index === modulePages.censimento.findIndex((page) => page.key === pageKey) ? "active" : ""} key={phase.label}>
+            <article className={index === ["censimento-zone", "censimento-vie", "censimento-complessi", "censimento-immobili", "censimento-proprietari"].indexOf(pageKey) ? "active" : ""} key={phase.label}>
               <span>{phase.label}</span>
               <strong>{phase.value}</strong>
               <small>{phase.text}</small>
@@ -6352,7 +6352,10 @@ function Panel({
   if (/^filtr[oi]/i.test(title)) {
     return <details className="workspace-panel panel-filter span-12">
       <summary><Filter size={16} aria-hidden="true" /><span>{title}</span><ChevronRight size={16} aria-hidden="true" /></summary>
-      <div className="filter-content">{children}</div>
+      <div className="filter-content">
+        {action && onPanelAction && <button className="filter-reset" type="button" onClick={onPanelAction}>{action}</button>}
+        {children}
+      </div>
     </details>;
   }
 
@@ -6367,7 +6370,17 @@ function Panel({
       <header>
         <h2>{title}</h2>
         {action && onPanelAction ? (
-          <button type="button" onClick={onPanelAction}>
+          <button type="button" onClick={(event) => {
+            if (action === "Filtri") {
+              const filters = event.currentTarget.closest(".workspace-grid")?.querySelector<HTMLDetailsElement>(".panel-filter");
+              if (filters) {
+                filters.open = true;
+                filters.querySelector("summary")?.focus();
+                return;
+              }
+            }
+            onPanelAction();
+          }}>
             <Filter size={14} />
             {action}
           </button>
