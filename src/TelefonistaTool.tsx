@@ -92,29 +92,29 @@ const objections = [
       "La capisco. Non la chiamo per forzarla a vendere, ma per darle un valore aggiornato dell'immobile. Anche se oggi non vende, sapere il prezzo reale le evita decisioni al buio in futuro.",
   },
   {
-    label: "Ho gia' un'agenzia",
+    label: "Ho già un'agenzia",
     answer:
-      "Perfetto, allora e' ancora piu' utile avere un secondo parere gratuito. Non le chiedo di cambiare nulla: le propongo solo una valutazione tecnica per confrontare i dati.",
+      "Perfetto, allora è ancora più utile avere un secondo parere gratuito. Non le chiedo di cambiare nulla: le propongo solo una valutazione tecnica per confrontare i dati.",
   },
   {
     label: "Non mi interessa",
     answer:
-      "Nessun problema. Le faccio una sola domanda pratica: preferisce che la richiami piu' avanti o registro che al momento non vuole aggiornamenti sulla valutazione?",
+      "Nessun problema. Le faccio una sola domanda pratica: preferisce che la richiami più avanti o registro che al momento non vuole aggiornamenti sulla valutazione?",
   },
   {
-    label: "Mi richiami piu' avanti",
+    label: "Mi richiami più avanti",
     answer:
-      "Certo. Per non disturbarla a caso, mi dice quale periodo ha piu' senso per lei? Intanto segno se l'immobile e' abitato, libero o locato.",
+      "Certo. Per non disturbarla a caso, mi dice quale periodo ha più senso per lei? Intanto segno se l'immobile è abitato, libero o locato.",
   },
   {
     label: "Come avete il numero?",
     answer:
-      "Stiamo lavorando su contatti e immobili gia' censiti in zona. Se preferisce non ricevere altre chiamate, lo registro subito e non la disturbo oltre.",
+      "Stiamo lavorando su contatti e immobili già censiti in zona. Se preferisce non ricevere altre chiamate, lo registro subito e non la disturbo oltre.",
   },
   {
     label: "Mi mandi un messaggio",
     answer:
-      "Glielo mando volentieri. Prima pero' mi basta capire un dettaglio, cosi' il messaggio e' utile: parliamo dello stesso immobile o la situazione e' cambiata?",
+      "Glielo mando volentieri. Prima però mi basta capire un dettaglio, così il messaggio è utile: parliamo dello stesso immobile o la situazione è cambiata?",
   },
 ];
 
@@ -196,8 +196,8 @@ function buildScript() {
       icon: PhoneCall,
       beginner: [
         "Telefonista: Buongiorno, parlo con il proprietario dell'immobile? Sono di Fenix Group Real Estate, la disturbo solo per un aggiornamento rapido.",
-        "Se risponde: \"Dipende, per cosa?\"\nTelefonista: Le spiego subito: stiamo aggiornando le situazioni degli immobili gia' censiti in zona e vorrei capire se i dati che abbiamo sono ancora corretti.",
-        "Se risponde: \"Non ho tempo\"\nTelefonista: Ha ragione, le faccio una sola domanda e poi decida lei: l'immobile e' ancora suo oppure la situazione e' cambiata?",
+        "Se risponde: \"Dipende, per cosa?\"\nTelefonista: Le spiego subito: stiamo aggiornando le situazioni degli immobili già censiti in zona e vorrei capire se i dati che abbiamo sono ancora corretti.",
+        "Se risponde: \"Non ho tempo\"\nTelefonista: Ha ragione, le faccio una sola domanda e poi decida lei: l'immobile è ancora suo oppure la situazione è cambiata?",
       ],
       expert: [
         "Apri con nome agenzia + motivo rapido.",
@@ -210,7 +210,7 @@ function buildScript() {
       title: "Aggancio",
       icon: Target,
       beginner: [
-        "Telefonista: Non la chiamo per venderle qualcosa al telefono. Prima mi serve capire se la situazione dell'immobile e' ancora quella registrata.",
+        "Telefonista: Non la chiamo per venderle qualcosa al telefono. Prima mi serve capire se la situazione dell'immobile è ancora quella registrata.",
         "Se risponde: \"Non vendo\"\nTelefonista: Perfetto, infatti non le sto chiedendo di vendere. Anche chi non vende spesso vuole sapere quanto vale oggi casa sua, soprattutto se il mercato della zona si muove.",
         "Telefonista: Se ha senso, le propongo una perizia gratuita. Se non ha senso, chiudiamo qui e aggiorno semplicemente la scheda.",
       ],
@@ -225,7 +225,7 @@ function buildScript() {
       title: "Indagine",
       icon: ClipboardCheck,
       beginner: [
-        "Telefonista: L'immobile e' ancora di sua proprieta? E oggi e' abitato da lei, affittato, libero o gestito da qualcun altro?",
+        "Telefonista: L'immobile è ancora di sua proprieta? E oggi è abitato da lei, affittato, libero o gestito da qualcun altro?",
         "Se risponde in modo chiuso\nTelefonista: Le chiedo solo per non richiamarla con informazioni sbagliate. Se mi dice lo stato attuale, aggiorno la scheda e non le faccio perdere tempo.",
         "Telefonista: Ha mai fatto una valutazione recente o si basa ancora su una stima vecchia?",
         "Telefonista: Nel palazzo o nella via conosce qualcuno che sta pensando di vendere, affittare o semplicemente capire il valore del proprio immobile?",
@@ -244,7 +244,7 @@ function buildScript() {
       icon: Gauge,
       beginner: [
         "Telefonista: Per darle un valore serio non basta guardare i metri quadri. Servono stato interno, piano, esposizione, palazzo e domanda reale della zona.",
-        "Se risponde: \"Quanto vale?\"\nTelefonista: Al telefono rischierei di darle un numero poco serio. La cosa corretta e' far passare un tecnico per una perizia gratuita e senza impegno.",
+        "Se risponde: \"Quanto vale?\"\nTelefonista: Al telefono rischierei di darle un numero poco serio. La cosa corretta è far passare un tecnico per una perizia gratuita e senza impegno.",
         "Telefonista: Le torna meglio un passaggio breve questa settimana oppure la prossima? Anche solo 15 minuti per raccogliere i dati corretti.",
       ],
       expert: [
@@ -266,8 +266,8 @@ function buildScript() {
       icon: CheckCircle2,
       beginner: [
         "Telefonista: Perfetto, allora le confermo cosa segno: situazione dell'immobile, eventuale interesse alla perizia e prossimo ricontatto.",
-        "Se la perizia e' fissata\nTelefonista: Le mando conferma e faccio passare il tecnico preparato sui dati corretti. Se cambia qualcosa, ci avvisa prima dell'appuntamento.",
-        "Se non fissa\nTelefonista: Va bene, aggiorno la scheda. Posso richiamarla piu' avanti o preferisce che la lasci tranquillo per ora?",
+        "Se la perizia è fissata\nTelefonista: Le mando conferma e faccio passare il tecnico preparato sui dati corretti. Se cambia qualcosa, ci avvisa prima dell'appuntamento.",
+        "Se non fissa\nTelefonista: Va bene, aggiorno la scheda. Posso richiamarla più avanti o preferisce che la lasci tranquillo per ora?",
         "Dopo la chiamata: salva l'esito, scrivi le note essenziali e passa subito al prossimo contatto senza perdere il ritmo.",
       ],
       expert: ["Riepiloga dati.", "Conferma appuntamento o ricontatto.", "Chiedi consenso al prossimo contatto.", "Salva note e riparti."],
@@ -481,7 +481,7 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
           <textarea
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
-            placeholder="Scrivi cosa e' successo durante la telefonata: situazione immobile, disponibilita, obiezioni, persone citate, prossimo ricontatto..."
+            placeholder="Scrivi cosa è successo durante la telefonata: situazione immobile, disponibilita, obiezioni, persone citate, prossimo ricontatto..."
           />
 
           <div className="telefonista-checklist-head">

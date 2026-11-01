@@ -1,5 +1,6 @@
 import { supabase } from "./lib/supabase";
 import { portalExport } from "./crm/portalExport";
+import { LEGAL_ENTITY, LegalPage, legalDocumentFor } from "./legal";
 import { privateStorage, setStorageOwner, clearPrivateStorage } from "./lib/privateStorage";
 import { StrictMode, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -1565,6 +1566,9 @@ function AppRouter() {
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
+  const legalDocument = legalDocumentFor(path);
+  if (legalDocument) return <LegalPage documentKey={legalDocument} />;
+
   let content: ReactNode = <CrmApp />;
   if (/^\/pws(?:\/|$)/i.test(path)) content = <PwsTool onNavigate={navigate} />;
   else if (/^\/planimetrie(?:\/|$)/.test(path)) content = <PlanimetrieTool onNavigate={navigate} />;
@@ -1833,6 +1837,28 @@ function ProcessBand() {
 }
 
 function ContactSection() {
+  const [requestPrepared, setRequestPrepared] = useState(false);
+
+  function prepareRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const name = String(data.get("nome") || "").trim();
+    const email = String(data.get("email") || "").trim();
+    const topic = String(data.get("argomento") || "").trim();
+    const message = String(data.get("messaggio") || "").trim();
+    const body = [
+      `Nome e cognome: ${name}`,
+      `Email: ${email}`,
+      `Argomento: ${topic || "Non indicato"}`,
+      "",
+      message,
+    ].join("\r\n");
+    const subject = `Richiesta informazioni - ${topic || "Fenix Suite"}`;
+
+    window.location.href = `mailto:${LEGAL_ENTITY.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setRequestPrepared(true);
+  }
+
   return (
     <section className="contact-section" id="richiedi">
       <div className="contact-copy">
@@ -1844,30 +1870,23 @@ function ContactSection() {
         </p>
         <div className="contact-strip">
           <Mail size={18} />
-          <span>Risposta rapida garantita</span>
+          <span>Risponderemo entro 2 giorni lavorativi</span>
         </div>
       </div>
-      <form
-        className="contact-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const form = event.currentTarget;
-          form.classList.add("form-sent");
-        }}
-      >
+      <form className="contact-form" onSubmit={prepareRequest}>
         <div className="form-row">
           <label>
             Nome e cognome
-            <input required type="text" placeholder="Nome cognome" />
+            <input name="nome" required type="text" placeholder="Nome cognome" />
           </label>
           <label>
             Email
-            <input required type="email" placeholder="mario@agenzia.it" />
+            <input name="email" required type="email" placeholder="mario@agenzia.it" />
           </label>
         </div>
         <label>
           Argomento
-          <select defaultValue="">
+          <select name="argomento" defaultValue="">
             <option value="" disabled>
               Seleziona un argomento
             </option>
@@ -1878,18 +1897,27 @@ function ContactSection() {
         </label>
         <label>
           Messaggio
-          <textarea placeholder="Scrivi qui il tuo messaggio..." rows={5} />
+          <textarea name="messaggio" placeholder="Scrivi qui il tuo messaggio..." rows={5} />
         </label>
         <label className="privacy-check">
-          <input required type="checkbox" />
-          <span>Ho letto e accetto la privacy policy.</span>
+          <input required name="consenso" type="checkbox" />
+          <span>
+            Ho letto l'<a href="/privacy">informativa privacy</a> e acconsento al trattamento
+            dei dati per ricevere risposta.
+          </span>
         </label>
         <button className="primary-action form-button" type="submit">
-          Invia
+          Invia richiesta
         </button>
-        <p className="form-success" role="status">
-          Messaggio registrato.
+        <p className="form-hint">
+          Si aprirà il tuo programma di posta con il messaggio già compilato. In alternativa
+          scrivi a <a href={`mailto:${LEGAL_ENTITY.email}`}>{LEGAL_ENTITY.email}</a>.
         </p>
+        {requestPrepared ? (
+          <p className="form-success" role="status">
+            Richiesta preparata: completa l'invio dal tuo programma di posta.
+          </p>
+        ) : null}
       </form>
     </section>
   );
@@ -1900,7 +1928,13 @@ function Footer() {
     <footer className="footer">
       <span>Fenix Suite</span>
       <span>Real estate platform © 2026</span>
-      <span>Termini e condizioni | Privacy Policy</span>
+      <span className="footer-legal">
+        <a href="/termini">Termini e condizioni</a>
+        <span aria-hidden="true"> · </span>
+        <a href="/privacy">Privacy Policy</a>
+        <span aria-hidden="true"> · </span>
+        <a href="/note-legali">Note legali</a>
+      </span>
     </footer>
   );
 }
@@ -2011,11 +2045,11 @@ function LoginScreen({
           <div className="login-highlights">
             <span>
               <ShieldCheck size={18} />
-              Sessione locale protetta
+              Accesso protetto con Supabase Auth
             </span>
             <span>
               <DatabaseBackup size={18} />
-              Dati salvati nel browser
+              Copia di lavoro sul dispositivo, non cifrata
             </span>
           </div>
         </div>
@@ -2049,8 +2083,15 @@ function LoginScreen({
             {loading ? "Verifica..." : "Accedi a Fenix Suite"}
           </button>
           <p className="login-note">
-            Account registrato per l'accesso. La password non e' salvata in chiaro
-            nell'interfaccia.
+            Le credenziali sono gestite da Supabase Auth: la password non è memorizzata in
+            chiaro nell'applicazione.
+          </p>
+          <p className="login-legal">
+            <a href="/privacy">Informativa privacy</a>
+            <span aria-hidden="true"> · </span>
+            <a href="/termini">Termini e condizioni</a>
+            <span aria-hidden="true"> · </span>
+            <a href="/note-legali">Note legali</a>
           </p>
         </form>
       </section>

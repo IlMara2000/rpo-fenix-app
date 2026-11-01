@@ -7,23 +7,31 @@ export const config = {
 
 const maxBodyBytes = 2 * 1024 * 1024;
 
+/**
+ * Consente solo le origini elencate in CYBORG_ALLOWED_ORIGINS.
+ * I client non browser (server-to-server) non inviano Origin e non hanno bisogno di CORS.
+ * Restituisce false quando l'origine dichiarata non è autorizzata.
+ */
 function sendCors(req, res) {
-  const allowedOrigins = (process.env.CYBORG_ALLOWED_ORIGINS || "*")
+  const allowedOrigins = (process.env.CYBORG_ALLOWED_ORIGINS || "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
   const requestOrigin = req.headers.origin;
-  const allowOrigin =
-    allowedOrigins.includes("*") || !requestOrigin
-      ? "*"
-      : allowedOrigins.includes(requestOrigin)
-        ? requestOrigin
-        : allowedOrigins[0];
 
-  res.setHeader("Access-Control-Allow-Origin", allowOrigin);
+  if (!requestOrigin) {
+    return true;
+  }
+
+  if (!allowedOrigins.includes(requestOrigin)) {
+    return false;
+  }
+
+  res.setHeader("Access-Control-Allow-Origin", requestOrigin);
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Cyborg-Token");
   res.setHeader("Vary", "Origin");
+  return true;
 }
 
 function timingSafeEqual(left, right) {
@@ -233,8 +241,11 @@ async function upsertCensusData(payload) {
 }
 
 export default async function handler(req, res) {
-  sendCors(req, res);
   res.setHeader("Cache-Control", "no-store");
+
+  if (!sendCors(req, res)) {
+    return res.status(403).json({ error: "Origine non consentita." });
+  }
 
   if (req.method === "OPTIONS") {
     return res.status(204).end();

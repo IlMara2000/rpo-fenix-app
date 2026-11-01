@@ -10,4 +10,20 @@ New CRM, PWS, account and call data is stored in browser keys scoped to the veri
 
 Uploads accept at most 4 MiB; XLSX archives at most 24 MiB expanded, 1,000 members, 250,000 cells per sheet and 500,000 cells total. Limits also cover sparse and merged ranges. Multipart parsing no longer depends on removed Python `cgi` APIs. Scanner output still highlights blacklisted rows; it does not erase their values.
 
+## Accesso alle API RPO
+
+`api/converter.py` e `api/scanner.py` applicano ora `server/security.py`, che rispecchia la politica di `server/security.js`: token Supabase valido, profilo con `status = 'Attivo'`, altrimenti 401/403. Se `SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY` (o le equivalenti `VITE_*`) mancano, la risposta è 503 e nessun file viene elaborato. Il client RPO invia il token in `Authorization` e interrompe l'operazione se la sessione è scaduta.
+
+## Intestazioni e documenti legali
+
+`vercel.json` dichiara `Content-Security-Policy` (script solo dal dominio, nessun frame, connessioni limitate a self e Supabase), `Permissions-Policy` e `Strict-Transport-Security`. La CSP può interferire con la toolbar dei deployment di preview di Vercel: verificarne il comportamento prima di usarla nelle preview condivise.
+
+Le pagine `/privacy`, `/termini` e `/note-legali` sono pubbliche, non passano da `AuthBoundary` e sono collegate dalla schermata di accesso e dal footer. I dati del prestatore sono centralizzati in `LEGAL_ENTITY` (`src/legal.tsx`): finché contengono segnaposto la pagina mostra l'avviso "Documento in bozza". Il modulo contatti prepara un messaggio nel client di posta dell'utente e non dichiara più un invio che non avviene.
+
+## Configurazione di autenticazione
+
+`supabase/config.toml` imposta ora `enable_signup = false`, conferma e-mail obbligatoria, password di almeno 12 caratteri con requisiti e limiti di sessione. **Il file vale per lo sviluppo locale:** le stesse opzioni vanno impostate nel progetto hostato (Authentication → Sign In / Providers, Password, Sessions) e applicate con `supabase config push` solo se il progetto è gestito da CLI.
+
+`api/cyborg/import-census.js` accetta CORS solo dalle origini elencate in `CYBORG_ALLOWED_ORIGINS` e rifiuta le altre con 403. Senza variabile impostata, i client non browser continuano a funzionare ma nessuna pagina web può chiamare l'endpoint.
+
 Validation: `npm test`, `python3 -m unittest discover -s tests -p 'test_*.py'`, `npm run build`, `npm audit`. Remote configuration, prior history, existing account roles, production log exposure and a real-user end-to-end login have not been verified by these local checks. Review existing privileged profiles for unauthorized historic changes before rollout.

@@ -1,3 +1,4 @@
+from server.security import AuthError, require_active_user, send_auth_error
 from server.uploads import read_multipart, validate_xlsx
 from http.server import BaseHTTPRequestHandler
 import io
@@ -74,6 +75,12 @@ def zip_text(text):
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
+        try:
+            require_active_user(self.headers)
+        except AuthError as auth_error:
+            send_auth_error(self, auth_error)
+            return
+
         try:
             form = read_multipart(self)
 

@@ -14,3 +14,16 @@ export const supabase = isSupabaseConfigured
       },
     })
   : null;
+
+/**
+ * Header Authorization per le API protette.
+ * Fallisce subito, invece di lasciare che il server risponda 401.
+ */
+export async function authHeaders(): Promise<Record<string, string>> {
+  const session = supabase ? await supabase.auth.getSession() : null;
+  const token = session?.data.session?.access_token;
+  if (!token) {
+    throw new Error("Sessione scaduta: accedi di nuovo per usare questo strumento.");
+  }
+  return { Authorization: `Bearer ${token}` };
+}

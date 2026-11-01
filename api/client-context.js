@@ -10,14 +10,21 @@ export default function handler(request, response) {
     return response.status(405).json({ error: "Metodo non consentito." });
   }
 
-  const forwardedFor = firstHeaderValue(request.headers["x-forwarded-for"]);
+  // x-real-ip è impostato dall'infrastruttura; X-Forwarded-For si usa solo come riserva
+  // prendendo l'ultimo valore, cioè quello aggiunto dal proxy più vicino.
+  const forwardedFor = String(request.headers["x-forwarded-for"] || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .pop();
   const clientIp =
-    forwardedFor ||
     firstHeaderValue(request.headers["x-real-ip"]) ||
+    forwardedFor ||
     request.socket?.remoteAddress ||
     "unknown";
+  const salt = process.env.CLIENT_CONTEXT_SALT || "fenix-network";
   const networkId = createHash("sha256")
-    .update(`fenix-network:${clientIp}`)
+    .update(`${salt}:${clientIp}`)
     .digest("hex")
     .slice(0, 24);
 

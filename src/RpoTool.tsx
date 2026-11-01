@@ -21,6 +21,20 @@ import {
   type DividerResult,
   type SplitterResult,
 } from "./rpoLogic";
+import { authHeaders } from "./lib/supabase";
+
+async function responseError(response: Response): Promise<string> {
+  const text = await response.text();
+  try {
+    const parsed = JSON.parse(text) as { error?: unknown };
+    if (typeof parsed?.error === "string" && parsed.error.trim()) {
+      return parsed.error;
+    }
+  } catch {
+    // risposta non JSON: si usa il testo originale
+  }
+  return text.trim() || `Errore ${response.status}.`;
+}
 
 type ToolStatus = {
   message: string;
@@ -51,9 +65,9 @@ const tutorialCopy = [
   {
     title: "TXT Zipper",
     before:
-      "Prima: usa un TXT gia' pronto per il caricamento RPO, ad esempio una lista gia' preparata o una parte generata dal divisore.",
+      "Prima: usa un TXT già pronto per il caricamento RPO, ad esempio una lista già preparata o una parte generata dal divisore.",
     after:
-      "Dopo: scarica lo ZIP generato. Dentro trovi lista.txt in UTF-8 con righe CRLF: e' la cartella compressa richiesta dal portale RPO, senza modifiche al contenuto del TXT.",
+      "Dopo: scarica lo ZIP generato. Dentro trovi lista.txt in UTF-8 con righe CRLF: è la cartella compressa richiesta dal portale RPO, senza modifiche al contenuto del TXT.",
   },
   {
     title: "TXT Cleaner",
@@ -148,10 +162,14 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
     await runWithStatus("CREAZIONE ZIP RPO IN CORSO...", async () => {
       const formData = new FormData();
       formData.append("excel", converterFile);
-      const response = await fetch("/api/converter", { method: "POST", body: formData });
+      const response = await fetch("/api/converter", {
+        method: "POST",
+        headers: await authHeaders(),
+        body: formData,
+      });
 
       if (!response.ok) {
-        throw new Error(await response.text());
+        throw new Error(await responseError(response));
       }
 
       const blob = await response.blob();
@@ -170,10 +188,14 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
       const formData = new FormData();
       formData.append("excel", converterFile);
       formData.append("output", "txt");
-      const response = await fetch("/api/converter", { method: "POST", body: formData });
+      const response = await fetch("/api/converter", {
+        method: "POST",
+        headers: await authHeaders(),
+        body: formData,
+      });
 
       if (!response.ok) {
-        throw new Error(await response.text());
+        throw new Error(await responseError(response));
       }
 
       const blob = await response.blob();
@@ -191,10 +213,14 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
     await runWithStatus("CREAZIONE ZIP TXT IN CORSO...", async () => {
       const formData = new FormData();
       formData.append("txt", txtZipFile);
-      const response = await fetch("/api/converter", { method: "POST", body: formData });
+      const response = await fetch("/api/converter", {
+        method: "POST",
+        headers: await authHeaders(),
+        body: formData,
+      });
 
       if (!response.ok) {
-        throw new Error(await response.text());
+        throw new Error(await responseError(response));
       }
 
       const blob = await response.blob();
@@ -246,10 +272,14 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
       const formData = new FormData();
       formData.append("txt", scannerTxt);
       formData.append("excel", scannerExcel);
-      const response = await fetch("/api/scanner", { method: "POST", body: formData });
+      const response = await fetch("/api/scanner", {
+        method: "POST",
+        headers: await authHeaders(),
+        body: formData,
+      });
 
       if (!response.ok) {
-        throw new Error(await response.text());
+        throw new Error(await responseError(response));
       }
 
       const blob = await response.blob();
@@ -405,7 +435,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
             Icon={FileArchive}
             kicker="Fase 3"
             title="CONVERTITORE da TXT a ZIP"
-            text="Serve a comprimere un TXT gia' pronto nello ZIP richiesto dal portale RPO, senza filtrare o modificare il file."
+            text="Serve a comprimere un TXT già pronto nello ZIP richiesto dal portale RPO, senza filtrare o modificare il file."
           />
           {tutorialStep === 2 ? (
             <TutorialNote
