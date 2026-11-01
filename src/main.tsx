@@ -2040,7 +2040,7 @@ function LoginScreen({
           <h1>Entra nel gestionale operativo.</h1>
           <p>
             La suite interna raccoglie cruscotto, immobili, clienti, censimento,
-            agenda, censimento e strumenti collegati in un unico ambiente.
+            agenda e strumenti collegati in un unico ambiente.
           </p>
           <div className="login-highlights">
             <span>
