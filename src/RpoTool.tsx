@@ -567,7 +567,7 @@ export function RpoTool({ onNavigate }: RpoToolProps) {
         </article>
       </section>
 
-      <footer className="rpo-footer">REALINDI DEN SYSTEMS © 2026</footer>
+      <footer className="rpo-footer">Fenix Group © 2026</footer>
     </main>
   );
 }
