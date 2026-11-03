@@ -37,6 +37,38 @@ test("map markers carry cadastral data but never owner names", async () => {
   );
 });
 
+test("address lookups are queued so the public map service is not flooded", async () => {
+  const { geocodeAddress } = await loadModule("../src/censimento/coordinates.ts");
+  const originalFetch = globalThis.fetch;
+  const starts = [];
+  let inFlight = 0;
+  let maxInFlight = 0;
+
+  globalThis.fetch = async () => {
+    inFlight += 1;
+    maxInFlight = Math.max(maxInFlight, inFlight);
+    starts.push(Date.now());
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    inFlight -= 1;
+    return { ok: true, json: async () => [{ lat: "45.4642", lon: "9.19" }] };
+  };
+
+  try {
+    const [first, second] = await Promise.all([
+      geocodeAddress("Via Roma 10, Centro"),
+      geocodeAddress("Via Verdi 1, Centro"),
+    ]);
+
+    assert.deepEqual(first, { lat: 45.4642, lng: 9.19 });
+    assert.deepEqual(second, { lat: 45.4642, lng: 9.19 });
+    assert.equal(maxInFlight, 1, "una sola richiesta in volo alla volta");
+    assert.equal(starts.length, 2);
+    assert.ok(starts[1] - starts[0] >= 1000, `distacco di soli ${starts[1] - starts[0]}ms`);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("properties without valid coordinates are reported as missing, not plotted", async () => {
   const { splitMappable } = await loadModule("../src/censimento/geocode.ts");
 

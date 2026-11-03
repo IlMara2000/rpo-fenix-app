@@ -59,15 +59,45 @@ export function addressForProperty(property: MapSourceProperty): string {
 }
 
 /**
- * Geocodifica una richiesta alla volta su OpenStreetMap (Nominatim).
- * Il servizio pubblico accetta una richiesta al secondo: la funzione e'
- * pensata per essere chiamata solo su azione esplicita dell'operatore.
+ * Il servizio pubblico OpenStreetMap (Nominatim) ammette al massimo una
+ * richiesta al secondo. Due clic ravvicinati su immobili diversi partirebbero
+ * insieme e farebbero bloccare il servizio, quindi le ricerche vengono messe in
+ * fila indiana con almeno un secondo di distacco.
+ */
+const MIN_INTERVAL_MS = 1100;
+
+let queue: Promise<unknown> = Promise.resolve();
+let lastRequestAt = 0;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Geocodifica un indirizzo su OpenStreetMap (Nominatim).
+ * Le chiamate concorrenti vengono accodate: il servizio pubblico non tollera
+ * due richieste nello stesso secondo.
  */
 export async function geocodeAddress(query: string): Promise<Coordinates | null> {
   const trimmed = query.trim();
   if (trimmed.length < 4) {
     return null;
   }
+
+  const task = queue.then(
+    () => requestCoordinates(trimmed),
+    () => requestCoordinates(trimmed),
+  );
+  queue = task.catch(() => undefined);
+  return task;
+}
+
+async function requestCoordinates(trimmed: string): Promise<Coordinates | null> {
+  const sinceLast = Date.now() - lastRequestAt;
+  if (sinceLast < MIN_INTERVAL_MS) {
+    await wait(MIN_INTERVAL_MS - sinceLast);
+  }
+  lastRequestAt = Date.now();
 
   try {
     const response = await fetch(

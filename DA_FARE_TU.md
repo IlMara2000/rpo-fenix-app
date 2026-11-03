@@ -25,6 +25,10 @@ Apri `src/legal.tsx` e sostituisci i valori fra doppie graffe:
 L'email `daniele.marangoni@grfenix.com` è già corretta, non toccarla.
 Quando non resta nessuna doppia graffa, l'avviso "Documento in bozza" sparisce da solo.
 
+Gli stessi dati servono nel file **`LICENSE`**, dove ho lasciato `[RAGIONE SOCIALE]`,
+`[SEDE LEGALE]`, `[PARTITA IVA]`, `[PEC]` e `[FORO COMPETENTE]` (la città del tribunale,
+ess. Milano). Se mi dai i valori li metto in tutti e due i file in una volta.
+
 Se preferisci, passami i valori e li inserisco io: non sono segreti, sono dati
 che finiscono comunque in una pagina pubblica.
 
@@ -110,8 +114,9 @@ Queste non sono cose da codice e vanno fatte con chi ti segue:
 - **Registro dei trattamenti** (art. 30 GDPR): l'elenco di quali dati tratti e perché.
 - **Contratti di nomina a responsabile** (DPA) con Vercel e Supabase: si accettano dalle
   loro pagine, sono documenti standard.
-- **Licenza del software**: oggi non c'è. Se il codice resta tuo, va scritto che è
-  proprietario e non open source.
+- **Licenza del software**: il file `LICENSE` c'è già, scritto come licenza
+  proprietaria. Restano da riempire i segnaposto e da farla controllare a chi ti segue
+  per l'aspetto legale (in particolare il foro competente).
 
 ---
 

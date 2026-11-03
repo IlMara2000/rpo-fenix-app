@@ -41,9 +41,10 @@ function coordinatesOf(property: MapSourceProperty): Coordinates | null {
  * Unica mappa immobiliare del gestionale.
  * Mostra solo gli immobili: popup e testi non contengono mai il nome del proprietario.
  *
- * La posizione scelta viene salvata sull'immobile stesso, così resta anche
- * cambiando computer. La vecchia cache del browser serve solo a recuperare le
- * posizioni gia' scelte prima che esistesse il campo: vengono ricopiate una volta.
+ * La posizione scelta viene salvata sull'immobile stesso invece che in una
+ * memoria separata: cosi' entra nelle copie di sicurezza e non si perde se si
+ * pulisce la cache. La vecchia cache resta solo come riserva per recuperare le
+ * posizioni scelte prima che il campo esistesse: vengono ricopiate una volta.
  */
 export function PropertyMap({
   properties,
