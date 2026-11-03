@@ -108,3 +108,55 @@
 .workspace-shell .census-phase-grid strong { color: #f8f8fa !important; font-size: 22px !important; }
 .workspace-shell .census-phase-grid small { color: #bec6d2 !important; font-size: 12px !important; line-height: 1.4; }
 .workspace-shell .filter-content > .filter-reset { margin: 12px 14px 0; }
+
+/* --- Censimento mixabile: colonna strumenti + area di lavoro --- */
+.workspace-shell .census-mix-shell { display: grid; grid-template-columns: 208px minmax(0,1fr); gap: 14px; align-items: start; }
+.workspace-shell .census-sites { position: sticky; top: 76px; display: grid; gap: 4px; padding: 12px 10px; border: 1px solid #ffffff18; border-radius: 10px; background: #141820; }
+.workspace-shell .census-sites-title { margin: 0 0 6px; padding: 0 6px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #8b95a4; }
+.workspace-shell .census-site-link { display: flex !important; align-items: center; gap: 8px; width: 100% !important; justify-content: flex-start !important; padding: 9px 10px !important; min-height: 38px !important; border-radius: 7px !important; background: transparent !important; box-shadow: none !important; color: #cdd4de !important; text-align: left; }
+.workspace-shell .census-site-link span { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-shell .census-site-link svg:last-child:not(:first-child) { opacity: .55; flex: 0 0 auto; }
+.workspace-shell .census-site-link:hover, .workspace-shell .census-site-link:focus-visible { background: #ffffff0f !important; color: #fff !important; }
+.workspace-shell .census-site-link.is-active { background: #ffffff1a !important; color: #fff !important; box-shadow: inset 2px 0 0 var(--red) !important; }
+.workspace-shell .census-mix-main { min-width: 0; }
+.workspace-shell .census-mix-shell.is-split .census-mix-main { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 14px; align-items: start; }
+.workspace-shell .census-analysis { min-width: 0; max-height: 78vh; overflow-y: auto; }
+.workspace-shell .census-analysis .workspace-grid { grid-template-columns: minmax(0,1fr) !important; }
+.workspace-shell .census-analysis .workspace-grid > .workspace-panel { grid-column: 1 / -1 !important; }
+.workspace-shell .census-site-panel { display: flex; flex-direction: column; min-width: 0; border: 1px solid #ffffff18; border-radius: 10px; background: #141820; overflow: hidden; }
+.workspace-shell .census-site-panel > header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #ffffff16; }
+.workspace-shell .census-site-panel > header strong { font-size: 13px; }
+.workspace-shell .census-site-panel > header span { font-size: 11px; color: #9aa4b2; }
+.workspace-shell .census-site-actions { display: flex; gap: 8px; margin-left: auto; }
+.workspace-shell .census-site-actions a, .workspace-shell .census-site-actions button { display: inline-flex; align-items: center; gap: 6px; min-height: 30px !important; padding: 5px 10px !important; border-radius: 6px !important; font-size: 11px !important; background: #ffffff0f !important; color: #dbe2ea !important; text-decoration: none; }
+.workspace-shell .census-site-frame { width: 100%; height: min(76vh, 820px); border: 0; background: #fff; }
+.workspace-shell .census-site-empty { padding: 18px 14px; font-size: 12px; color: #9aa4b2; }
+@media(max-width:1100px) {
+  .workspace-shell .census-mix-shell { grid-template-columns: minmax(0,1fr); }
+  .workspace-shell .census-sites { position: static; display: flex; flex-wrap: wrap; }
+  .workspace-shell .census-sites-title { display: none; }
+  .workspace-shell .census-site-link { width: auto !important; }
+  .workspace-shell .census-mix-shell.is-split .census-mix-main { grid-template-columns: minmax(0,1fr); }
+  .workspace-shell .census-analysis { max-height: none; }
+}
+/* Barra azioni dentro un pannello */
+.workspace-shell .panel-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px 0; }
+.workspace-shell .toolbar-button { display: inline-flex; align-items: center; gap: 6px; min-height: 32px !important; padding: 6px 12px !important; border-radius: 7px !important; font-size: 11px !important; background: #ffffff0f !important; color: #dbe2ea !important; }
+.workspace-shell .toolbar-button:hover, .workspace-shell .toolbar-button:focus-visible { background: #ffffff1f !important; color: #fff !important; }
+/* Mappa immobiliare */
+.workspace-shell .property-map { display: grid; gap: 12px; padding: 12px 14px 14px; }
+.workspace-shell .property-map-canvas { width: 100%; height: min(68vh, 720px); border-radius: 8px; border: 1px solid #ffffff18; background: #0e1219; }
+.workspace-shell .property-map-canvas:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.workspace-shell .property-map-pin { display: block; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 2px #0d1016, 0 0 0 3px #ffffff55; }
+.workspace-shell .property-map-credit { margin: 0; font-size: 11px; color: #9aa4b2; }
+.workspace-shell .property-map-credit a { color: #cbd5e1; text-decoration: underline; }
+.workspace-shell .property-map-empty, .workspace-shell .property-map-message { margin: 0; font-size: 12px; color: #b9c2cf; }
+.workspace-shell .property-map-message { color: #f0c674; }
+.workspace-shell .property-map-missing { display: grid; gap: 8px; padding: 12px; border: 1px solid #ffffff12; border-radius: 8px; background: #ffffff04; }
+.workspace-shell .property-map-missing > strong { font-size: 12px; }
+.workspace-shell .property-map-missing ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.workspace-shell .property-map-missing li { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #c7cfda; }
+.workspace-shell .property-map-missing li span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-shell .property-map-missing li button { flex: 0 0 auto; min-height: 30px !important; padding: 5px 10px !important; font-size: 11px !important; }
+.workspace-shell .leaflet-container { font: inherit; background: #0e1219; }
+.workspace-shell .leaflet-control-attribution { font-size: 10px; }

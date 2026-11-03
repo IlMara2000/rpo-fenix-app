@@ -1,4 +1,7 @@
 import { supabase } from "./lib/supabase";
+import { CensimentoWorkspace } from "./censimento/CensimentoWorkspace";
+import { PropertyMap } from "./censimento/PropertyMap";
+import { censimentoSites, findCensimentoSite, type CensimentoSiteId } from "./censimento/sites";
 import { portalExport } from "./crm/portalExport";
 import { LEGAL_ENTITY, LegalPage, legalDocumentFor } from "./legal";
 import { privateStorage, setStorageOwner, clearPrivateStorage } from "./lib/privateStorage";
@@ -597,7 +600,7 @@ const modules: ModuleItem[] = [
 
 const navigationModuleKeys: ModuleKey[] = [
   "start", "agenda", "censimento", "richieste", "nominativi",
-  "immobili", "obiettivi", "utilita", "impostazioni",
+  "proprietari", "immobili", "obiettivi", "utilita", "impostazioni",
 ];
 
 const modulePages: Record<ModuleKey, ModulePage[]> = {
@@ -799,6 +802,12 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       label: "Proprietari",
       description: "Fase 5: collega clienti e proprietari agli immobili censiti.",
       Icon: UsersRound,
+    },
+    {
+      key: "censimento-mappa",
+      label: "Mappa",
+      description: "Mappa immobiliare: gli immobili censiti e i dati catastali in un solo posto.",
+      Icon: MapPinned,
     },
   ],
   obiettivi: [
@@ -2402,7 +2411,7 @@ function ModuleView({
   agendaResetVersion: number;
 }) {
   if (moduleKey === "immobili") {
-    return <PropertiesView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
+    return <PropertiesView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenMap={() => onOpenModule("censimento", "censimento-mappa")} />;
   }
   if (moduleKey === "richieste") {
     return <RequestsView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
@@ -2411,7 +2420,7 @@ function ModuleView({
     return <ContactsView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
   }
   if (moduleKey === "proprietari") {
-    return <OwnersView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
+    return <OwnersView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenMap={() => onOpenModule("censimento", "censimento-mappa")} />;
   }
   if (moduleKey === "agenda") {
     return <AgendaView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} resetVersion={agendaResetVersion} />;
@@ -2821,15 +2830,17 @@ function PropertiesView({
   data,
   onCommit,
   onAction,
+  onOpenMap,
 }: {
   pageKey: string;
   query: string;
   data: CrmData;
   onCommit: CrmCommit;
   onAction: (message: string) => void;
+  onOpenMap: () => void;
 }) {
   const [filters, setFilters] = useState<Record<string, string>>({});
-  const [propertyView, setPropertyView] = useState<"list" | "map">("list");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [showPropertyDetails, setShowPropertyDetails] = useState(false);
   const baseRows = data.properties.filter((item) => {
     if (pageKey === "immobili-vendite") {
@@ -2939,9 +2950,9 @@ function PropertiesView({
               onClick={() => setShowPropertyDetails((visible) => !visible)}
             />
             <ToolButton
-              label={propertyView === "map" ? "Visualizza elenco" : "Visualizza mappa"}
-              Icon={propertyView === "map" ? ListChecks : MapPinned}
-              onClick={() => setPropertyView((view) => (view === "map" ? "list" : "map"))}
+              label="Mappa immobiliare"
+              Icon={MapPinned}
+              onClick={onOpenMap}
             />
             <ToolButton
               label="Stampa elenco"
@@ -2952,27 +2963,11 @@ function PropertiesView({
         </Panel>
       ) : null}
       <Panel
-        className={searchMode ? "span-7" : "span-8"}
+        className={newMode || filtersOpen ? "span-8" : "span-12"}
         title={newMode ? "Schede recenti" : "Archivio immobili"}
-        action={activeFilters(filters).length ? "Azzera filtri" : "Filtri"}
-        onPanelAction={() => {
-          setFilters({});
-          onAction("Filtri immobili azzerati.");
-        }}
+        action={newMode ? undefined : filtersOpen ? "Chiudi filtri" : "Filtri"}
+        onPanelAction={newMode ? undefined : () => setFiltersOpen((open) => !open)}
       >
-        {propertyView === "map" && !newMode ? (
-          <div className="map-strip">
-            {rows.length ? rows.map((item) => (
-              <button key={item.id} type="button" onClick={() => onAction(`Immobile ${item.code} selezionato sulla mappa.`)}>
-                <MapPinned size={18} />
-                <strong>{item.title}</strong>
-                <span>{item.zone} / {item.price}</span>
-              </button>
-            )) : (
-              <EmptyState title="Nessun immobile da mostrare" text="Modifica i filtri per popolare la vista mappa." />
-            )}
-          </div>
-        ) : (
           <DataTable
             columns={showPropertyDetails
               ? ["Codice", "Immobile", "Zona", "Stato", "Prezzo", "Catasto", "Superficie", "Locali", "Portali"]
@@ -3021,11 +3016,16 @@ function PropertiesView({
               },
             ]}
           />
-        )}
       </Panel>
+      {(newMode || filtersOpen) ? (
       <Panel
-        className={newMode ? "span-12 crm-form-panel" : "span-4"}
+        className={newMode ? "span-12 crm-form-panel" : "span-12"}
         title={newMode ? "Scheda immobile completa" : "Filtri avanzati"}
+        action={newMode || !activeFilters(filters).length ? undefined : "Azzera filtri"}
+        onPanelAction={newMode ? undefined : () => {
+          setFilters({});
+          onAction("Filtri immobili azzerati.");
+        }}
       >
         <StructuredQuickForm
           requiredDefault={false}
@@ -3086,6 +3086,7 @@ function PropertiesView({
           }}
         />
       </Panel>
+      ) : null}
       <Panel className="span-4" title="Checklist scheda">
         <Checklist
           items={["Dati proprietario", "Caratteristiche", "Foto", "Planimetria", "Portali"]}
@@ -3167,7 +3168,7 @@ function RequestsView({
   return (
     <div className="workspace-grid">
       <Panel
-        className="span-8"
+        className={pageKey === "richieste-nuova" ? "span-8" : "span-12"}
         title={pageKey === "richieste-matching" ? "Incroci automatici" : "Richieste clienti"}
         action="Matching automatico"
         onPanelAction={() =>
@@ -3242,11 +3243,8 @@ function RequestsView({
           ]}
         />
       </Panel>
-      <Panel
-        className={pageKey === "richieste-nuova" ? "span-12 crm-form-panel" : "span-4"}
-        title={pageKey === "richieste-nuova" ? "Preferenza completa" : "Filtro richieste"}
-      >
-        {pageKey === "richieste-nuova" ? (
+      {pageKey === "richieste-nuova" ? (
+      <Panel className="span-12 crm-form-panel" title="Preferenza completa">
           <StructuredQuickForm
             requiredDefault={false}
             sections={requestFormSections}
@@ -3312,15 +3310,8 @@ function RequestsView({
               );
             }}
           />
-        ) : (
-          <QuickForm
-            button="Applica filtro"
-            fields={searchFilterFields}
-            required={false}
-            onSubmit={(values) => onAction(`Filtro richieste applicato: ${valuesSummary(values)}.`)}
-          />
-        )}
       </Panel>
+      ) : null}
       <Panel className="span-12" title="Pipeline richieste">
         <div className="pipeline">
           {["Nuove", "Qualificate", "Visita", "Trattativa", "Chiuse"].map((stage, index) => (
@@ -3350,6 +3341,7 @@ function ContactsView({
   onAction: (message: string) => void;
 }) {
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const filteredContacts = data.contacts.filter((item) => {
     const splitName = splitFullName(item.name);
     const details = item.details ?? {};
@@ -3419,13 +3411,10 @@ function ContactsView({
       ) : (
         <>
       <Panel
-        className="span-8"
+        className={pageKey === "nominativi-nuovo" ? "span-8" : "span-12"}
         title="Database clienti"
-        action={activeFilters(filters).length ? "Azzera filtri" : "Filtri"}
-        onPanelAction={() => {
-          setFilters({});
-          onAction("Filtri clienti azzerati.");
-        }}
+        action={pageKey === "nominativi-nuovo" ? undefined : filtersOpen ? "Chiudi filtri" : "Filtri"}
+        onPanelAction={pageKey === "nominativi-nuovo" ? undefined : () => setFiltersOpen((open) => !open)}
       >
         <DataTable
           columns={["Nominativo", "Tipologia", "Contatti", "Ultima attività", "Operatore", "Ricontatto", "Privacy", "Stato"]}
@@ -3480,9 +3469,15 @@ function ContactsView({
           ]}
         />
       </Panel>
+      {(pageKey === "nominativi-nuovo" || filtersOpen) ? (
       <Panel
-        className={pageKey === "nominativi-nuovo" ? "span-12 crm-form-panel" : "span-4"}
+        className={pageKey === "nominativi-nuovo" ? "span-12 crm-form-panel" : "span-12"}
         title={pageKey === "nominativi-nuovo" ? "Anagrafica completa" : "Filtri nominativi"}
+        action={pageKey === "nominativi-nuovo" || !activeFilters(filters).length ? undefined : "Azzera filtri"}
+        onPanelAction={pageKey === "nominativi-nuovo" ? undefined : () => {
+          setFilters({});
+          onAction("Filtri clienti azzerati.");
+        }}
       >
         <StructuredQuickForm
           requiredDefault={false}
@@ -3538,6 +3533,7 @@ function ContactsView({
           }}
         />
       </Panel>
+      ) : null}
       <Panel className="span-12" title="Comunicazioni rapide">
         <div className="tool-grid">
           <ToolButton label="Email scheda" Icon={Mail} onClick={() => onCommit((currentData) => ({
@@ -3630,14 +3626,17 @@ function OwnersView({
   data,
   onCommit,
   onAction,
+  onOpenMap,
 }: {
   pageKey: string;
   query: string;
   data: CrmData;
   onCommit: CrmCommit;
   onAction: (message: string) => void;
+  onOpenMap: () => void;
 }) {
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const ownerBase = data.contacts
     .filter((contact) => isOwnerContact(contact, data.properties))
     .filter((contact) => {
@@ -3806,31 +3805,20 @@ function OwnersView({
 
   return (
     <div className="workspace-grid">
-      <Panel className="span-12" title="Regola operativa">
-        <div className="scope-strip">
-          <span>
-            <strong>Cliente e proprietario</strong>
-            <small>La stessa persona resta in anagrafica clienti e diventa proprietaria quando viene collegata a un immobile.</small>
-          </span>
-          <span>
-            <strong>Immobili collegati</strong>
-            <small>Ogni immobile puo avere uno o piu proprietari, separati nella scheda con storico attivita dedicato.</small>
-          </span>
-          <span>
-            <strong>Sviluppo</strong>
-            <small>Telefonate, esiti e follow-up finiscono sempre nella sezione Attivita.</small>
-          </span>
-        </div>
-      </Panel>
       <Panel
         className={linkMode ? "span-8" : "span-12"}
         title="Archivio proprietari"
-        action={activeFilters(filters).length ? "Azzera filtri" : "Filtri"}
-        onPanelAction={() => {
-          setFilters({});
-          onAction("Filtri proprietari azzerati.");
-        }}
+        action={linkMode ? undefined : filtersOpen ? "Chiudi filtri" : "Filtri"}
+        onPanelAction={linkMode ? undefined : () => setFiltersOpen((open) => !open)}
       >
+        {!linkMode ? (
+          <div className="panel-toolbar">
+            <button type="button" className="toolbar-button" onClick={onOpenMap}>
+              <MapPinned size={16} aria-hidden="true" />
+              <span>Mappa immobiliare</span>
+            </button>
+          </div>
+        ) : null}
         <DataTable
           columns={["Proprietario", "Numero", "Immobili", "Catasto", "Stato", "Prossimo passo"]}
           rows={owners.map((owner) => {
@@ -3879,35 +3867,49 @@ function OwnersView({
           ]}
         />
       </Panel>
-      <Panel className={linkMode ? "span-4 crm-form-panel" : "span-12"} title={linkMode ? "Collega a immobile" : "Filtro proprietari"}>
-        <QuickForm
-          button={linkMode ? "Collega proprietario" : "Filtra proprietari"}
-          fields={linkMode
-            ? [
-                "Nome",
-                "Cognome",
-                { name: "Numero", required: false },
-                "Immobile collegato",
-                { name: "Codice fiscale", required: false },
-                { name: "Foglio", required: false },
-                { name: "Particella", required: false },
-                { name: "Subalterno", required: false },
-                { name: "Categoria catastale", options: cadastralCategoryOptions, required: false },
-                { name: "Vani", options: roomOptions, required: false },
-                { name: "Nota", required: false },
-              ]
-            : searchFilterFields}
-          required={linkMode}
-          onSubmit={(values) => {
-            if (!linkMode) {
+      {filtersOpen && !linkMode ? (
+        <Panel
+          className="span-12"
+          title="Filtro proprietari"
+          action={activeFilters(filters).length ? "Azzera filtri" : undefined}
+          onPanelAction={() => {
+            setFilters({});
+            onAction("Filtri proprietari azzerati.");
+          }}
+        >
+          <QuickForm
+            button="Filtra proprietari"
+            fields={searchFilterFields}
+            required={false}
+            onSubmit={(values) => {
               setFilters(values);
               onAction(`Filtro proprietari applicato: ${valuesSummary(values)}.`);
-              return;
-            }
-            upsertOwner(values);
-          }}
-        />
-      </Panel>
+            }}
+          />
+        </Panel>
+      ) : null}
+      {linkMode ? (
+        <Panel className="span-4 crm-form-panel" title="Collega a immobile">
+          <QuickForm
+            button="Collega proprietario"
+            fields={[
+              "Nome",
+              "Cognome",
+              { name: "Numero", required: false },
+              "Immobile collegato",
+              { name: "Codice fiscale", required: false },
+              { name: "Foglio", required: false },
+              { name: "Particella", required: false },
+              { name: "Subalterno", required: false },
+              { name: "Categoria catastale", options: cadastralCategoryOptions, required: false },
+              { name: "Vani", options: roomOptions, required: false },
+              { name: "Nota", required: false },
+            ]}
+            required
+            onSubmit={upsertOwner}
+          />
+        </Panel>
+      ) : null}
     </div>
   );
 }
@@ -4647,6 +4649,14 @@ function CensusView({
   onAction: (message: string) => void;
 }) {
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [activeSiteId, setActiveSiteId] = useState<CensimentoSiteId | null>(null);
+  const mapPage = pageKey === "censimento-mappa";
+  const activeSite = mapPage
+    ? findCensimentoSite("mappa") ?? null
+    : activeSiteId
+      ? findCensimentoSite(activeSiteId) ?? null
+      : null;
   const censusAreas = useFilteredRows(data.censusAreas, query, (area) =>
     [area.zone, String(area.buildings), String(area.contacts), area.updatedAt].join(" "),
   );
@@ -5341,7 +5351,27 @@ function CensusView({
     );
   }
 
+  function selectSite(id: CensimentoSiteId) {
+    const site = findCensimentoSite(id);
+    if (!site) {
+      return;
+    }
+    if (site.mode === "external") {
+      window.open(site.url, "_blank", "noopener,noreferrer");
+      onAction(`${site.label} aperto in una scheda del browser.`);
+      return;
+    }
+    setActiveSiteId(id);
+  }
+
   return (
+    <CensimentoWorkspace
+      sites={censimentoSites}
+      activeSite={activeSite}
+      onSelectSite={selectSite}
+      onClose={() => setActiveSiteId(null)}
+      mapView={<PropertyMap properties={data.properties} />}
+    >
     <div className="workspace-grid">
 
       <Panel className="span-12" title="Fasi censimento">
@@ -5356,10 +5386,10 @@ function CensusView({
         </div>
       </Panel>
 
-      {pageKey === "censimento-proprietari" || pageKey === "censimento-contatti" ? (
+      {pageKey === "censimento-proprietari" && filtersOpen ? (
         <Panel
           className="span-12"
-          title={pageKey === "censimento-contatti" ? "Filtro contatti censimento" : "Filtro proprietari"}
+          title="Filtro proprietari"
           action={activeFilters(filters).length ? "Azzera filtri" : undefined}
           onPanelAction={() => {
             setFilters({});
@@ -5381,8 +5411,16 @@ function CensusView({
       <Panel
         className="span-8"
         title={pageTitle}
-        action="Selezione"
-        onPanelAction={() => onAction("Usa la tabella per controllare il livello corrente del censimento.")}
+        action={pageKey === "censimento-contatti" || pageKey === "censimento-proprietari"
+          ? (filtersOpen ? "Chiudi filtri" : "Filtri")
+          : "Selezione"}
+        onPanelAction={() => {
+          if (pageKey === "censimento-contatti" || pageKey === "censimento-proprietari") {
+            setFiltersOpen((open) => !open);
+            return;
+          }
+          onAction("Usa la tabella per controllare il livello corrente del censimento.");
+        }}
       >
         <DataTable
           columns={tableColumns}
@@ -5421,8 +5459,9 @@ function CensusView({
           ]}
         />
       </Panel>
+      {(pageKey !== "censimento-contatti" || filtersOpen) ? (
       <Panel
-        className={pageKey === "censimento-nuovo-contatto" ? "span-12 crm-form-panel" : "span-4 crm-form-panel"}
+        className={pageKey === "censimento-nuovo-contatto" || pageKey === "censimento-contatti" ? "span-12 crm-form-panel" : "span-4 crm-form-panel"}
         title={formTitle}
       >
         {pageKey === "censimento-nuovo-contatto" ? (
@@ -5448,23 +5487,9 @@ function CensusView({
           />
         )}
       </Panel>
-
-      <Panel className="span-12" title="Mappa censimento">
-        {data.censusAreas.length ? (
-          <div className="map-strip">
-            {data.censusAreas.map((area) => (
-              <button key={area.zone} type="button" onClick={() => onAction(`Zona ${area.zone} selezionata.`)}>
-                <MapPinned size={18} />
-                <strong>{area.zone}</strong>
-                <span>{area.buildings} palazzi / {area.contacts} proprietari</span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <EmptyState title="Nessuna zona censita" text="Crea la prima zona per iniziare il censimento gerarchico." />
-        )}
-      </Panel>
+      ) : null}
     </div>
+    </CensimentoWorkspace>
   );
 }
 
@@ -6391,7 +6416,7 @@ function Panel({
   const reduceMotion = useReducedMotion();
 
   if (/^filtr[oi]/i.test(title)) {
-    return <details className="workspace-panel panel-filter span-12">
+    return <details className="workspace-panel panel-filter span-12" open>
       <summary><Filter size={16} aria-hidden="true" /><span>{title}</span><ChevronRight size={16} aria-hidden="true" /></summary>
       <div className="filter-content">
         {action && onPanelAction && <button className="filter-reset" type="button" onClick={onPanelAction}>{action}</button>}
