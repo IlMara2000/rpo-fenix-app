@@ -60,8 +60,7 @@
           "value": "nosniff"
         },
         {
-          "key": "Referrer-Policy",
-          "value": "no-referrer"
+          "key": "Referrer-Policy",            "value": "strict-origin-when-cross-origin"
         },
         {
           "key": "X-Frame-Options",
@@ -76,8 +75,7 @@
           "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
         },
         {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' mailto:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; manifest-src 'self'; upgrade-insecure-requests"
+          "key": "Content-Security-Policy",            "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' mailto:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; media-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://tiles.openfreemap.org https://nominatim.openstreetmap.org; frame-src 'self' https://sister.agenziaentrate.gov.it https://cercaora.online https://app.datagma.com; manifest-src 'self'; upgrade-insecure-requests"
         }
       ]
     },

@@ -1,11 +1,19 @@
 import { supabase } from "./lib/supabase";
 import { CensimentoWorkspace } from "./censimento/CensimentoWorkspace";
-import { PropertyMap } from "./censimento/PropertyMap";
+import { Suspense, lazy } from "react";
 import { censimentoSites, findCensimentoSite, type CensimentoSiteId } from "./censimento/sites";
 import { portalExport } from "./crm/portalExport";
 import { LEGAL_ENTITY, LegalPage, legalDocumentFor } from "./legal";
 import { privateStorage, setStorageOwner, clearPrivateStorage } from "./lib/privateStorage";
 import { StrictMode, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+
+/**
+ * La mappa porta con se' il motore cartografico (circa 800 kB): si carica solo
+ * quando l'operatore la apre, invece di pesare su ogni pagina del gestionale.
+ */
+const PropertyMap = lazy(() =>
+  import("./censimento/PropertyMap").then((module) => ({ default: module.PropertyMap })),
+);
 import { createRoot, type Root } from "react-dom/client";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
@@ -5394,7 +5402,11 @@ function CensusView({
       activeSite={activeSite}
       onSelectSite={selectSite}
       onClose={() => setActiveSiteId(null)}
-      mapView={<PropertyMap properties={data.properties} onCoordinatesChange={saveMapPositions} />}
+      mapView={
+        <Suspense fallback={<p className="property-map-empty">Carico la mappa…</p>}>
+          <PropertyMap properties={data.properties} onCoordinatesChange={saveMapPositions} />
+        </Suspense>
+      }
     >
     <div className="workspace-grid">
 

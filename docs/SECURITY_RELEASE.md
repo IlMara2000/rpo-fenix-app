@@ -16,7 +16,9 @@ Uploads accept at most 4 MiB; XLSX archives at most 24 MiB expanded, 1,000 membe
 
 ## Intestazioni e documenti legali
 
-`vercel.json` dichiara `Content-Security-Policy` (script solo dal dominio, nessun frame, connessioni limitate a self e Supabase), `Permissions-Policy` e `Strict-Transport-Security`. La CSP può interferire con la toolbar dei deployment di preview di Vercel: verificarne il comportamento prima di usarla nelle preview condivise.
+`vercel.json` dichiara `Content-Security-Policy` (script solo dal dominio, nessun frame in entrata, connessioni limitate a self, Supabase e ai servizi cartografici: tessere OpenFreeMap e ricerca indirizzi Nominatim), `Permissions-Policy` e `Strict-Transport-Security`. La direttiva `frame-src` elenca solo Sister, CercaOra e Datagma: gli altri siti non possono essere incorporati. La CSP può interferire con la toolbar dei deployment di preview di Vercel: verificarne il comportamento prima di usarla nelle preview condivise.
+
+La mappa usa le tessere vettoriali di OpenFreeMap tramite MapLibre: servizio pubblico senza chiave, senza limiti di richieste e con uso commerciale consentito. Il server di tessere pubblico di OpenStreetMap non è adatto a un gestionale (la sua politica vieta l'uso da parte di applicazioni commerciali) e non viene usato. La ricerca degli indirizzi si appoggia a Nominatim, che ammette una richiesta al secondo: le richieste sono accodate e distanziate nel client (`src/censimento/coordinates.ts`). Se il volume di ricerche cresce, va sostituito con un servizio a chiave o con un'istanza propria.
 
 Le pagine `/privacy`, `/termini` e `/note-legali` sono pubbliche, non passano da `AuthBoundary` e sono collegate dalla schermata di accesso e dal footer. I dati del prestatore sono centralizzati in `LEGAL_ENTITY` (`src/legal.tsx`): finché contengono segnaposto la pagina mostra l'avviso "Documento in bozza". Il modulo contatti prepara un messaggio nel client di posta dell'utente e non dichiara più un invio che non avviene.
 

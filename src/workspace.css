@@ -145,9 +145,10 @@
 .workspace-shell .toolbar-button:hover, .workspace-shell .toolbar-button:focus-visible { background: #ffffff1f !important; color: #fff !important; }
 /* Mappa immobiliare */
 .workspace-shell .property-map { display: grid; gap: 12px; padding: 12px 14px 14px; }
-.workspace-shell .property-map-canvas { width: 100%; height: min(68vh, 720px); border-radius: 8px; border: 1px solid #ffffff18; background: #0e1219; }
+.workspace-shell .property-map-canvas { width: 100%; height: min(68vh, 720px); border-radius: 8px; border: 1px solid #ffffff18; background: #e9edf2; overflow: hidden; }
 .workspace-shell .property-map-canvas:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
-.workspace-shell .property-map-pin { display: block; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 2px #0d1016, 0 0 0 3px #ffffff55; }
+.workspace-shell .property-map-pin { display: block; width: 16px; height: 16px; padding: 0; margin: 0; appearance: none; border-radius: 50%; background: var(--red); border: 2px solid #0d1016; box-shadow: 0 0 0 2px #ffffff88; cursor: pointer; }
+.workspace-shell .property-map-pin:focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
 .workspace-shell .property-map-credit { margin: 0; font-size: 11px; color: #9aa4b2; }
 .workspace-shell .property-map-credit a { color: #cbd5e1; text-decoration: underline; }
 .workspace-shell .property-map-empty, .workspace-shell .property-map-message { margin: 0; font-size: 12px; color: #b9c2cf; }
@@ -159,7 +160,8 @@
 .workspace-shell .property-map-missing li span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workspace-shell .property-map-missing li button { flex: 0 0 auto; min-height: 30px !important; padding: 5px 10px !important; font-size: 11px !important; }
 .workspace-shell .property-map-missing li .property-map-actions { flex: 0 0 auto; display: flex; gap: 6px; overflow: visible; }
-.workspace-shell .property-map-canvas.is-placing { cursor: crosshair; }
+.workspace-shell .property-map-canvas.is-placing, .workspace-shell .property-map-canvas.is-placing .maplibregl-canvas { cursor: crosshair; }
 .workspace-shell .property-map-hint { margin: 0; font-size: 12px; color: #f0c674; }
-.workspace-shell .leaflet-container { font: inherit; background: #0e1219; }
-.workspace-shell .leaflet-control-attribution { font-size: 10px; }
+.workspace-shell .maplibregl-ctrl-attrib { font-size: 10px; }
+.workspace-shell .maplibregl-popup-content { font: inherit; font-size: 12px; padding: 8px 10px; }
+.workspace-shell .maplibregl-ctrl-group button { min-height: 0 !important; }

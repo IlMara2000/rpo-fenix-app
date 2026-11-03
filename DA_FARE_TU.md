@@ -90,6 +90,20 @@ Environment Variables, oppure dimmi che sono pronte e ti dico il nome esatto del
 
 ## 5. Gli account dei quattro siti esterni
 
+Ho controllato i quattro collegamenti uno per uno, dall'esterno:
+
+| Sito | Risposta | Si apre dentro il gestionale? |
+| --- | --- | --- |
+| Sister | funziona | sì, in un riquadro |
+| CercaOra | funziona | sì, in un riquadro |
+| Datagma | funziona | sì, in un riquadro |
+| Whuis | funziona | **no**: il loro sito vieta di essere incorniciato, si apre in una scheda |
+
+I primi tre non mandano segnali di blocco, quindi il riquadro si apre. Attenzione però:
+siti con accesso tramite SPID o codice temporaneo possono rifiutarsi di funzionare dentro un
+riquadro anche senza dirlo in anticipo. In quel caso basta premere "Apri in una scheda"
+accanto al riquadro: il collegamento è lo stesso.
+
 La colonna dei siti nel Censimento è pronta, ma i contenuti dipendono dai tuoi rapporti:
 
 - **Sister** (Agenzia delle Entrate): serve la convenzione attiva per consultare le
@@ -125,13 +139,31 @@ Queste non sono cose da codice e vanno fatte con chi ti segue:
 - Filtri nascosti all'avvio in tutte le pagine del gestionale.
 - Proprietari raggiungibile dalla barra laterale.
 - Colonna dei siti nel Censimento, con gestionale attivo a destra.
-- Una sola mappa immobiliare al posto delle due finte, con attribuzione OpenStreetMap
-  e senza nomi di proprietari.
+- Una sola mappa immobiliare al posto delle due finte, con attribuzione obbligatoria
+  e senza nomi di proprietari. Le tessere ora vengono da **OpenFreeMap**: gratuito, senza
+  chiave, senza limiti di richieste e con uso commerciale consentito, quindi non ti blocca
+  anche se la usi tutto il giorno. In più il motore della mappa si scarica solo quando
+  apri la mappa, non su ogni pagina.
+- Sistemato il blocco che impediva alla mappa di funzionare sul sito online: una regola di
+  sicurezza del sito vietava al browser di collegarsi ai servizi esterni, quindi la ricerca
+  degli indirizzi veniva bloccata prima ancora di partire. Ora è permessa solo verso i
+  servizi che servono davvero.
 - La posizione scelta sulla mappa ora si salva **sull'immobile**, non più in una memoria
   separata: finisce anche nelle copie di sicurezza che scarichi e non si perde se si
   pulisce la memoria del browser. In più puoi posizionare a mano un immobile cliccando
   sulla mappa, senza dipendere dalla ricerca dell'indirizzo.
 - Test automatici, controllo dei tipi e build: tutti verdi.
+
+---
+
+## Un limite della ricerca indirizzi (non è un compito)
+
+La mappa in sé non ha limiti. La **ricerca automatica dell'indirizzo** invece usa un
+servizio pubblico gratuito che ammette una ricerca al secondo: il programma le mette in
+fila e le distanzia da solo, quindi puoi cliccare quanto vuoi senza combinare guai. Se un
+giorno assumete altre persone e fate centinaia di ricerche al giorno, quel servizio non
+basta più e conviene passare a uno a pagamento (pochi euro al mese) o all'inserimento a
+mano, che funziona sempre cliccando il punto sulla mappa.
 
 ---
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import * as L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import * as maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 import { splitMappable, type MapSourceProperty } from "./geocode";
 import {
   addressForProperty,
@@ -10,7 +10,16 @@ import {
   type Coordinates,
 } from "./coordinates";
 
-const ITALY_CENTER: L.LatLngTuple = [42.5, 12.5];
+/**
+ * Tessere vettoriali di OpenFreeMap: servizio pubblico gratuito, senza chiave e
+ * senza limiti di richieste, con uso commerciale consentito. Le tessere del
+ * server pubblico di OpenStreetMap non si possono usare per un gestionale.
+ */
+const STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
+
+/** Centro e zoom iniziali: Italia intera. MapLibre vuole [longitudine, latitudine]. */
+const ITALY_CENTER: [number, number] = [12.5, 42.5];
+const ITALY_ZOOM = 5.2;
 
 export type PlacedCoordinates = { id: string; lat: number; lng: number };
 
@@ -54,8 +63,8 @@ export function PropertyMap({
   onCoordinatesChange?: (entries: PlacedCoordinates[]) => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const layerRef = useRef<L.LayerGroup | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
   const [legacyCoordinates, setLegacyCoordinates] = useState<Record<string, Coordinates>>(() => readCoordinates());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [placingId, setPlacingId] = useState<string | null>(null);
@@ -96,18 +105,23 @@ export function PropertyMap({
       return;
     }
 
-    const map = L.map(container, { center: ITALY_CENTER, zoom: 6 });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
-    layerRef.current = L.layerGroup().addTo(map);
+    const map = new maplibregl.Map({
+      container,
+      style: STYLE_URL,
+      center: ITALY_CENTER,
+      zoom: ITALY_ZOOM,
+      dragRotate: false,
+    });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapRef.current = map;
 
     return () => {
+      for (const marker of markersRef.current) {
+        marker.remove();
+      }
+      markersRef.current = [];
       map.remove();
       mapRef.current = null;
-      layerRef.current = null;
     };
   }, []);
 
@@ -132,31 +146,45 @@ export function PropertyMap({
   }, [properties, legacyCoordinates, onCoordinatesChange]);
 
   useEffect(() => {
-    const layer = layerRef.current;
     const map = mapRef.current;
-    if (!layer || !map) {
+    if (!map) {
       return;
     }
 
-    layer.clearLayers();
-    const pin = L.divIcon({
-      className: "property-map-pin",
-      html: "",
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
-      popupAnchor: [0, -10],
-    });
+    for (const marker of markersRef.current) {
+      marker.remove();
+    }
+    markersRef.current = [];
 
     for (const marker of markers) {
-      L.marker([marker.lat, marker.lng], { icon: pin, title: marker.label })
-        .bindPopup(`<strong>${escapeHtml(marker.label)}</strong><br>${escapeHtml(marker.cadastral)}`)
-        .addTo(layer);
+      const element = document.createElement("button");
+      element.type = "button";
+      element.className = "property-map-pin";
+      element.title = `${marker.label} — ${marker.cadastral}`;
+      element.setAttribute("aria-label", `${marker.label}. ${marker.cadastral}`);
+
+      const pin = new maplibregl.Marker({ element, anchor: "center" })
+        .setLngLat([marker.lng, marker.lat])
+        .setPopup(
+          new maplibregl.Popup({ offset: 14, closeButton: false }).setHTML(
+            `<strong>${escapeHtml(marker.label)}</strong><br>${escapeHtml(marker.cadastral)}`,
+          ),
+        )
+        .addTo(map);
+      markersRef.current.push(pin);
     }
 
-    if (markers.length) {
-      const bounds = L.latLngBounds(markers.map((marker) => [marker.lat, marker.lng] as L.LatLngTuple));
-      map.fitBounds(bounds.pad(0.2), { maxZoom: 15 });
+    if (!markers.length) {
+      return;
     }
+
+    const lngs = markers.map((marker) => marker.lng);
+    const lats = markers.map((marker) => marker.lat);
+    const bounds: maplibregl.LngLatBoundsLike = [
+      [Math.min(...lngs), Math.min(...lats)],
+      [Math.max(...lngs), Math.max(...lats)],
+    ];
+    map.fitBounds(bounds, { padding: 48, maxZoom: 15, duration: 0 });
   }, [markers]);
 
   // Posizionamento a mano: si sceglie l'immobile, poi si clicca il punto sulla mappa.
@@ -167,19 +195,19 @@ export function PropertyMap({
     }
     const targetId: string = placingId;
 
-    function handlePlace(event: L.LeafletMouseEvent) {
+    function handlePlace(event: maplibregl.MapMouseEvent) {
       setPlacingId(null);
       savePositions([
         {
           id: targetId,
-          lat: roundCoordinate(event.latlng.lat),
-          lng: roundCoordinate(event.latlng.lng),
+          lat: roundCoordinate(event.lngLat.lat),
+          lng: roundCoordinate(event.lngLat.lng),
         },
       ]);
       setMessage(null);
     }
 
-    map.once("click", handlePlace);
+    map.on("click", handlePlace);
     return () => {
       map.off("click", handlePlace);
     };
@@ -214,9 +242,19 @@ export function PropertyMap({
         aria-label="Mappa immobiliare"
       />
       <p className="property-map-credit">
-        Mappa © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>
-        {" · "}
-        Dati catastali inseriti a mano nel censimento.
+        Mappa{" "}
+        <a href="https://openfreemap.org" target="_blank" rel="noopener noreferrer">
+          OpenFreeMap
+        </a>
+        {" © "}
+        <a href="https://openmaptiles.org" target="_blank" rel="noopener noreferrer">
+          OpenMapTiles
+        </a>
+        {" · dati "}
+        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
+          OpenStreetMap
+        </a>
+        {" · dati catastali inseriti a mano nel censimento."}
       </p>
 
       {placingId ? (
