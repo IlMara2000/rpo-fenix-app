@@ -39,7 +39,9 @@ Non sono presenti entità strutturate per trattative, follow-up separati, richia
 
 ## Integrazione telefoniste
 
-`/telefonista` salva log locali con operatore, proprietario, zona, immobile, esito, note e checklist, ma senza `accountId`, `agentId`, `contactId` o `propertyId`. Il PWS non li attribuisce automaticamente: un collegamento sarebbe ambiguo. La futura integrazione richiede identificativi CRM stabili e titolare dell’esito.
+`/telefonista` salva log locali con operatore, proprietario, telefono, zona, immobile, esito, note e checklist. Nome e telefono del contatto sono obbligatori per salvare: senza intestatario la chiamata non è ritrovabile nello storico. Il contatto può essere richiamato dalla rubrica del CRM locale (nome, telefono, immobile collegato) e l'operatore è precompilato dalla sessione attiva.
+
+Restano assenti `accountId`, `agentId`, `contactId` e `propertyId`: il PWS non attribuisce i log automaticamente, perché un collegamento basato sulla sola etichetta del nome sarebbe ambiguo. La futura integrazione richiede identificativi CRM stabili e un titolare dell’esito.
 
 ## Modello PWS
 

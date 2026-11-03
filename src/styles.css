@@ -218,6 +218,117 @@
   box-shadow: 0 0 0 3px rgba(255, 89, 93, 0.14);
 }
 
+.telefonista-contact-panel {
+  margin-bottom: 18px;
+}
+
+.telefonista-contact-panel .telefonista-section-title {
+  flex-wrap: wrap;
+}
+
+.telefonista-contact-badge {
+  margin-left: auto;
+  padding: 7px 13px;
+  border: 1px solid rgba(255, 89, 93, 0.44);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 89, 93, 0.12);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.telefonista-contact-panel .telefonista-fields {
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+}
+
+.telefonista-contact-hint {
+  margin: 13px 0 0;
+  color: rgba(248, 248, 250, 0.58);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.telefonista-contact-search {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 16px;
+}
+
+.telefonista-contact-search label {
+  display: grid;
+  gap: 7px;
+  color: rgba(248, 248, 250, 0.66);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.telefonista-contact-search-input {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.065);
+}
+
+.telefonista-contact-search-input svg {
+  color: #ff595d;
+  flex: 0 0 auto;
+}
+
+.telefonista-contact-search-input input {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  color: #fff;
+  background: transparent;
+  font: inherit;
+  font-weight: 750;
+  outline: none;
+}
+
+.telefonista-contact-search-input:focus-within {
+  border-color: rgba(255, 89, 93, 0.78);
+  box-shadow: 0 0 0 3px rgba(255, 89, 93, 0.14);
+}
+
+.telefonista-contact-results {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.telefonista-contact-results button {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 10px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 13px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.telefonista-contact-results button:hover,
+.telefonista-contact-results button:focus-visible {
+  border-color: rgba(255, 89, 93, 0.6);
+  background: rgba(255, 89, 93, 0.12);
+}
+
+.telefonista-contact-results small {
+  color: rgba(248, 248, 250, 0.62);
+  font-size: 0.76rem;
+}
+
 .telefonista-mode-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -1959,6 +1959,26 @@ function Footer() {
   );
 }
 
+function italianAuthMessage(raw: string) {
+  const message = (raw || "").toLowerCase();
+  if (message.includes("invalid login credentials") || message.includes("invalid_credentials")) {
+    return "Email o password non corretti.";
+  }
+  if (message.includes("email not confirmed") || message.includes("not confirmed")) {
+    return "Email non ancora confermata: chiedi a un responsabile di attivare l'account.";
+  }
+  if (message.includes("rate limit") || message.includes("too many")) {
+    return "Troppi tentativi di accesso: attendi un minuto e riprova.";
+  }
+  if (message.includes("failed to fetch") || message.includes("network")) {
+    return "Server non raggiungibile: controlla la connessione e riprova.";
+  }
+  if (message.includes("email") && message.includes("invalid")) {
+    return "Indirizzo email non valido.";
+  }
+  return raw || "Accesso non riuscito: controlla i dati o contatta un responsabile.";
+}
+
 function LoginScreen({
   notice,
   onBack,
@@ -1979,15 +1999,24 @@ function LoginScreen({
     event.preventDefault();
     setError("");
     setLoading(true);
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const email = String(form.get("email") || "").trim().toLowerCase();
     const password = String(form.get("password") || "");
+    const clearPasswordField = () => {
+      const passwordInput = formElement.querySelector<HTMLInputElement>('input[name="password"]');
+      if (passwordInput) {
+        passwordInput.value = "";
+        passwordInput.focus();
+      }
+    };
     const { isSupabaseConfigured, supabase } = await import("./lib/supabase");
     if (isSupabaseConfigured && supabase) {
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
       if (authError || !authData.user) {
         setLoading(false);
-        setError(authError?.message || "Credenziali Supabase non valide.");
+        setError(italianAuthMessage(authError?.message || ""));
+        clearPasswordField();
         return;
       }
 
@@ -2980,6 +3009,7 @@ function PropertiesView({
         onPanelAction={newMode ? undefined : () => setFiltersOpen((open) => !open)}
       >
           <DataTable
+            emptyMessage="Nessun immobile in archivio: apri «Nuovo» per creare la prima scheda."
             columns={showPropertyDetails
               ? ["Codice", "Immobile", "Zona", "Stato", "Prezzo", "Catasto", "Superficie", "Locali", "Portali"]
               : ["Codice", "Immobile", "Zona", "Stato", "Prezzo", "Catasto", "Portali"]}
@@ -3211,6 +3241,7 @@ function RequestsView({
         }
       >
         <DataTable
+          emptyMessage="Nessun incrocio: servono almeno una richiesta e un immobile compatibili. Avvia il matching automatico dal riquadro qui sopra."
           columns={["Cliente", "Richiesta", "Zona", "Match", "Proposta"]}
           rows={rows.map((item) => [
             item.client,
@@ -3428,6 +3459,7 @@ function ContactsView({
         onPanelAction={pageKey === "nominativi-nuovo" ? undefined : () => setFiltersOpen((open) => !open)}
       >
         <DataTable
+          emptyMessage="Nessun nominativo in rubrica: apri «Nuovo» per inserire il primo cliente."
           columns={["Nominativo", "Tipologia", "Contatti", "Ultima attività", "Operatore", "Ricontatto", "Privacy", "Stato"]}
           rows={rows.map((item) => {
             const latestActivity = data.activities.find((activity) => sameLabel(activity.contact, item.name));
@@ -3831,6 +3863,7 @@ function OwnersView({
           </div>
         ) : null}
         <DataTable
+          emptyMessage="Nessun proprietario: i contatti della rubrica compaiono qui quando li colleghi a un immobile."
           columns={["Proprietario", "Numero", "Immobili", "Catasto", "Stato", "Prossimo passo"]}
           rows={owners.map((owner) => {
             const linkedProperties = propertiesForContact(owner, data.properties);
@@ -3981,6 +4014,7 @@ function ActivityCenterView({
         }}
       >
         <DataTable
+          emptyMessage="Nessuna attività registrata: pianifica la prima dall'agenda."
           columns={["Quando", "Titolo", "Tipo", "Contatto", "Immobile", "Stato", "Note"]}
           rows={rows.map((activity) => [
             `${activity.day} ${activity.time}`,
@@ -4120,7 +4154,9 @@ function AgendaView({
 }) {
   const [calendarMode, setCalendarMode] = useState<"week" | "month" | "day">("week");
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const newMode = pageKey === "agenda-nuova";
+  const activeFilterCount = activeFilters(filters).length;
   const filteredActivities = data.activities.filter((item) => {
     const linkedContact = data.contacts.find((contact) => sameLabel(contact.name, item.contact));
     const splitName = splitFullName(item.contact);
@@ -4184,13 +4220,16 @@ function AgendaView({
   return (
     <div className="workspace-grid">
       <Panel
-        className={newMode ? "span-8" : "span-8"}
+        className={newMode || filtersOpen ? "span-8" : "span-12"}
         title={pageKey === "agenda-storico" ? "Ricerca storico attivita" : "Agenda operativa"}
-        action={activeFilters(filters).length ? "Azzera filtri" : undefined}
-        onPanelAction={() => {
-          setFilters({});
-          onAction("Filtri agenda azzerati.");
-        }}
+        action={newMode
+          ? undefined
+          : filtersOpen
+            ? "Chiudi filtri"
+            : activeFilterCount
+              ? `Filtri · ${activeFilterCount}`
+              : "Filtri"}
+        onPanelAction={newMode ? undefined : () => setFiltersOpen((open) => !open)}
       >
         {pageKey === "agenda-storico" ? (
           <DataTable
@@ -4307,7 +4346,16 @@ function AgendaView({
           </>
         )}
       </Panel>
-      <Panel className={newMode ? "span-12 crm-form-panel" : "span-4"} title={newMode ? "Nuova attività completa" : "Filtro agenda"}>
+      {(newMode || filtersOpen) ? (
+      <Panel
+        className={newMode ? "span-12 crm-form-panel" : "span-4"}
+        title={newMode ? "Nuova attività completa" : "Filtro agenda"}
+        action={newMode || !activeFilterCount ? undefined : "Azzera filtri"}
+        onPanelAction={newMode ? undefined : () => {
+          setFilters({});
+          onAction("Filtri agenda azzerati.");
+        }}
+      >
         {newMode ? (
           <StructuredQuickForm
             requiredDefault={false}
@@ -4359,6 +4407,7 @@ function AgendaView({
           />
         )}
       </Panel>
+      ) : null}
       <Panel className="span-12" title="Promemoria automatici">
         <Checklist
           items={["Invio promemoria visita", "Conferma appuntamento", "Follow-up post visita", "Aggiorna storico cliente"]}
@@ -4522,6 +4571,7 @@ function AdvertisingContactsView({
     <div className="workspace-grid">
       <Panel className="span-8" title="Contatti pubblicitari">
         <DataTable
+          emptyMessage="Nessun contatto da portali, sito o campagne: arriveranno qui con la provenienza compilata."
           columns={["Contatto", "Interesse", "Numero", "Stato", "Provenienza"]}
           rows={rows.map((contact) => [
             contact.name,
@@ -6502,10 +6552,12 @@ function DataTable({
   columns,
   rows,
   actions = [],
+  emptyMessage = "Nessun dato disponibile per questa vista.",
 }: {
   columns: string[];
   rows: string[][];
   actions?: { label: string; onClick: (rowIndex: number) => void }[];
+  emptyMessage?: string;
 }) {
   const reduceMotion = useReducedMotion();
 
@@ -6545,7 +6597,7 @@ function DataTable({
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length + (actions.length ? 1 : 0)}>Nessun dato disponibile per questa vista.</td>
+              <td colSpan={columns.length + (actions.length ? 1 : 0)}>{emptyMessage}</td>
             </tr>
           )}
         </tbody>

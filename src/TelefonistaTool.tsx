@@ -1,4 +1,5 @@
 import { privateStorage } from "./lib/privateStorage";
+import { loadCrmSnapshot, loadSession } from "./pws/storage";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -17,6 +18,7 @@ import {
   Play,
   RotateCcw,
   Save,
+  Search,
   Sparkles,
   Target,
   TimerReset,
@@ -34,6 +36,7 @@ type CallOutcome =
 
 type CallContext = {
   owner: string;
+  phone: string;
   operator: string;
   zone: string;
   street: string;
@@ -58,8 +61,38 @@ type TelefonistaToolProps = {
 const callStorageKey = "fenix-telefonista-calls-v1";
 const draftStorageKey = "fenix-telefonista-draft-v1";
 
+type ContactSuggestion = {
+  id: string;
+  name: string;
+  phone: string;
+  property: string;
+};
+
+function loadContactSuggestions(): ContactSuggestion[] {
+  try {
+    return loadCrmSnapshot()
+      .contacts.map((contact) => ({
+        id: String(contact.id ?? ""),
+        name: String(contact.name ?? "").trim(),
+        phone: String(contact.phone ?? "").trim(),
+        property: String(contact.property ?? "").trim(),
+      }))
+      .filter((contact) => contact.name);
+  } catch {
+    return [];
+  }
+}
+
+function normalizeSearch(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 const emptyContext: CallContext = {
   owner: "",
+  phone: "",
   operator: "",
   zone: "",
   street: "",
@@ -161,6 +194,14 @@ function formatDuration(totalSeconds: number) {
   return `${minutes}:${seconds}`;
 }
 
+function formatCallTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
 function createSummary(log: Omit<CallLog, "id" | "createdAt">) {
   const subject = log.context.owner || "Proprietario non indicato";
   const address = [log.context.zone, log.context.street, log.context.building, log.context.property]
@@ -168,6 +209,7 @@ function createSummary(log: Omit<CallLog, "id" | "createdAt">) {
     .join(" / ");
   return [
     `Telefonata: ${subject}`,
+    log.context.phone ? `Telefono: ${log.context.phone}` : "Telefono: non indicato",
     `Esito: ${log.outcome}`,
     `Durata: ${formatDuration(log.duration)}`,
     address ? `Riferimento: ${address}` : "Riferimento: non indicato",
@@ -277,7 +319,11 @@ function buildScript() {
 
 export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
   const draft = useMemo(loadDraft, []);
-  const [context] = useState<CallContext>(() => ({ ...emptyContext, ...(draft.context || {}) }));
+  const [context, setContext] = useState<CallContext>(() => ({
+    ...emptyContext,
+    ...(draft.context || {}),
+    operator: draft.context?.operator || loadSession()?.name || "",
+  }));
   const [notes, setNotes] = useState(typeof draft.notes === "string" ? draft.notes : "");
   const [mode, setMode] = useState<TelefonistaMode>(
     draft.mode === "esperto" || draft.mode === "principiante" ? draft.mode : "principiante",
@@ -297,6 +343,20 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
   const [running, setRunning] = useState(false);
   const [calls, setCalls] = useState<CallLog[]>(loadCalls);
   const [notice, setNotice] = useState("Pronto per iniziare la telefonata.");
+  const [contactQuery, setContactQuery] = useState("");
+  const rubrica = useMemo(loadContactSuggestions, []);
+
+  const contactMatches = useMemo(() => {
+    const needle = normalizeSearch(contactQuery.trim());
+    if (needle.length < 2) {
+      return [];
+    }
+    return rubrica
+      .filter((contact) =>
+        normalizeSearch(`${contact.name} ${contact.phone}`).includes(needle),
+      )
+      .slice(0, 5);
+  }, [contactQuery, rubrica]);
 
   const script = useMemo(() => buildScript(), []);
   const activePhase = script.find((item) => item.key === phase) || script[0];
@@ -324,6 +384,21 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
     privateStorage.setItem(draftStorageKey, JSON.stringify({ context, notes, outcome, checked, mode, phase }));
   }, [checked, context, mode, notes, outcome, phase]);
 
+  function updateContext(field: keyof CallContext, value: string) {
+    setContext((current) => ({ ...current, [field]: value }));
+  }
+
+  function pickContact(contact: ContactSuggestion) {
+    setContext((current) => ({
+      ...current,
+      owner: contact.name,
+      phone: contact.phone || current.phone,
+      property: contact.property || current.property,
+    }));
+    setContactQuery("");
+    setNotice(`Contatto ${contact.name} caricato dalla rubrica del CRM.`);
+  }
+
   function toggleCheck(item: string) {
     setChecked((current) =>
       current.includes(item) ? current.filter((entry) => entry !== item) : [...current, item],
@@ -341,19 +416,34 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
   }
 
   function saveCall() {
+    const owner = context.owner.trim();
+    const phone = context.phone.trim();
+    if (!owner || !phone) {
+      setNotice(
+        "Prima di salvare inserisci nome del proprietario e telefono: senza questi dati la chiamata non ha intestatario.",
+      );
+      return;
+    }
     const log: CallLog = {
       id: typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}`,
       createdAt: new Date().toISOString(),
       duration: elapsed,
       outcome,
-      context,
+      context: { ...context, owner, phone },
       notes,
       checklist: checked,
     };
     const nextCalls = [log, ...safeCalls].slice(0, 8);
     setCalls(nextCalls);
     privateStorage.setItem(callStorageKey, JSON.stringify(nextCalls));
-    setNotice("Chiamata salvata nello storico locale.");
+    setRunning(false);
+    setElapsed(0);
+    setNotes("");
+    setChecked([]);
+    setOutcome("Info raccolte");
+    setPhase("apertura");
+    setContext((current) => ({ ...emptyContext, operator: current.operator }));
+    setNotice(`Chiamata di ${owner} salvata: scheda pronta per il prossimo contatto.`);
   }
 
   function resetCall() {
@@ -363,6 +453,7 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
     setChecked([]);
     setOutcome("Info raccolte");
     setPhase("apertura");
+    setContext((current) => ({ ...emptyContext, operator: current.operator }));
     setNotice("Scheda chiamata pulita.");
   }
 
@@ -395,6 +486,124 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
         <p>
           Guida operativa per gestire chiamate immobiliari, raccogliere informazioni utili e fissare perizie
           gratuite senza perdere il controllo della conversazione.
+        </p>
+      </section>
+
+      <section className="telefonista-card telefonista-contact-panel" aria-label="Contatto chiamato">
+        <div className="telefonista-section-title">
+          <PhoneCall size={18} />
+          <span>Chi stai chiamando</span>
+          <strong className="telefonista-contact-badge">
+            {context.owner.trim() ? context.owner : "Contatto da compilare"}
+          </strong>
+        </div>
+
+        <div className="telefonista-contact-search">
+          <label>
+            Cerca in rubrica
+            <span className="telefonista-contact-search-input">
+              <Search size={16} aria-hidden="true" />
+              <input
+                value={contactQuery}
+                onChange={(event) => setContactQuery(event.target.value)}
+                placeholder="Nome o telefono del proprietario"
+                autoComplete="off"
+              />
+            </span>
+          </label>
+          {contactQuery.trim().length >= 2 ? (
+            contactMatches.length ? (
+              <ul className="telefonista-contact-results">
+                {contactMatches.map((contact) => (
+                  <li key={contact.id || contact.name}>
+                    <button type="button" onClick={() => pickContact(contact)}>
+                      <strong>{contact.name}</strong>
+                      <small>{[contact.phone, contact.property].filter(Boolean).join(" · " ) || "Nessun recapito"}</small>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="telefonista-contact-hint">
+                {rubrica.length
+                  ? "Nessun contatto in rubrica con questo nome: puoi compilare i campi a mano."
+                  : "La rubrica del CRM è vuota per questo utente: compila i campi a mano."}
+              </p>
+            )
+          ) : null}
+        </div>
+
+        <div className="telefonista-fields">
+          <label>
+            Proprietario
+            <input
+              value={context.owner}
+              onChange={(event) => updateContext("owner", event.target.value)}
+              placeholder="Nome e cognome"
+              autoComplete="off"
+            />
+          </label>
+          <label>
+            Telefono
+            <input
+              value={context.phone}
+              onChange={(event) => updateContext("phone", event.target.value)}
+              placeholder="333 123 4567"
+              inputMode="tel"
+              type="tel"
+              autoComplete="off"
+            />
+          </label>
+          <label>
+            Zona
+            <input
+              value={context.zone}
+              onChange={(event) => updateContext("zone", event.target.value)}
+              placeholder="Es. Centro storico"
+              autoComplete="off"
+            />
+          </label>
+          <label>
+            Via o piazza
+            <input
+              value={context.street}
+              onChange={(event) => updateContext("street", event.target.value)}
+              placeholder="Es. Via Roma"
+              autoComplete="off"
+            />
+          </label>
+          <label>
+            Civico
+            <input
+              value={context.building}
+              onChange={(event) => updateContext("building", event.target.value)}
+              placeholder="Es. 12"
+              autoComplete="off"
+            />
+          </label>
+          <label>
+            Immobile
+            <input
+              value={context.property}
+              onChange={(event) => updateContext("property", event.target.value)}
+              placeholder="Es. trilocale piano 2"
+              autoComplete="off"
+            />
+          </label>
+          <label>
+            Operatore
+            <input
+              value={context.operator}
+              onChange={(event) => updateContext("operator", event.target.value)}
+              placeholder="Chi sta chiamando"
+              autoComplete="off"
+            />
+          </label>
+        </div>
+
+        <p className="telefonista-contact-hint">
+          Nome e telefono sono obbligatori: senza, la chiamata salvata non ha intestatario e non si ritrova più
+          nello storico.
         </p>
       </section>
 
@@ -554,7 +763,7 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
         {safeCalls.length === 0 ? (
           <article>
             <MapPinned size={18} />
-            <span>Nessuna chiamata salvata. Quando finisci una telefonata, salva l'esito per ritrovarlo qui.</span>
+            <span>Nessuna chiamata salvata. Compila nome e telefono del contatto, poi salva l'esito: lo ritrovi qui.</span>
           </article>
         ) : (
           safeCalls.map((call) => (
@@ -562,7 +771,9 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
               <PhoneCall size={18} />
               <span>
                 <strong>{call.context.owner || "Proprietario non indicato"}</strong>
-                {call.outcome} - {formatDuration(call.duration)}
+                {[call.context.phone, call.outcome, formatDuration(call.duration), formatCallTime(call.createdAt)]
+                  .filter(Boolean)
+                  .join(" · ")}
               </span>
             </article>
           ))
