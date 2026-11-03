@@ -158,6 +158,9 @@ type PropertyRecord = {
   cadastralCategory?: string;
   rooms?: string;
   source?: string;
+  /** Posizione sulla mappa: unica, condivisa da mappa, elenco e schede. */
+  lat?: number;
+  lng?: number;
   details?: PropertyDetails;
   updatedAt: string;
 };
@@ -4652,6 +4655,27 @@ function CensusView({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [activeSiteId, setActiveSiteId] = useState<CensimentoSiteId | null>(null);
   const mapPage = pageKey === "censimento-mappa";
+  const saveMapPositions = (entries: Array<{ id: string; lat: number; lng: number }>) => {
+    if (!entries.length) {
+      return;
+    }
+    const positions = new Map(entries.map((entry) => [entry.id, entry]));
+    const stamp = new Date().toISOString();
+    onCommit(
+      (current) => ({
+        ...current,
+        properties: current.properties.map((property) => {
+          const position = positions.get(property.id);
+          return position
+            ? { ...property, lat: position.lat, lng: position.lng, updatedAt: stamp }
+            : property;
+        }),
+      }),
+      entries.length === 1
+        ? "Posizione salvata sull'immobile"
+        : `Posizioni salvate su ${entries.length} immobili`,
+    );
+  };
   const activeSite = mapPage
     ? findCensimentoSite("mappa") ?? null
     : activeSiteId
@@ -5370,7 +5394,7 @@ function CensusView({
       activeSite={activeSite}
       onSelectSite={selectSite}
       onClose={() => setActiveSiteId(null)}
-      mapView={<PropertyMap properties={data.properties} />}
+      mapView={<PropertyMap properties={data.properties} onCoordinatesChange={saveMapPositions} />}
     >
     <div className="workspace-grid">
 

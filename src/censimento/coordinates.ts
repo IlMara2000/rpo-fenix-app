@@ -7,7 +7,11 @@ export interface Coordinates {
 
 const STORAGE_KEY = "fenix-map-coordinates";
 
-/** Coordinate gia' risolte, salvate a parte: l'archivio immobili resta com'e'. */
+/**
+ * Vecchia memoria delle coordinate, tenuta solo come riserva.
+ * La posizione vera vive sul record dell'immobile (lat/lng): queste voci vengono
+ * ricopiate una volta sola la prima volta che la mappa si apre.
+ */
 export function readCoordinates(): Record<string, Coordinates> {
   if (typeof localStorage === "undefined") {
     return {};
