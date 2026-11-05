@@ -41,7 +41,16 @@ Non sono presenti entità strutturate per trattative, follow-up separati, richia
 
 `/telefonista` salva log locali con operatore, proprietario, telefono, zona, immobile, esito, note e checklist. Nome e telefono del contatto sono obbligatori per salvare: senza intestatario la chiamata non è ritrovabile nello storico. Il contatto può essere richiamato dalla rubrica del CRM locale (nome, telefono, immobile collegato) e l'operatore è precompilato dalla sessione attiva.
 
-Restano assenti `accountId`, `agentId`, `contactId` e `propertyId`: il PWS non attribuisce i log automaticamente, perché un collegamento basato sulla sola etichetta del nome sarebbe ambiguo. La futura integrazione richiede identificativi CRM stabili e un titolare dell’esito.
+Scegliendo un contatto dalla rubrica il log conserva il suo identificativo in `context.contactId`: è il riferimento stabile che mancava. Al salvataggio l'esito viene scritto anche nel CRM come attività (`id = telefonata-<id chiamata>`, tipo `Telefonata`, contatto, immobile, stato uguale all'esito, note con esito, riferimento e punti raccolti), quindi compaiono nello storico attività, nella scheda persona e nei conteggi del modulo Attività. La scrittura rilegge e riscrive l'intero oggetto `fenix-suite-crm-data-v2`: censimento, pubblicità, obiettivi e richieste restano intatti. I campi anagrafici del contatto non vengono modificati: si aggiunge solo la riga di storico.
+
+Se il contatto non esiste in rubrica l'attività viene registrata con il nome digitato e il log resta senza `linkedContactId` (nell'interfaccia non compare «in scheda CRM»). Restano assenti `accountId`, `agentId` e `propertyId`: il log non è ancora attribuito a un utente tramite identificativo né a un immobile con `propertyId`, quindi il PWS continua a non attribuire i log automaticamente, perché un collegamento basato sulla sola etichetta del nome sarebbe ambiguo.
+
+## Navigazione, ricerca e schede
+
+- La barra laterale è l'unico elenco dei moduli; gli altri programmi (PWS, RPO, Telefonista, Planimetrie) sono nel menu «Programmi» della barra superiore. La vecchia striscia di programmi dentro il contenuto è stata rimossa per non duplicare la navigazione.
+- La ricerca in alto cerca insieme in rubrica, immobili e richieste. Aprendo un risultato il modulo di destinazione viene filtrato sul termine scelto; il filtro resta visibile come pillola removibile sotto il titolo della pagina.
+- La scheda persona (`PersonCard`) è unica e si apre da rubrica, proprietari, storico attività, ricerca globale e riquadro «Da ricontattare»: mostra recapiti, immobili collegati, richieste, ultime attività (comprese le telefonate del modulo telefonista) e i collegamenti per aprire i moduli filtrati.
+- La pipeline richieste è a colonne (Nuova, Qualificata, Visita, Trattativa, Chiusa): le schede si trascinano tra le colonne oppure si spostano dal selettore interno, che resta l'unico modo usabile su touch. Ogni spostamento salva `status`, `stageChangedAt` (ISO) e `updatedAt`, così il tempo nella fase è calcolato sui dati e non stimato.
 
 ## Modello PWS
 

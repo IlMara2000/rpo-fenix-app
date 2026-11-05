@@ -1,5 +1,5 @@
 import { privateStorage } from "./lib/privateStorage";
-import { loadCrmSnapshot, loadSession } from "./pws/storage";
+import { crmStorageKey, loadCrmSnapshot, loadSession } from "./pws/storage";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -35,6 +35,8 @@ type CallOutcome =
   | "Segnalazione ricevuta";
 
 type CallContext = {
+  /** Identificativo della scheda in rubrica: e' il legame stabile con il CRM. */
+  contactId: string;
   owner: string;
   phone: string;
   operator: string;
@@ -52,6 +54,8 @@ type CallLog = {
   context: CallContext;
   notes: string;
   checklist: string[];
+  /** Presente solo se l'esito e' stato scritto davvero nella scheda del contatto. */
+  linkedContactId?: string;
 };
 
 type TelefonistaToolProps = {
@@ -91,6 +95,7 @@ function normalizeSearch(value: string) {
 }
 
 const emptyContext: CallContext = {
+  contactId: "",
   owner: "",
   phone: "",
   operator: "",
@@ -165,6 +170,7 @@ function loadCalls() {
             context: { ...emptyContext, ...(call.context || {}) },
             notes: String(call.notes || ""),
             checklist: Array.isArray(call.checklist) ? call.checklist.filter(Boolean).map(String) : [],
+            linkedContactId: call.linkedContactId ? String(call.linkedContactId) : undefined,
           }))
           .slice(0, 8)
       : [];
@@ -219,6 +225,76 @@ function createSummary(log: Omit<CallLog, "id" | "createdAt">) {
     "Note:",
     log.notes || "Nessuna nota inserita.",
   ].join("\n");
+}
+
+function callTimeLabel(date: Date) {
+  return date.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+}
+
+function callStampLabel(date: Date) {
+  return date.toLocaleString("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function sameContactLabel(first: string, second: string) {
+  return first.trim().toLowerCase() === second.trim().toLowerCase();
+}
+
+/**
+ * Scrive l'esito della chiamata nella scheda del contatto in CRM.
+ * Rilegge e riscrive l'oggetto completo: censimento, pubblicita' e obiettivi
+ * restano intatti, si aggiunge solo l'attivita' della telefonata.
+ */
+function syncCallToCrm(log: CallLog): { contactId: string; contactName: string } | null {
+  try {
+    const raw = privateStorage.getItem(crmStorageKey);
+    const data = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    const contacts = Array.isArray(data.contacts) ? (data.contacts as Array<Record<string, unknown>>) : [];
+    const normalizedPhone = log.context.phone.replace(/\s+/g, "");
+    const matched = contacts.find(
+      (contact) =>
+        (!!log.context.contactId && String(contact.id) === log.context.contactId) ||
+        (!!normalizedPhone && String(contact.phone || "").replace(/\s+/g, "") === normalizedPhone) ||
+        sameContactLabel(String(contact.name || ""), log.context.owner),
+    );
+    const contactName = String(matched?.name || log.context.owner);
+    const created = new Date(log.createdAt);
+    const address = [log.context.zone, log.context.street, log.context.building, log.context.property]
+      .filter(Boolean)
+      .join(" / ");
+    const activity = {
+      id: `telefonata-${log.id}`,
+      time: callTimeLabel(created),
+      title: `Telefonata ${contactName}`,
+      type: "Telefonata",
+      owner: log.context.operator || "Telefonista",
+      contact: contactName,
+      property: log.context.property,
+      status: log.outcome,
+      note: [
+        `Esito: ${log.outcome}.`,
+        address ? `Riferimento: ${address}.` : "",
+        `Punti raccolti: ${log.checklist.length}/${checklistItems.length}.`,
+        log.notes,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .slice(0, 600),
+      day: "Oggi",
+      updatedAt: callStampLabel(created),
+    };
+    const activities = Array.isArray(data.activities) ? (data.activities as Array<Record<string, unknown>>) : [];
+    data.activities = [activity, ...activities.filter((item) => String(item?.id) !== activity.id)].slice(0, 400);
+    privateStorage.setItem(crmStorageKey, JSON.stringify(data));
+    return { contactId: matched ? String(matched.id) : "", contactName };
+  } catch {
+    return null;
+  }
 }
 
 function downloadTextFile(filename: string, content: string) {
@@ -391,6 +467,7 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
   function pickContact(contact: ContactSuggestion) {
     setContext((current) => ({
       ...current,
+      contactId: contact.id,
       owner: contact.name,
       phone: contact.phone || current.phone,
       property: contact.property || current.property,
@@ -433,7 +510,9 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
       notes,
       checklist: checked,
     };
-    const nextCalls = [log, ...safeCalls].slice(0, 8);
+    const synced = syncCallToCrm(log);
+    const storedLog: CallLog = synced?.contactId ? { ...log, linkedContactId: synced.contactId } : log;
+    const nextCalls = [storedLog, ...safeCalls].slice(0, 8);
     setCalls(nextCalls);
     privateStorage.setItem(callStorageKey, JSON.stringify(nextCalls));
     setRunning(false);
@@ -443,7 +522,13 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
     setOutcome("Info raccolte");
     setPhase("apertura");
     setContext((current) => ({ ...emptyContext, operator: current.operator }));
-    setNotice(`Chiamata di ${owner} salvata: scheda pronta per il prossimo contatto.`);
+    setNotice(
+      synced
+        ? synced.contactId
+          ? `Chiamata di ${owner} salvata: la trovi nello storico attivita e nella scheda di ${synced.contactName}.`
+          : `Chiamata di ${owner} salvata nel CRM come attivita: nessuna scheda in rubrica per questo numero, compila i campi dal contatto giusto per collegarla.`
+        : `Chiamata di ${owner} salvata solo qui: il CRM non era raggiungibile, riprova dopo aver riaperto la sessione.`,
+    );
   }
 
   function resetCall() {
@@ -603,7 +688,7 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
 
         <p className="telefonista-contact-hint">
           Nome e telefono sono obbligatori: senza, la chiamata salvata non ha intestatario e non si ritrova più
-          nello storico.
+          nello storico. Scegliendo un contatto dalla rubrica, l'esito finisce direttamente nella sua scheda in CRM.
         </p>
       </section>
 
@@ -771,7 +856,13 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
               <PhoneCall size={18} />
               <span>
                 <strong>{call.context.owner || "Proprietario non indicato"}</strong>
-                {[call.context.phone, call.outcome, formatDuration(call.duration), formatCallTime(call.createdAt)]
+                {[
+                  call.context.phone,
+                  call.outcome,
+                  formatDuration(call.duration),
+                  formatCallTime(call.createdAt),
+                  call.linkedContactId ? "in scheda CRM" : "",
+                ]
                   .filter(Boolean)
                   .join(" · ")}
               </span>

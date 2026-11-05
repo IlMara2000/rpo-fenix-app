@@ -5,7 +5,7 @@ import { censimentoSites, findCensimentoSite, type CensimentoSiteId } from "./ce
 import { portalExport } from "./crm/portalExport";
 import { LEGAL_ENTITY, LegalPage, legalDocumentFor } from "./legal";
 import { privateStorage, setStorageOwner, clearPrivateStorage } from "./lib/privateStorage";
-import { StrictMode, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { StrictMode, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 /**
  * La mappa porta con se' il motore cartografico (circa 800 kB): si carica solo
@@ -54,6 +54,7 @@ import {
   Plus,
   RefreshCcwDot,
   Search,
+  X,
   Settings,
   ShieldCheck,
   Smartphone,
@@ -182,6 +183,8 @@ type RequestRecord = {
   proposal: string;
   status: string;
   details?: RequestDetails;
+  /** Quando la richiesta e' entrata nella fase attuale: serve per i giorni in fase. */
+  stageChangedAt?: string;
   updatedAt: string;
 };
 
@@ -2160,6 +2163,7 @@ function Workspace({
   const [activeModule, setActiveModule] = useState<ModuleKey>(() => getInitialModule());
   const [activePage, setActivePage] = useState(() => getInitialPage(getInitialModule()));
   const [query, setQuery] = useState("");
+  const [personId, setPersonId] = useState<string | null>(null);
   const [notice, setNotice] = useState("Dashboard aggiornata.");
   const [crmData, setCrmData] = usePersistentCrmData();
   const [accounts, setAccounts] = usePersistentAccounts();
@@ -2228,7 +2232,7 @@ function Workspace({
     setNotice(message);
   }
 
-  function openModule(moduleKey: ModuleKey, pageKey?: string) {
+  function openModule(moduleKey: ModuleKey, pageKey?: string, filterTerm = "") {
     if (!getVisibleModules(currentUser).some((item) => item.key === moduleKey)) {
       setNotice("Il tuo ruolo non consente di aprire questa sezione.");
       return;
@@ -2240,6 +2244,7 @@ function Workspace({
     if (moduleKey === "agenda" && !pageKey) {
       setAgendaResetVersion((version) => version + 1);
     }
+    setQuery(filterTerm);
     setActiveModule(moduleKey);
     setActivePage(page.key);
     localStorage.setItem("fenix-suite-active-module", moduleKey);
@@ -2248,15 +2253,27 @@ function Workspace({
     setNotice(`${module?.label ?? "Modulo"} / ${page.label}: pronto.`);
   }
 
+  const openedPerson = personId ? crmData.contacts.find((contact) => contact.id === personId) ?? null : null;
+
   return (
     <main className="workspace-shell">
       <section className="app-main">
         <div className="workspace-navigation">
         <CrmTopbar
           activeModule={safeActiveModule}
-          modules={visibleModules}
           onLogout={onLogout}
           onOpenModule={openModule}
+          searchSlot={
+            <GlobalSearch
+              data={crmData}
+              onOpenResult={(result) => {
+                if (result.contactId) {
+                  setPersonId(result.contactId);
+                }
+                openModule(result.moduleKey, result.pageKey, result.query);
+              }}
+            />
+          }
         />
 
           <aside className="app-sidebar">
@@ -2313,15 +2330,6 @@ function Workspace({
           animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
           transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
         >
-          <nav className="dashboard-programs" aria-label="Programmi Fenix">
-            {selectorPrograms.map(({ title, description, path, Icon }) => (
-              <a key={path} href={path === "/crm" ? "/crm#start/start-dashboard" : path}
-                title={description} aria-current={path === "/crm" ? "page" : undefined}>
-                <Icon size={18} aria-hidden="true" />
-                <span>{title.replace("PROGRAMMA ", "")}</span>
-              </a>
-            ))}
-          </nav>
           <div className="workspace-status" role="status">
             <span>
               <CheckCircle2 size={16} />
@@ -2339,6 +2347,14 @@ function Workspace({
               </span>
               <h1>{currentPage.label}</h1>
               <p>{currentPage.description}</p>
+              {query.trim() ? (
+                <button className="module-filter-chip" type="button" onClick={() => setQuery("")}>
+                  <Search size={13} aria-hidden="true" />
+                  Filtro: {query.trim()}
+                  <X size={13} aria-hidden="true" />
+                  <span className="sr-only">Rimuovi filtro</span>
+                </button>
+              ) : null}
             </div>
             {creationPage && currentPage.key !== creationPage.key ? (
               <button
@@ -2372,28 +2388,38 @@ function Workspace({
                 accounts={accounts}
                 onAccountsChange={updateAccounts}
                 agendaResetVersion={agendaResetVersion}
+                onOpenPerson={setPersonId}
               />
             </motion.div>
           </AnimatePresence>
         </motion.section>
         </div>
       </section>
+      {openedPerson ? (
+        <PersonCard
+          contact={openedPerson}
+          data={crmData}
+          onClose={() => setPersonId(null)}
+          onOpenModule={openModule}
+        />
+      ) : null}
     </main>
   );
 }
 
 function CrmTopbar({
-  modules,
   activeModule,
   onOpenModule,
   onLogout,
+  searchSlot,
 }: {
-  modules: ModuleItem[];
   activeModule: ModuleKey;
-  onOpenModule: (moduleKey: ModuleKey, pageKey?: string) => void;
+  onOpenModule: (moduleKey: ModuleKey) => void;
   onLogout: () => void;
+  searchSlot?: ReactNode;
 }) {
-  const primaryModules = navigationModuleKeys.flatMap(key => modules.filter(module => module.key === key));
+  const programsRef = useRef<HTMLDetailsElement>(null);
+  const closePrograms = () => programsRef.current?.removeAttribute("open");
 
   return (
     <header className="area-topbar">
@@ -2404,24 +2430,314 @@ function CrmTopbar({
           <small>Real Estate CRM</small>
         </span>
       </button>
-      <nav aria-label="Moduli principali">
-        {primaryModules.map(({ key, label, Icon }) => (
-          <button
-            className={key === activeModule ? "active" : ""}
-            key={key}
-            type="button"
-            onClick={() => onOpenModule(key)}
-          >
-            <Icon size={24} />
-            <span>{label === "Contatti Pubblicita" ? "+ Contatto P." : label}</span>
-          </button>
-        ))}
-      </nav>
+      {searchSlot}
+      <details className="topbar-programs" ref={programsRef}>
+        <summary aria-label="Apri gli altri programmi Fenix">
+          <Blocks size={17} aria-hidden="true" />
+          <span>Programmi</span>
+        </summary>
+        <nav aria-label="Altri programmi Fenix">
+          {selectorPrograms.map(({ title, description, path, Icon }) => (
+            <a
+              key={path}
+              href={path === "/crm" ? "/crm#start/start-dashboard" : path}
+              title={description}
+              aria-current={path === "/crm" ? "page" : undefined}
+              onClick={closePrograms}
+            >
+              <Icon size={17} aria-hidden="true" />
+              <span>{title.replace("PROGRAMMA ", "")}</span>
+            </a>
+          ))}
+        </nav>
+      </details>
       <button className="area-topbar-logout" type="button" onClick={onLogout}>
         <LogOut size={17} />
         Esci
       </button>
     </header>
+  );
+}
+
+type GlobalSearchResult = {
+  key: string;
+  label: string;
+  detail: string;
+  kind: string;
+  contactId?: string;
+  moduleKey: ModuleKey;
+  pageKey: string;
+  query: string;
+};
+
+/**
+ * Ricerca unica del gestionale: cerca in rubrica, immobili e richieste senza
+ * costringere a sapere in quale modulo si trova il dato.
+ */
+function GlobalSearch({
+  data,
+  onOpenResult,
+}: {
+  data: CrmData;
+  onOpenResult: (result: GlobalSearchResult) => void;
+}) {
+  const [term, setTerm] = useState("");
+  const needle = normalizeSearchValue(term);
+  const results = useMemo<GlobalSearchResult[]>(() => {
+    if (needle.length < 2) {
+      return [];
+    }
+    const matches = (value: string) => normalizeSearchValue(value).includes(needle);
+    const contactResults = data.contacts
+      .filter((contact) => matches(`${contact.name} ${contact.phone} ${contact.email || ""} ${contact.taxCode || ""}`))
+      .slice(0, 5)
+      .map((contact) => ({
+        key: contact.id,
+        label: contact.name,
+        detail: [contact.phone, contact.email, contact.type].filter(Boolean).join(" · "),
+        kind: "Rubrica",
+        contactId: contact.id,
+        moduleKey: "nominativi" as ModuleKey,
+        pageKey: "nominativi-elenco",
+        query: contact.name,
+      }));
+    const propertyResults = data.properties
+      .filter((property) => matches(`${property.code} ${property.title} ${property.zone} ${property.owner}`))
+      .slice(0, 4)
+      .map((property) => ({
+        key: property.id,
+        label: property.title,
+        detail: [property.code, property.zone, property.owner].filter(Boolean).join(" · "),
+        kind: "Immobile",
+        moduleKey: "immobili" as ModuleKey,
+        pageKey: "immobili-tutti",
+        query: property.code || property.title,
+      }));
+    const requestResults = data.requests
+      .filter((request) => matches(`${request.client} ${request.target} ${request.area} ${request.proposal}`))
+      .slice(0, 4)
+      .map((request) => ({
+        key: request.id,
+        label: request.client,
+        detail: [request.target, request.area, request.status].filter(Boolean).join(" · "),
+        kind: "Richiesta",
+        moduleKey: "richieste" as ModuleKey,
+        pageKey: "richieste-elenco",
+        query: request.client,
+      }));
+    return [...contactResults, ...propertyResults, ...requestResults];
+  }, [data, needle]);
+
+  return (
+    <form className="global-search" role="search" onSubmit={(event) => event.preventDefault()}>
+      <span className="global-search-input">
+        <Search size={17} aria-hidden="true" />
+        <input
+          value={term}
+          onChange={(event) => setTerm(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              setTerm("");
+              event.currentTarget.blur();
+            }
+          }}
+          placeholder="Cerca persona, telefono, immobile..."
+          aria-label="Cerca in tutto il gestionale"
+          autoComplete="off"
+        />
+        {term ? (
+          <button type="button" onClick={() => setTerm("")} aria-label="Cancella ricerca">
+            <X size={15} aria-hidden="true" />
+          </button>
+        ) : null}
+      </span>
+      {needle.length >= 2 ? (
+        <div className="global-search-results">
+          {results.length ? (
+            results.map((result) => (
+              <button
+                key={`${result.kind}-${result.key}`}
+                type="button"
+                onClick={() => {
+                  onOpenResult(result);
+                  setTerm("");
+                }}
+              >
+                <span>
+                  <strong>{result.label}</strong>
+                  <small>{result.detail || "Nessun dettaglio"}</small>
+                </span>
+                <em>{result.kind}</em>
+              </button>
+            ))
+          ) : (
+            <p>Nessun risultato per «{term.trim()}»: prova con un cognome, un numero o un codice immobile.</p>
+          )}
+        </div>
+      ) : null}
+    </form>
+  );
+}
+
+function PersonCard({
+  contact,
+  data,
+  onClose,
+  onOpenModule,
+}: {
+  contact: ContactRecord;
+  data: CrmData;
+  onClose: () => void;
+  onOpenModule: (moduleKey: ModuleKey, pageKey?: string, filterTerm?: string) => void;
+}) {
+  const details = contact.details ?? {};
+  const properties = propertiesForContact(contact, data.properties);
+  const requests = data.requests.filter((request) => sameLabel(request.client, contact.name));
+  const activities = data.activities
+    .filter((activity) => sameLabel(activity.contact, contact.name))
+    .slice(0, 6);
+  const privacy = details.privacyRevocationDate
+    ? "Consenso revocato"
+    : details.doNotContact === "Si"
+      ? "Non contattare"
+      : details.privacyLegalBasis || "Da verificare";
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="person-card-backdrop" role="presentation" onClick={onClose}>
+      <aside
+        className="person-card"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Scheda di ${contact.name}`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header>
+          <div>
+            <span>{contact.type || "Contatto"}</span>
+            <h2>{contact.name}</h2>
+            <small>
+              {[contact.status, contact.owner ? `Operatore ${contact.owner}` : "", contact.source]
+                .filter(Boolean)
+                .join(" · ")}
+            </small>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Chiudi scheda">
+            <X size={20} aria-hidden="true" />
+          </button>
+        </header>
+
+        <div className="person-card-body">
+          <section>
+            <h3>Recapiti</h3>
+            <dl>
+              <div>
+                <dt>Telefono</dt>
+                <dd>
+                  {contact.phone ? <a href={`tel:${contact.phone.replace(/\s+/g, "")}`}>{contact.phone}</a> : "-"}
+                </dd>
+              </div>
+              <div>
+                <dt>Email</dt>
+                <dd>{contact.email ? <a href={`mailto:${contact.email}`}>{contact.email}</a> : "-"}</dd>
+              </div>
+              <div>
+                <dt>Codice fiscale</dt>
+                <dd>{contact.taxCode || details.taxCode || "-"}</dd>
+              </div>
+              <div>
+                <dt>Catasto</dt>
+                <dd>{cadastralLabel(contact)}</dd>
+              </div>
+              <div>
+                <dt>Prossimo passo</dt>
+                <dd>{details.nextContactDate || contact.nextStep || "-"}</dd>
+              </div>
+              <div>
+                <dt>Privacy</dt>
+                <dd>{privacy}</dd>
+              </div>
+            </dl>
+            {contact.note ? <p className="person-card-note">{contact.note}</p> : null}
+          </section>
+
+          <section>
+            <h3>Immobili collegati</h3>
+            {properties.length ? (
+              <ul className="person-card-list">
+                {properties.map((property) => (
+                  <li key={property.id}>
+                    <button type="button" onClick={() => { onClose(); onOpenModule("immobili", "immobili-tutti", property.code || property.title); }}>
+                      <strong>{property.code || property.title}</strong>
+                      <small>
+                        {[property.title, property.zone, property.price, property.status].filter(Boolean).join(" · ")}
+                      </small>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="person-card-empty">Nessun immobile collegato a questo nominativo.</p>
+            )}
+          </section>
+
+          <section>
+            <h3>Richieste</h3>
+            {requests.length ? (
+              <ul className="person-card-list">
+                {requests.map((request) => (
+                  <li key={request.id}>
+                    <button type="button" onClick={() => { onClose(); onOpenModule("richieste", "richieste-elenco", request.client); }}>
+                      <strong>{request.target}</strong>
+                      <small>{[request.area, request.match, request.status, request.proposal].filter(Boolean).join(" · ")}</small>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="person-card-empty">Nessuna richiesta registrata per questa persona.</p>
+            )}
+          </section>
+
+          <section>
+            <h3>Ultime attivita</h3>
+            {activities.length ? (
+              <ul className="person-card-timeline">
+                {activities.map((activity) => (
+                  <li key={activity.id}>
+                    <span>{activity.updatedAt}</span>
+                    <strong>{activity.title}</strong>
+                    <small>{[activity.type, activity.status, activity.note].filter(Boolean).join(" · ")}</small>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="person-card-empty">Nessuna attivita registrata: le telefonate del modulo telefonista compaiono qui.</p>
+            )}
+          </section>
+        </div>
+
+        <footer>
+          <button type="button" onClick={() => { onClose(); onOpenModule("nominativi", "nominativi-elenco", contact.name); }}>
+            Apri in rubrica
+          </button>
+          {properties.length ? (
+            <button type="button" onClick={() => { onClose(); onOpenModule("proprietari", "proprietari-elenco", contact.name); }}>
+              Apri tra i proprietari
+            </button>
+          ) : null}
+        </footer>
+      </aside>
+    </div>
   );
 }
 
@@ -2437,6 +2753,7 @@ function ModuleView({
   accounts,
   onAccountsChange,
   agendaResetVersion,
+  onOpenPerson,
 }: {
   moduleKey: ModuleKey;
   pageKey: string;
@@ -2444,29 +2761,30 @@ function ModuleView({
   data: CrmData;
   onCommit: CrmCommit;
   onAction: (message: string) => void;
-  onOpenModule: (moduleKey: ModuleKey, pageKey?: string) => void;
+  onOpenModule: (moduleKey: ModuleKey, pageKey?: string, filterTerm?: string) => void;
   currentUser: SessionUser;
   accounts: AccountRecord[];
   onAccountsChange: (updater: (accountList: AccountRecord[]) => AccountRecord[], message: string) => void;
   agendaResetVersion: number;
+  onOpenPerson: (contactId: string) => void;
 }) {
   if (moduleKey === "immobili") {
     return <PropertiesView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenMap={() => onOpenModule("censimento", "censimento-mappa")} />;
   }
   if (moduleKey === "richieste") {
-    return <RequestsView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
+    return <RequestsView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenPerson={onOpenPerson} />;
   }
   if (moduleKey === "nominativi") {
-    return <ContactsView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
+    return <ContactsView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenPerson={onOpenPerson} />;
   }
   if (moduleKey === "proprietari") {
-    return <OwnersView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenMap={() => onOpenModule("censimento", "censimento-mappa")} />;
+    return <OwnersView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenPerson={onOpenPerson} onOpenMap={() => onOpenModule("censimento", "censimento-mappa")} />;
   }
   if (moduleKey === "agenda") {
     return <AgendaView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} resetVersion={agendaResetVersion} />;
   }
   if (moduleKey === "attivita") {
-    return <ActivityCenterView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
+    return <ActivityCenterView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenPerson={onOpenPerson} />;
   }
   if (moduleKey === "pubblicita") {
     return <MarketingView data={data} onCommit={onCommit} onAction={onAction} />;
@@ -2512,6 +2830,7 @@ function ModuleView({
       data={data}
       onCommit={onCommit}
       onOpenModule={onOpenModule}
+      onOpenPerson={onOpenPerson}
     />
   );
 }
@@ -2521,12 +2840,14 @@ function StartView({
   currentUser,
   data,
   onOpenModule,
+  onOpenPerson,
 }: {
   accounts: AccountRecord[];
   currentUser: SessionUser;
   data: CrmData;
   onCommit: CrmCommit;
   onOpenModule: (moduleKey: ModuleKey, pageKey?: string) => void;
+  onOpenPerson: (contactId: string) => void;
 }) {
   const accountScope = getAccountScope(accounts, currentUser);
   const scopeOwners = new Set(
@@ -2550,6 +2871,19 @@ function StartView({
   const censusRecallRows = data.contacts
     .filter((contact) => /censimento|proprietario|valutazione|ricontattare/i.test(`${contact.source} ${contact.type} ${contact.status}`))
     .slice(0, 12);
+  const recallRows: { contact: ContactRecord; reason: string; source: string }[] = [];
+  const seenRecallIds = new Set<string>();
+  [...censusRecallRows, ...fallbackQueue].forEach((contact) => {
+    if (seenRecallIds.has(contact.id)) {
+      return;
+    }
+    seenRecallIds.add(contact.id);
+    recallRows.push({
+      contact,
+      reason: [contact.status, contact.nextStep].filter(Boolean).join(" · "),
+      source: censusRecallRows.some((row) => row.id === contact.id) ? "Censimento" : "Rubrica",
+    });
+  });
   const censusTotal = Math.max(0, data.censusAreas.reduce((sum, area) => sum + area.contacts, 0) || censusRecallRows.length);
   const overdueCensus = Math.max(0, censusRecallRows.filter((contact) => /ricontattare|valutazione/i.test(contact.status)).length || censusTotal);
   const censusDueSoon = Math.max(0, censusRecallRows.filter((contact) => /lead|nuovo|da qualificare/i.test(`${contact.status} ${contact.nextStep}`)).length);
@@ -2640,26 +2974,38 @@ function StartView({
         </div>
       </section>
 
-      <section className="area-card area-card-census-recalls">
-        <AreaCardHeader title="Contatti censiti da ricontattare" filter={accountScope.label} />
+      <section className="area-card area-card-recall">
+        <AreaCardHeader title="Da ricontattare" filter={accountScope.label} />
         <div className="area-list-section">
-          <h3>Oggi</h3>
-          {censusRecallRows.length ? (
-            <div className="area-contact-table">
-              <div className="area-contact-head">
-                <span>Nome</span>
+          {recallRows.length ? (
+            <div className="area-recall-list">
+              <div className="area-recall-head">
+                <span>Nominativo</span>
                 <span>Telefono</span>
+                <span>Motivo</span>
               </div>
-              {censusRecallRows.map((contact) => (
-                <button key={contact.id} type="button" onClick={() => onOpenModule("censimento", "censimento-contatti")}>
-                  <span>{contact.name}</span>
+              {recallRows.slice(0, 10).map(({ contact, reason, source }) => (
+                <button key={contact.id} type="button" onClick={() => onOpenPerson(contact.id)}>
+                  <span>
+                    <strong>{contact.name}</strong>
+                    <small>{source}</small>
+                  </span>
                   <b>{contact.phone || "-"}</b>
+                  <em>{reason || "Nessun motivo indicato"}</em>
                 </button>
               ))}
             </div>
           ) : (
-            <p>Nessun contatto censito da ricontattare per oggi</p>
+            <p>Nessuno da ricontattare: quando un cliente ha un ricontatto o un esito aperto compare qui.</p>
           )}
+          <div className="dashboard-link-row" aria-label="Azioni ricontatti">
+            <button type="button" onClick={() => onOpenModule("nominativi", "nominativi-elenco")}>
+              Apri rubrica
+            </button>
+            <button type="button" onClick={() => onOpenModule("censimento", "censimento-contatti")}>
+              Apri censimento
+            </button>
+          </div>
         </div>
       </section>
 
@@ -2675,35 +3021,6 @@ function StartView({
         </div>
       </section>
 
-      <section className="area-card area-card-nominativi">
-        <AreaCardHeader title="Nominativi da ricontattare" filter={accountScope.label} />
-        <div className="area-list-section">
-          {[
-            { title: "Oggi", rows: fallbackQueue.slice(0, 3), empty: "Non hai nessuno da ricontattare" },
-            { title: "Domani", rows: [], empty: "Non hai nessuno da ricontattare" },
-            { title: "Questa settimana", rows: [], empty: "Non hai nessuno da ricontattare nei prossimi giorni della settimana" },
-          ].map((section) => (
-            <section key={section.title}>
-              <h3>{section.title}</h3>
-              {section.rows.length ? (
-                <div className="area-mini-list">
-                  {section.rows.map((contact) => (
-                    <button key={contact.id} type="button" onClick={() => onOpenModule("nominativi", "nominativi-elenco")}>
-                      <span>{contact.name}</span>
-                      <small>{contact.phone || contact.status}</small>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p>{section.empty}</p>
-              )}
-            </section>
-          ))}
-          <button className="dashboard-panel-link" type="button" onClick={() => onOpenModule("nominativi", "nominativi-elenco")}>
-            Apri clienti
-          </button>
-        </div>
-      </section>
     </div>
   );
 }
@@ -3182,29 +3499,67 @@ function PropertiesView({
   );
 }
 
+const requestStages = ["Nuova", "Qualificata", "Visita", "Trattativa", "Chiusa"];
+
+function daysInStage(request: RequestRecord) {
+  const started = request.stageChangedAt ? new Date(request.stageChangedAt).getTime() : NaN;
+  if (Number.isNaN(started)) {
+    return "";
+  }
+  const days = Math.floor((Date.now() - started) / 86400000);
+  if (days <= 0) {
+    return "entrata oggi";
+  }
+  return days === 1 ? "1 giorno in fase" : `${days} giorni in fase`;
+}
+
 function RequestsView({
   pageKey,
   query,
   data,
   onCommit,
   onAction,
+  onOpenPerson,
 }: {
   pageKey: string;
   query: string;
   data: CrmData;
   onCommit: CrmCommit;
   onAction: (message: string) => void;
+  onOpenPerson: (contactId: string) => void;
 }) {
   const rows = useFilteredRows(data.requests, query, (item) =>
     [item.client, item.target, item.area, item.proposal].join(" "),
   );
-  const pipelineCounts = {
-    Nuove: data.requests.filter((item) => item.status === "Nuova").length,
-    Qualificate: data.requests.filter((item) => item.status === "Qualificata").length,
-    Visita: data.requests.filter((item) => item.status === "Visita").length,
-    Trattativa: data.requests.filter((item) => item.status === "Trattativa").length,
-    Chiuse: data.requests.filter((item) => item.status === "Chiusa").length,
-  };
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropStage, setDropStage] = useState<string | null>(null);
+
+  function moveRequest(requestId: string, stage: string) {
+    const request = data.requests.find((item) => item.id === requestId);
+    if (!request || request.status === stage) {
+      return;
+    }
+    onCommit(
+      (currentData) => ({
+        ...currentData,
+        requests: currentData.requests.map((item) =>
+          item.id === requestId
+            ? { ...item, status: stage, stageChangedAt: new Date().toISOString(), updatedAt: nowLabel() }
+            : item,
+        ),
+      }),
+      `Richiesta ${request.client} spostata in «${stage}».`,
+    );
+  }
+
+  function openClient(clientName: string) {
+    const contact = data.contacts.find((item) => sameLabel(item.name, clientName));
+    if (!contact) {
+      onAction(`Nessuna scheda in rubrica per ${clientName}: crea il nominativo per aprire la scheda persona.`);
+      return;
+    }
+    onOpenPerson(contact.id);
+  }
 
   return (
     <div className="workspace-grid">
@@ -3354,15 +3709,91 @@ function RequestsView({
           />
       </Panel>
       ) : null}
-      <Panel className="span-12" title="Pipeline richieste">
-        <div className="pipeline">
-          {["Nuove", "Qualificate", "Visita", "Trattativa", "Chiuse"].map((stage, index) => (
-            <div key={stage}>
-              <span>{stage}</span>
-              <strong>{Object.values(pipelineCounts)[index]}</strong>
-              <small>{["lead", "schede inviate", "appuntamenti", "negoziazioni", "mese"][index]}</small>
-            </div>
-          ))}
+      <Panel className="span-12" title={`Pipeline richieste (${rows.length})`}>
+        <div className="pipeline-board">
+          {requestStages.map((stage) => {
+            const stageRequests = rows.filter((request) => (request.status || "Nuova") === stage);
+            return (
+              <div
+                className={`pipeline-column ${dropStage === stage ? "is-drop-target" : ""}`}
+                key={stage}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  if (dropStage !== stage) {
+                    setDropStage(stage);
+                  }
+                }}
+                onDragLeave={() => setDropStage((current) => (current === stage ? null : current))}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const requestId = draggingId || event.dataTransfer.getData("text/plain");
+                  if (requestId) {
+                    moveRequest(requestId, stage);
+                  }
+                  setDraggingId(null);
+                  setDropStage(null);
+                }}
+              >
+                <header>
+                  <span>{stage}</span>
+                  <strong>{stageRequests.length}</strong>
+                </header>
+                <div className="pipeline-column-body">
+                  {stageRequests.length ? (
+                    stageRequests.map((request) => {
+                      const contact = data.contacts.find((item) => sameLabel(item.name, request.client));
+                      return (
+                        <article
+                          className={`pipeline-card ${draggingId === request.id ? "is-dragging" : ""}`}
+                          key={request.id}
+                          draggable
+                          onDragStart={(event) => {
+                            setDraggingId(request.id);
+                            event.dataTransfer.setData("text/plain", request.id);
+                            event.dataTransfer.effectAllowed = "move";
+                          }}
+                          onDragEnd={() => {
+                            setDraggingId(null);
+                            setDropStage(null);
+                          }}
+                        >
+                          <header>
+                            <button
+                              className="pipeline-card-client"
+                              type="button"
+                              onClick={() => (contact ? openClient(request.client) : onAction(`${request.client} non e' in rubrica: aggiungilo per aprire la scheda persona.`))}
+                              title="Apri la scheda persona"
+                            >
+                              {request.client}
+                            </button>
+                            <span>{request.match}</span>
+                          </header>
+                          <p>{request.target}</p>
+                          <small>{[request.area, request.proposal].filter(Boolean).join(" · ") || "Nessun dettaglio"}</small>
+                          <footer>
+                            <span>{daysInStage(request) || request.updatedAt}</span>
+                            <select
+                              aria-label={`Sposta ${request.client} in un'altra fase`}
+                              value={stage}
+                              onChange={(event) => moveRequest(request.id, event.target.value)}
+                            >
+                              {requestStages.map((option) => (
+                                <option key={option} value={option}>{option}</option>
+                              ))}
+                            </select>
+                          </footer>
+                        </article>
+                      );
+                    })
+                  ) : (
+                    <p className="pipeline-column-empty">
+                      {stage === "Nuova" ? "Trascina qui una richiesta per metterla in lavorazione." : "Nessuna richiesta in questa fase."}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </Panel>
     </div>
@@ -3375,12 +3806,14 @@ function ContactsView({
   data,
   onCommit,
   onAction,
+  onOpenPerson,
 }: {
   pageKey: string;
   query: string;
   data: CrmData;
   onCommit: CrmCommit;
   onAction: (message: string) => void;
+  onOpenPerson: (contactId: string) => void;
 }) {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -3449,7 +3882,7 @@ function ContactsView({
   return (
     <div className="workspace-grid">
       {pageKey === "nominativi-richieste" ? (
-        <RequestsView pageKey="richieste-elenco" query={query} data={data} onCommit={onCommit} onAction={onAction} />
+        <RequestsView pageKey="richieste-elenco" query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenPerson={onOpenPerson} />
       ) : (
         <>
       <Panel
@@ -3480,6 +3913,15 @@ function ContactsView({
             ];
           })}
           actions={[
+            {
+              label: "Scheda",
+              onClick: (rowIndex) => {
+                const contact = rows[rowIndex];
+                if (contact) {
+                  onOpenPerson(contact.id);
+                }
+              },
+            },
             {
               label: "Chiama",
               onClick: (rowIndex) => {
@@ -3670,6 +4112,7 @@ function OwnersView({
   onCommit,
   onAction,
   onOpenMap,
+  onOpenPerson,
 }: {
   pageKey: string;
   query: string;
@@ -3677,6 +4120,7 @@ function OwnersView({
   onCommit: CrmCommit;
   onAction: (message: string) => void;
   onOpenMap: () => void;
+  onOpenPerson: (contactId: string) => void;
 }) {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -3878,6 +4322,15 @@ function OwnersView({
           })}
           actions={[
             {
+              label: "Scheda",
+              onClick: (rowIndex) => {
+                const owner = owners[rowIndex];
+                if (owner) {
+                  onOpenPerson(owner.id);
+                }
+              },
+            },
+            {
               label: "Ricontatto",
               onClick: (rowIndex) => {
                 const owner = owners[rowIndex];
@@ -3964,12 +4417,14 @@ function ActivityCenterView({
   data,
   onCommit,
   onAction,
+  onOpenPerson,
 }: {
   pageKey: string;
   query: string;
   data: CrmData;
   onCommit: CrmCommit;
   onAction: (message: string) => void;
+  onOpenPerson: (contactId: string) => void;
 }) {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const filteredActivities = data.activities.filter((item) => {
@@ -4026,6 +4481,20 @@ function ActivityCenterView({
             activity.note || "-",
           ])}
           actions={[
+            {
+              label: "Scheda",
+              onClick: (rowIndex) => {
+                const activity = rows[rowIndex];
+                const contact = activity
+                  ? data.contacts.find((item) => sameLabel(item.name, activity.contact))
+                  : undefined;
+                if (!contact) {
+                  onAction(activity?.contact ? `${activity.contact} non e' in rubrica.` : "Questa attivita non ha un contatto collegato.");
+                  return;
+                }
+                onOpenPerson(contact.id);
+              },
+            },
             {
               label: "Chiudi",
               onClick: (rowIndex) => {
