@@ -34,6 +34,25 @@ export function CensimentoWorkspace({
         <p className="census-sites-title">Strumenti</p>
         {sites.map((site) => {
           const active = activeSite?.id === site.id;
+          // I siti che non si possono incorporare sono veri collegamenti:
+          // il browser apre una scheda nuova e questa resta com'era.
+          if (site.mode === "external") {
+            return (
+              <a
+                key={site.id}
+                className="census-site-link"
+                href={site.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={site.description}
+              >
+                <MapPinned size={16} aria-hidden="true" />
+                <span>{site.label}</span>
+                <ExternalLink size={13} aria-hidden="true" />
+              </a>
+            );
+          }
+
           return (
             <button
               key={site.id}
@@ -45,7 +64,6 @@ export function CensimentoWorkspace({
             >
               <MapPinned size={16} aria-hidden="true" />
               <span>{site.label}</span>
-              {site.mode === "external" ? <ExternalLink size={13} aria-hidden="true" /> : null}
             </button>
           );
         })}

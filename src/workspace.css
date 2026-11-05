@@ -113,7 +113,7 @@
 .workspace-shell .census-mix-shell { display: grid; grid-template-columns: 208px minmax(0,1fr); gap: 14px; align-items: start; }
 .workspace-shell .census-sites { position: sticky; top: 76px; display: grid; gap: 4px; padding: 12px 10px; border: 1px solid #ffffff18; border-radius: 10px; background: #141820; }
 .workspace-shell .census-sites-title { margin: 0 0 6px; padding: 0 6px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #8b95a4; }
-.workspace-shell .census-site-link { display: flex !important; align-items: center; gap: 8px; width: 100% !important; justify-content: flex-start !important; padding: 9px 10px !important; min-height: 38px !important; border-radius: 7px !important; background: transparent !important; box-shadow: none !important; color: #cdd4de !important; text-align: left; }
+.workspace-shell .census-site-link { display: flex !important; align-items: center; gap: 8px; width: 100% !important; justify-content: flex-start !important; padding: 9px 10px !important; min-height: 38px !important; border-radius: 7px !important; background: transparent !important; box-shadow: none !important; color: #cdd4de !important; text-align: left; text-decoration: none !important; }
 .workspace-shell .census-site-link span { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workspace-shell .census-site-link svg:last-child:not(:first-child) { opacity: .55; flex: 0 0 auto; }
 .workspace-shell .census-site-link:hover, .workspace-shell .census-site-link:focus-visible { background: #ffffff0f !important; color: #fff !important; }

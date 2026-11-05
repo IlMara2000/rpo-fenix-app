@@ -14,7 +14,8 @@ export interface CensimentoSite {
  * Siti di lavoro del censimento.
  * - "interno": pagina del gestionale (la mappa).
  * - "embed": si apre dentro l'area di lavoro, in un riquadro.
- * - "external": il sito rifiuta l'incorporamento, si apre in una scheda separata.
+ * - "external": il sito rifiuta l'incorporamento, si apre in una scheda separata
+ *   come vero collegamento (target="_blank"), mai dentro la pagina corrente.
  */
 export const censimentoSites: CensimentoSite[] = [
   {
@@ -41,9 +42,9 @@ export const censimentoSites: CensimentoSite[] = [
   {
     id: "datagma",
     label: "Datagma",
-    description: "Numeri di cellulare e recapiti diretti. Si apre in una scheda separata.",
+    description: "Numeri di cellulare e recapiti diretti.",
     url: "https://app.datagma.com/signin.html",
-    mode: "external",
+    mode: "embed",
   },
   {
     id: "whuis",

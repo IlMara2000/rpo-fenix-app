@@ -9,7 +9,7 @@ async function loadModule(relativePath) {
   return import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
 }
 
-test("censimento sites embed only the embeddable ones and open Whuis and Datagma in a tab", async () => {
+test("censimento sites embed only the embeddable ones and open Whuis in a tab", async () => {
   const { censimentoSites, findCensimentoSite } = await loadModule("../src/censimento/sites.ts");
 
   assert.equal(censimentoSites.length, 5);
@@ -18,21 +18,15 @@ test("censimento sites embed only the embeddable ones and open Whuis and Datagma
   assert.equal(byId.whuis.mode, "external");
   assert.match(byId.whuis.url, /^https:\/\//);
 
-  for (const id of ["sister", "cercaora"]) {
+  for (const id of ["sister", "cercaora", "datagma"]) {
     assert.equal(byId[id].mode, "embed");
     assert.match(byId[id].url, /^https:\/\//);
   }
-
-  // Datagma non si puo incorporare: la sua pagina di accesso porta la scheda
-  // principale altrove, quindi va aperta in una scheda separata.
-  assert.equal(byId.datagma.mode, "external");
-  assert.match(byId.datagma.url, /^https:\/\//);
 
   assert.equal(byId.mappa.mode, "interno");
   assert.equal(byId.mappa.url, "");
   assert.equal(censimentoSites.filter((site) => !site.url).length, 1);
 
   assert.equal(findCensimentoSite("whuis")?.mode, "external");
-  assert.equal(findCensimentoSite("datagma")?.mode, "external");
   assert.equal(findCensimentoSite("inesistente"), undefined);
 });
