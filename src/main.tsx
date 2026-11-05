@@ -2326,8 +2326,8 @@ function Workspace({
         <div className="area-workspace-frame">
         <motion.section
           className={`workspace-content ${safeActiveModule === "start" ? "area-start-content" : ""}`}
-          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-          animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+          initial={reduceMotion ? false : { y: 10 }}
+          animate={reduceMotion ? undefined : { y: 0 }}
           transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="workspace-status" role="status">
@@ -6979,9 +6979,8 @@ function Panel({
   return (
     <motion.section
       className={`workspace-panel ${className}`}
-      initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.995 }}
-      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
-      viewport={{ once: true, margin: "-24px" }}
+      initial={reduceMotion ? false : { y: 10, scale: 0.995 }}
+      animate={reduceMotion ? undefined : { y: 0, scale: 1 }}
       transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
     >
       <header>

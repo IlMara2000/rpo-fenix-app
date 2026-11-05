@@ -165,3 +165,51 @@
 .workspace-shell .maplibregl-ctrl-attrib { font-size: 10px; }
 .workspace-shell .maplibregl-popup-content { font: inherit; font-size: 12px; padding: 8px 10px; }
 .workspace-shell .maplibregl-ctrl-group button { min-height: 0 !important; }
+
+/* Su finestre strette la barra in alto aveva un'altezza fissa: ricerca e
+   pulsanti uscivano dal riquadro e finivano sopra al menu dei moduli. Qui la
+   barra cresce con il contenuto e la ricerca prende una riga tutta sua. */
+@media (max-width: 720px) {
+  .workspace-shell .area-topbar {
+    height: auto !important;
+    min-height: 0 !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+  }
+
+  .workspace-shell .area-topbar-brand {
+    flex: 0 0 auto !important;
+    padding: 4px 0 !important;
+  }
+
+  .workspace-shell .area-topbar-brand .fenix-official-logo {
+    width: 132px !important;
+  }
+
+  .workspace-shell .area-topbar .topbar-programs {
+    order: 1 !important;
+    margin-left: auto !important;
+    flex: 0 0 auto !important;
+  }
+
+  .workspace-shell .area-topbar-logout {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    order: 2 !important;
+    margin-left: 0 !important;
+    flex: 0 0 auto !important;
+  }
+
+  .workspace-shell .area-topbar .global-search {
+    order: 3 !important;
+    flex: 1 1 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .workspace-shell .workspace-navigation {
+    position: static !important;
+  }
+}

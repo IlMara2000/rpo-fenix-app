@@ -11667,3 +11667,40 @@ tbody tr:hover {
       "recensus" !important;
   }
 }
+
+/* A larghezze da tablet le testate dei pannelli si impilavano su due righe:
+   titolo sopra e azione sotto, larga quanto tutto il pannello. Restano su una
+   riga sola, con l'azione alla sua larghezza naturale. */
+@media (max-width: 1024px) {
+  .workspace-shell .area-card-header,
+  .workspace-shell .workspace-panel header {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    grid-template-columns: none !important;
+    gap: 8px 12px !important;
+  }
+
+  .workspace-shell .area-card-header h2,
+  .workspace-shell .area-card-header h3,
+  .workspace-shell .workspace-panel header h2 {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .workspace-shell .area-card-header .area-card-tag,
+  .workspace-shell .workspace-panel header button,
+  .workspace-shell .workspace-panel header .panel-action-label {
+    flex: 0 0 auto;
+    width: auto !important;
+    min-height: 32px !important;
+  }
+}
+
+/* Le schede della dashboard si fermavano alla loro altezza naturale e
+   lasciavano un vuoto sotto la colonna di destra: qui riempiono la loro area. */
+.workspace-shell .area-dashboard {
+  align-items: stretch !important;
+}
