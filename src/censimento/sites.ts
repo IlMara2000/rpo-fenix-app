@@ -41,9 +41,9 @@ export const censimentoSites: CensimentoSite[] = [
   {
     id: "datagma",
     label: "Datagma",
-    description: "Numeri di cellulare e recapiti diretti.",
+    description: "Numeri di cellulare e recapiti diretti. Si apre in una scheda separata.",
     url: "https://app.datagma.com/signin.html",
-    mode: "embed",
+    mode: "external",
   },
   {
     id: "whuis",
