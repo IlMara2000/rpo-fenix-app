@@ -36,7 +36,10 @@ export const censimentoSites: CensimentoSite[] = [
     id: "cercaora",
     label: "CercaOra",
     description: "Telefono del proprietario partendo da codice fiscale o indirizzo.",
-    url: "https://cercaora.online/",
+    // L'applicazione sta su /app/: la home del sito è solo la pagina di
+    // presentazione e dopo l'accesso porta a una pagina diversa da quella
+    // che si apre con il collegamento diretto.
+    url: "https://cercaora.online/app/",
     mode: "embed",
   },
   {
