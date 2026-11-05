@@ -3029,11 +3029,7 @@ function AreaCardHeader({ title, filter }: { title: string; filter?: string }) {
   return (
     <header className="area-card-header">
       <h2>{title}</h2>
-      {filter ? (
-        <select aria-label={`Filtro ${title}`} defaultValue={filter}>
-          <option>{filter}</option>
-        </select>
-      ) : null}
+      {filter ? <span className="area-card-tag">{filter}</span> : null}
     </header>
   );
 }
