@@ -11014,7 +11014,7 @@ tbody tr:hover {
   position: absolute !important;
   top: calc(100% + 8px) !important;
   right: 0 !important;
-  z-index: 95 !important;
+  z-index: 96 !important;
   display: grid !important;
   grid-auto-columns: 1fr !important;
   gap: 2px !important;
