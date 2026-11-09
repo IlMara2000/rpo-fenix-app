@@ -75,6 +75,10 @@ import { PlanimetrieTool } from "./PlanimetrieTool";
 import { RpoTool } from "./RpoTool";
 import { TelefonistaTool } from "./TelefonistaTool";
 import { PwsTool } from "./PwsTool";
+import {
+  InformationArchivePanel,
+  type ArchiveCandidate,
+} from "./crm/components/InformationArchivePanel";
 import { StructuredQuickForm } from "./crm/components/StructuredQuickForm";
 import {
   activityFormSections,
@@ -6126,6 +6130,15 @@ function GoalsView({ query, data, onCommit }: { query: string; data: CrmData; on
   );
 }
 
+/** Solo i dati identificativi gia' presenti nel CRM entrano nell'archivio cifrato. */
+function compactInformation(values: Record<string, string | undefined>) {
+  return Object.fromEntries(
+    Object.entries(values)
+      .filter(([, value]) => typeof value === "string" && value.trim())
+      .map(([key, value]) => [key, (value as string).trim()]),
+  );
+}
+
 function UtilitiesView({
   pageKey,
   query,
@@ -6140,6 +6153,40 @@ function UtilitiesView({
   onAction: (message: string) => void;
 }) {
   const logRows = useFilteredRows(data.activityLog, query, (item) => item);
+  const archiveRecords = useMemo<ArchiveCandidate[]>(() => {
+    if (pageKey !== "utilita-backup") {
+      return [];
+    }
+
+    return [
+      ...data.contacts.map((contact) => ({
+        id: `contact:${contact.id}`,
+        kind: "contact" as const,
+        label:
+          contact.name ||
+          [contact.firstName, contact.lastName].filter(Boolean).join(" ") ||
+          contact.id,
+        source: contact.source ?? "",
+        information: compactInformation({
+          nome: contact.name,
+          telefono: contact.phone,
+          email: contact.email,
+        }),
+      })),
+      ...data.properties.map((property) => ({
+        id: `property:${property.id}`,
+        kind: "property" as const,
+        label: property.title || property.code || property.id,
+        source: property.source ?? "",
+        information: compactInformation({
+          codice: property.code,
+          titolo: property.title,
+          zona: property.zone,
+          proprietario: property.owner,
+        }),
+      })),
+    ];
+  }, [data.contacts, data.properties, pageKey]);
   const utilityTitle =
     pageKey === "utilita-preferenze"
       ? "Preferenze operative"
@@ -6179,6 +6226,11 @@ function UtilitiesView({
 
   return (
     <div className="workspace-grid">
+      {pageKey === "utilita-backup" ? (
+        <Panel className="span-12" title="Archivio cifrato">
+          <InformationArchivePanel records={archiveRecords} />
+        </Panel>
+      ) : null}
       <Panel className="span-6" title="Strumenti collegati">
         <div className="tool-grid compact-tools">
           {externalTools.map((tool) => (

@@ -228,3 +228,21 @@
 .workspace-shell .cyborg-workspace button { margin: 4px 8px 4px 0; padding: 8px 12px; border: 1px solid #ffffff30; border-radius: 6px; color: inherit; background: #ffffff10; cursor: pointer; }
 .workspace-shell .cyborg-import-preview { border-block: 1px solid #38bdf8; }
 .workspace-shell .cyborg-frame { width: 100%; height: max(720px, calc(100svh - 260px)); border: 0; background: #0f172a; }
+
+.workspace-shell .vault-archive { display: grid; gap: 22px; min-width: 0; }
+.workspace-shell .vault-form { display: grid; gap: 16px; }
+.workspace-shell .vault-step { display: grid; gap: 12px; padding: 16px; border: 1px solid #ffffff18; border-radius: 10px; background: #141820; }
+.workspace-shell .vault-step h3,
+.workspace-shell .vault-section h3 { margin: 0; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+.workspace-shell .vault-fields { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.workspace-shell .vault-fields label { display: grid; gap: 6px; font-size: 12px; }
+.workspace-shell .vault-fields input[type="file"] { padding: 8px; font-size: 12px; }
+.workspace-shell .vault-hint { margin: 0; font-size: 12px; line-height: 1.6; opacity: 0.78; }
+.workspace-shell .vault-empty { margin: 0; font-size: 12px; opacity: 0.78; }
+.workspace-shell .vault-section { display: grid; gap: 12px; min-width: 0; }
+.workspace-shell .vault-section-head { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; }
+.workspace-shell .vault-section-head small { font-size: 11px; opacity: 0.7; }
+.workspace-shell .vault-feedback { margin: 0; padding: 12px 14px; border-radius: 8px; font-size: 12px; line-height: 1.6; }
+.workspace-shell .vault-feedback.error { border: 1px solid #f87171; color: #fecaca; background: #7f1d1d33; }
+.workspace-shell .vault-feedback.ok { border: 1px solid #4ade80; color: #bbf7d0; background: #14532d33; }
+.workspace-shell .vault-warning { margin: 0; font-size: 12px; line-height: 1.6; color: #fde68a; }
