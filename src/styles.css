@@ -8789,7 +8789,7 @@ tbody tr:hover {
     box-shadow: none !important;
   }
 
-  .workspace-shell .area-topbar nav {
+  .workspace-shell .area-topbar > nav {
     display: none !important;
     visibility: hidden !important;
     width: 0 !important;
@@ -11016,7 +11016,11 @@ tbody tr:hover {
   right: 0 !important;
   z-index: 95 !important;
   display: grid !important;
+  grid-auto-columns: 1fr !important;
   gap: 2px !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
   min-width: 232px !important;
   padding: 6px !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
