@@ -2174,6 +2174,7 @@ function Workspace({
   const [crmData, setCrmData] = usePersistentCrmData();
   const [accounts, setAccounts] = usePersistentAccounts();
   const [agendaResetVersion, setAgendaResetVersion] = useState(0);
+  const submenuRef = useScrollEdges<HTMLElement>();
   const visibleModules = getVisibleModules(currentUser);
   const mainModules = navigationModuleKeys.flatMap(key => visibleModules.filter(module => module.key === key));
   const safeActiveModule = visibleModules.some((item) => item.key === activeModule)
@@ -2307,7 +2308,7 @@ function Workspace({
               ))}
             </nav>
             {currentPages.length > 1 ? (
-              <nav className="area-side-pages" aria-label={`Sottomenu ${currentModule.label}`}>
+              <nav className="area-side-pages" aria-label={`Sottomenu ${currentModule.label}`} ref={submenuRef}>
                 {currentPages.map(({ key, label, Icon }) => (
                   <button
                     className={key === currentPage.key ? "active" : ""}
@@ -7290,6 +7291,48 @@ function usePersistentAccounts() {
   }, [accounts]);
 
   return [accounts, setAccounts] as const;
+}
+
+/** Segnala quale bordo di una striscia scorrevole ha ancora schede oltre il taglio. */
+function useScrollEdges<T extends HTMLElement>() {
+  const [element, setElement] = useState<T | null>(null);
+
+  useEffect(() => {
+    if (!element) {
+      return;
+    }
+
+    const measure = () => {
+      const hiddenWidth = element.scrollWidth - element.clientWidth;
+      element.dataset.moreLeft = String(element.scrollLeft > 2);
+      element.dataset.moreRight = String(element.scrollLeft < hiddenWidth - 2);
+    };
+    let timer = 0;
+    const update = () => {
+      measure();
+      // Il ridimensionamento puo' arrivare prima del nuovo layout: rimisura a fine cambio.
+      window.clearTimeout(timer);
+      timer = window.setTimeout(measure, 120);
+    };
+
+    measure();
+    element.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    const resizeObserver = new ResizeObserver(update);
+    resizeObserver.observe(element);
+    const mutationObserver = new MutationObserver(update);
+    mutationObserver.observe(element, { childList: true, subtree: true });
+
+    return () => {
+      window.clearTimeout(timer);
+      element.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+    };
+  }, [element]);
+
+  return setElement;
 }
 
 function hydrateCrmData(savedData: Partial<CrmData>): CrmData {

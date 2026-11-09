@@ -12,6 +12,10 @@
 .workspace-shell .module-nav button span { display: none !important; width: auto !important; white-space: nowrap !important; }
 .workspace-shell .module-nav button:hover span, .workspace-shell .module-nav button:focus-visible span { display: inline !important; }
 .workspace-shell .area-side-pages { padding: 4px 24px 8px !important; gap: 6px !important; }
+/* Velo ai bordi: mostra che il sottomenu continua oltre il taglio. */
+.workspace-shell .area-side-pages[data-more-left="true"][data-more-right="true"] { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%); mask-image: linear-gradient(to right, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%); }
+.workspace-shell .area-side-pages[data-more-right="true"]:not([data-more-left="true"]) { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%); }
+.workspace-shell .area-side-pages[data-more-left="true"]:not([data-more-right="true"]) { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 28px); mask-image: linear-gradient(to right, transparent 0, #000 28px); }
 .workspace-shell .area-side-pages button { min-width: auto !important; min-height: 32px !important; padding: 0 12px !important; font-size: 11px !important; text-transform: none !important; letter-spacing: 0 !important; }
 .workspace-shell .workspace-content { padding: 16px 24px 32px !important; min-height: 0 !important; background: #0d1016 !important; }
 .workspace-shell .dashboard-programs { margin: 0 0 10px; gap: 6px; }
