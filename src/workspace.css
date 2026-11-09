@@ -219,3 +219,12 @@
     position: static !important;
   }
 }
+
+.workspace-shell .census-cyborg-view:not([hidden]) { grid-column: 1 / -1; min-width: 0; }
+.workspace-shell .census-cyborg-view[hidden] { display: none; }
+.workspace-shell .cyborg-workspace { border: 1px solid #ffffff18; border-radius: 10px; overflow: hidden; background: #141820; }
+.workspace-shell .cyborg-workspace > header, .workspace-shell .cyborg-import-preview { padding: 16px; }
+.workspace-shell .cyborg-workspace p { font-size: 12px; line-height: 1.6; }
+.workspace-shell .cyborg-workspace button { margin: 4px 8px 4px 0; padding: 8px 12px; border: 1px solid #ffffff30; border-radius: 6px; color: inherit; background: #ffffff10; cursor: pointer; }
+.workspace-shell .cyborg-import-preview { border-block: 1px solid #38bdf8; }
+.workspace-shell .cyborg-frame { width: 100%; height: max(720px, calc(100svh - 260px)); border: 0; background: #0f172a; }

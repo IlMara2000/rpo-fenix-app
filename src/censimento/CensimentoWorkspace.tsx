@@ -16,6 +16,7 @@ export function CensimentoWorkspace({
   onSelectSite,
   onClose,
   mapView,
+  cyborgView,
   children,
 }: {
   sites: CensimentoSite[];
@@ -23,10 +24,12 @@ export function CensimentoWorkspace({
   onSelectSite: (id: CensimentoSiteId) => void;
   onClose: () => void;
   mapView: ReactNode;
+  cyborgView: ReactNode;
   children: ReactNode;
 }) {
   const isMap = activeSite?.id === "mappa";
-  const showAnalysis = Boolean(activeSite) && !isMap;
+  const isCyborg = activeSite?.id === "cyborg";
+  const showAnalysis = Boolean(activeSite) && !isMap && !isCyborg;
 
   return (
     <div className={`census-mix-shell${activeSite ? " is-split" : ""}`}>
@@ -72,6 +75,9 @@ export function CensimentoWorkspace({
       <div className="census-mix-main">
         {!activeSite ? <div className="census-main-full">{children}</div> : null}
 
+        <div hidden={!isCyborg} className="census-cyborg-view">
+          {cyborgView}
+        </div>
         {isMap ? <div className="census-main-map">{mapView}</div> : null}
 
         {showAnalysis && activeSite ? (

@@ -1,4 +1,4 @@
-export type CensimentoSiteId = "mappa" | "sister" | "cercaora" | "datagma" | "whuis";
+export type CensimentoSiteId = "cyborg" | "mappa" | "sister" | "cercaora" | "datagma" | "whuis";
 
 export type CensimentoSiteMode = "interno" | "embed" | "external";
 
@@ -18,6 +18,7 @@ export interface CensimentoSite {
  *   come vero collegamento (target="_blank"), mai dentro la pagina corrente.
  */
 export const censimentoSites: CensimentoSite[] = [
+  { id: "cyborg", label: "CYBORG CENS", description: "Pannello completo dell’estensione: scansioni, sessioni e iniezione.", url: "", mode: "interno" },
   {
     id: "mappa",
     label: "Mappa",

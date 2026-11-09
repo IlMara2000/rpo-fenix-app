@@ -1,4 +1,6 @@
 import { supabase } from "./lib/supabase";
+import { CyborgPanel } from "./censimento/CyborgPanel";
+import { mergeCyborgImport } from "./censimento/cyborgImport";
 import { CensimentoWorkspace } from "./censimento/CensimentoWorkspace";
 import { Suspense, lazy } from "react";
 import { censimentoSites, findCensimentoSite, type CensimentoSiteId } from "./censimento/sites";
@@ -5917,6 +5919,20 @@ function CensusView({
       activeSite={activeSite}
       onSelectSite={selectSite}
       onClose={() => setActiveSiteId(null)}
+      cyborgView={
+        <CyborgPanel
+          preview={(batch) => mergeCyborgImport(data, batch)}
+          onImport={(batch) => {
+            const preview = mergeCyborgImport(data, batch);
+            // Verifica il salvataggio prima di chiudere l'anteprima (quota browser inclusa).
+            privateStorage.setItem(crmStorageKey, JSON.stringify({ ...data, contacts: preview.contacts, properties: preview.properties }));
+            onCommit((current) => {
+              const merged = mergeCyborgImport(current, batch);
+              return { ...current, contacts: merged.contacts, properties: merged.properties };
+            }, "Dati CYBORG CENS importati nel Censimento");
+          }}
+        />
+      }
       mapView={
         <Suspense fallback={<p className="property-map-empty">Carico la mappa…</p>}>
           <PropertyMap properties={data.properties} onCoordinatesChange={saveMapPositions} />

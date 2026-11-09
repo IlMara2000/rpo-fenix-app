@@ -12,7 +12,7 @@ async function loadModule(relativePath) {
 test("censimento sites embed only the embeddable ones and open Whuis in a tab", async () => {
   const { censimentoSites, findCensimentoSite } = await loadModule("../src/censimento/sites.ts");
 
-  assert.equal(censimentoSites.length, 5);
+  assert.equal(censimentoSites.length, 6);
   const byId = Object.fromEntries(censimentoSites.map((site) => [site.id, site]));
 
   assert.equal(byId.whuis.mode, "external");
@@ -23,9 +23,10 @@ test("censimento sites embed only the embeddable ones and open Whuis in a tab", 
     assert.match(byId[id].url, /^https:\/\//);
   }
 
+  assert.equal(byId.cyborg.mode, "interno");
   assert.equal(byId.mappa.mode, "interno");
   assert.equal(byId.mappa.url, "");
-  assert.equal(censimentoSites.filter((site) => !site.url).length, 1);
+  assert.equal(censimentoSites.filter((site) => !site.url).length, 2);
 
   assert.equal(findCensimentoSite("whuis")?.mode, "external");
   assert.equal(findCensimentoSite("inesistente"), undefined);
