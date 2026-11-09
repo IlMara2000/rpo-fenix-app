@@ -2174,6 +2174,7 @@ function Workspace({
   const [crmData, setCrmData] = usePersistentCrmData();
   const [accounts, setAccounts] = usePersistentAccounts();
   const [agendaResetVersion, setAgendaResetVersion] = useState(0);
+  const moduleNavRef = useScrollEdges<HTMLElement>();
   const submenuRef = useScrollEdges<HTMLElement>();
   const visibleModules = getVisibleModules(currentUser);
   const mainModules = navigationModuleKeys.flatMap(key => visibleModules.filter(module => module.key === key));
@@ -2291,7 +2292,7 @@ function Workspace({
                 <small>SALES</small>
               </span>
             </button>
-            <nav className="module-nav" aria-label="Moduli gestionale">
+            <nav className="module-nav" aria-label="Moduli gestionale" ref={moduleNavRef}>
               {mainModules.map(({ key, label, Icon }) => (
                 <button
                   className={key === safeActiveModule ? "active" : ""}
@@ -7303,9 +7304,11 @@ function useScrollEdges<T extends HTMLElement>() {
     }
 
     const measure = () => {
+      // La barra dei moduli ha scroll snap: a inizio corsa lo scrollLeft non e' 0.
+      const edge = 12;
       const hiddenWidth = element.scrollWidth - element.clientWidth;
-      element.dataset.moreLeft = String(element.scrollLeft > 2);
-      element.dataset.moreRight = String(element.scrollLeft < hiddenWidth - 2);
+      element.dataset.moreLeft = String(element.scrollLeft > edge);
+      element.dataset.moreRight = String(element.scrollLeft < hiddenWidth - edge);
     };
     let timer = 0;
     const update = () => {
