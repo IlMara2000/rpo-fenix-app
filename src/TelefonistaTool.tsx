@@ -1,4 +1,5 @@
 import { privateStorage } from "./lib/privateStorage";
+import { useScrollEdges } from "./crm/useScrollEdges";
 import { crmStorageKey, loadCrmSnapshot, loadSession } from "./pws/storage";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -419,6 +420,7 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
   const [running, setRunning] = useState(false);
   const [calls, setCalls] = useState<CallLog[]>(loadCalls);
   const [notice, setNotice] = useState("Pronto per iniziare la telefonata.");
+  const phaseNavRef = useScrollEdges<HTMLElement>();
   const [contactQuery, setContactQuery] = useState("");
   const rubrica = useMemo(loadContactSuggestions, []);
 
@@ -735,7 +737,7 @@ export function TelefonistaTool({ onNavigate }: TelefonistaToolProps) {
             <strong>{mode === "principiante" ? "Guidato" : "Sintesi"}</strong>
           </div>
 
-          <nav className="telefonista-phase-nav" aria-label="Fasi telefonata">
+          <nav className="telefonista-phase-nav" aria-label="Fasi telefonata" ref={phaseNavRef}>
             {script.map(({ key, title, icon: Icon }) => (
               <button className={phase === key ? "active" : ""} key={key} type="button" onClick={() => setPhase(key)}>
                 <Icon size={17} />
