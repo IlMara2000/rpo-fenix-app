@@ -38,14 +38,23 @@ del tetto di 10 generazioni AI al giorno. Ci sono tutte.
 
 ---
 
-## 1. Il captcha (mi servono due chiavi)
+## 1. Il captcha: mancano solo le due chiavi
 
-L'ultima cosa della configurazione di Supabase che non posso fare da solo: l'anti-bot.
-Serve un account hCaptcha o Cloudflare Turnstile, da cui si ottengono una chiave del sito
-(pubblica) e una segreta. Le metti su Vercel → Settings → Environment Variables, oppure
-mandami solo i nomi e le collego io nel codice. Finché non c'è, chiunque conosca
-l'indirizzo può provare password a ripetizione: dopo qualche tentativo Supabase blocca
-comunque l'indirizzo per un po', quindi non è scoperto.
+Il widget è già collegato al form di accesso e la regola di sicurezza del sito lo lascia
+caricare: mancano le chiavi del fornitore, perché senza quelle non posso né disegnare il
+riquadro né far verificare il gettone a Supabase.
+
+1. crea il sito su Cloudflare Turnstile (gratuito) o hCaptcha e prendi le **due** chiavi:
+   quella pubblica del sito e quella segreta;
+2. su Vercel → Settings → Environment Variables aggiungi
+   `VITE_SUPABASE_CAPTCHA_PROVIDER` (`turnstile` oppure `hcaptcha`) e
+   `VITE_SUPABASE_CAPTCHA_SITE_KEY` (la chiave pubblica), poi rifai il deploy;
+3. su Supabase → **Authentication → Attack Protection** scegli lo stesso fornitore,
+   incolla la chiave segreta e attiva.
+
+**L'ordine conta**: se attivi il controllo su Supabase prima di aver messo la chiave
+pubblica su Vercel, nessuno riesce più a entrare. Finché le due variabili mancano il
+riquadro non compare e l'accesso funziona come sempre.
 
 Due note tecniche:
 

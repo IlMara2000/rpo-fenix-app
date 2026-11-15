@@ -36,6 +36,7 @@ import { portalExport } from "./crm/portalExport";
 import { pageForPath } from "./crm/routes";
 import { LEGAL_ENTITY, LegalPage, legalDocumentFor } from "./legal";
 import { privateStorage, setStorageOwner, clearPrivateStorage } from "./lib/privateStorage";
+import { isCaptchaEnabled, mountCaptcha, resetCaptcha } from "./lib/captcha";
 import { StrictMode, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { createRoot, type Root } from "react-dom/client";
@@ -1806,6 +1807,9 @@ function italianAuthMessage(raw: string) {
   if (message.includes("rate limit") || message.includes("too many")) {
     return "Troppi tentativi di accesso: attendi un minuto e riprova.";
   }
+  if (message.includes("captcha")) {
+    return "Verifica anti-bot non valida o scaduta: ripeti il controllo e riprova.";
+  }
   if (message.includes("failed to fetch") || message.includes("network")) {
     return "Server non raggiungibile: controlla la connessione e riprova.";
   }
@@ -1826,10 +1830,17 @@ function LoginScreen({
 }) {
   const [error, setError] = useState(notice);
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaSlot = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setError(notice);
   }, [notice]);
+
+  useEffect(() => {
+    const container = captchaSlot.current;
+    if (container) mountCaptcha(container, setCaptchaToken);
+  }, []);
 
   async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1846,13 +1857,24 @@ function LoginScreen({
         passwordInput.focus();
       }
     };
+    if (isCaptchaEnabled && !captchaToken) {
+      setLoading(false);
+      setError("Completa la verifica anti-bot prima di accedere.");
+      return;
+    }
     const { isSupabaseConfigured, supabase } = await import("./lib/supabase");
     if (isSupabaseConfigured && supabase) {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: captchaToken ? { captchaToken } : undefined,
+      });
       if (authError || !authData.user) {
         setLoading(false);
         setError(italianAuthMessage(authError?.message || ""));
         clearPasswordField();
+        resetCaptcha(captchaSlot.current);
+        setCaptchaToken(null);
         return;
       }
 
@@ -1959,6 +1981,9 @@ function LoginScreen({
               placeholder="password"
             />
           </label>
+          {isCaptchaEnabled ? (
+            <div className="login-captcha" ref={captchaSlot} aria-label="Verifica anti-bot" />
+          ) : null}
           {error ? (
             <p className="login-error" role="alert">
               {error}
