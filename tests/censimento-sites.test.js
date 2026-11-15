@@ -9,7 +9,7 @@ async function loadModule(relativePath) {
   return import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
 }
 
-test("censimento sites: CercaOra and Datagma inside the page, Sister in a tab, Whuis a plain link", async () => {
+test("censimento sites: every working site opens in the same in-page box", async () => {
   const { censimentoSites, findCensimentoSite } = await loadModule("../src/censimento/sites.ts");
 
   assert.equal(censimentoSites.length, 6);
@@ -18,19 +18,26 @@ test("censimento sites: CercaOra and Datagma inside the page, Sister in a tab, W
   assert.equal(byId.whuis.mode, "external");
   assert.match(byId.whuis.url, /^https:\/\//);
 
-  // Questi due accettano di girare dentro una pagina: si aprono nel gestionale.
+  // CercaOra e Datagma girano nel riquadro della pagina.
   for (const id of ["cercaora", "datagma"]) {
     assert.equal(byId[id].mode, "embed");
     assert.match(byId[id].url, /^https:\/\//);
   }
 
+  // CercaOra resta sulla home del sito: le pagine /app/ si aprono bianche in
+  // un riquadro, quindi l'accesso si fa da lì con ACCEDI.
+  assert.equal(byId.cercaora.url, "https://cercaora.online/");
+
   assert.deepEqual(
     censimentoSites.map((site) => site.mode).sort(),
-    ["embed", "embed", "external", "interno", "interno", "tab"],
+    ["embed", "embed", "embed", "external", "interno", "interno"],
   );
 
-  // Sister richiede l'accesso dell'operatore: scheda vera, pannello Cyborg qui.
-  assert.equal(byId.sister.mode, "tab");
+  // Sister sta nello stesso riquadro, con la colonna del pannello Cyborg; il
+  // portale dell'Agenzia vieta di incorniciarla, e il riquadro lo dice.
+  assert.equal(byId.sister.mode, "embed");
+  assert.equal(byId.sister.frameBlocked, true);
+  assert.equal(byId.sister.sidePanel, "cyborg");
   assert.match(byId.sister.url, /^https:\/\/sister\.agenziaentrate\.gov\.it\//);
 
   assert.equal(byId.cyborg.mode, "interno");

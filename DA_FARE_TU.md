@@ -94,19 +94,20 @@ Ho controllato i quattro collegamenti uno per uno, dall'esterno:
 
 | Sito | Risposta | Si apre dentro il gestionale? |
 | --- | --- | --- |
-| Sister | funziona | **no**: il portale dell'Agenzia vieta di essere incorniciato, si apre in una scheda con il pannello Cyborg qui accanto |
-| CercaOra | funziona | sì: si apre dentro la pagina, con i dati del censimento nella colonna a destra |
+| Sister | funziona | **no**: il portale dell'Agenzia vieta di essere incorniciato; il riquadro lo spiega e apre la scheda con un clic |
+| CercaOra | funziona | sì: si apre dentro la pagina dalla home del sito, poi si entra con ACCEDI (le pagine interne dell'app restano bianche in un riquadro) |
 | Datagma | funziona | sì: si apre dentro la pagina, con i dati del censimento nella colonna a destra |
 | Whuis | funziona | **no**: il loro sito vieta di essere incorniciato, si apre in una scheda |
 
-CercaOra e Datagma girano dentro il gestionale: il sito prende l'area di lavoro, i dati
-del censimento restano nella colonna di destra, così si consultano mentre il sito è
-aperto. In alto ci sono sempre "Apri in una scheda" e "Chiudi".
+Tutti e tre girano nello stesso riquadro dentro il gestionale: il sito prende l'area di
+lavoro, la colonna di destra tiene i dati del censimento (per Sister, il pannello CYBORG
+CENS che la guida). In alto ci sono sempre "Apri in una scheda" e "Chiudi".
 
-Sister resta l'eccezione, e non per scelta: `sister.agenziaentrate.gov.it` porta al
-portale `portale.agenziaentrate.gov.it`, che risponde con `frame-ancestors 'none'` e
-rifiuta di essere mostrato dentro qualunque altra pagina. Lì la scheda si apre davvero e
-accanto compare la colonna del pannello CYBORG CENS che lavora su quella scheda.
+Sister è l'unica che non può riempire il riquadro, e non per un difetto nostro:
+`sister.agenziaentrate.gov.it` rimanda a `/Main/index.jsp` (302) e da lì a
+`portale.agenziaentrate.gov.it`, che risponde `frame-ancestors 'none'` e rifiuta di essere
+mostrato dentro qualunque altra pagina. Il riquadro quindi spiega la cosa e apre la scheda
+con un clic, mentre il pannello CYBORG CENS resta nella colonna accanto.
 
 La colonna dei siti nel Censimento è pronta, ma i contenuti dipendono dai tuoi rapporti:
 

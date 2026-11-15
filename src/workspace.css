@@ -143,7 +143,6 @@
 .workspace-shell .census-site-panel > header span { font-size: 11px; color: #9aa4b2; }
 .workspace-shell .census-site-actions { display: flex; gap: 8px; margin-left: auto; }
 .workspace-shell .census-site-actions a, .workspace-shell .census-site-actions button { display: inline-flex; align-items: center; gap: 6px; min-height: 30px !important; padding: 5px 10px !important; border-radius: 6px !important; font-size: 11px !important; background: #ffffff0f !important; color: #dbe2ea !important; text-decoration: none; }
-.workspace-shell .census-site-empty { padding: 18px 14px; font-size: 12px; color: #9aa4b2; }
 .workspace-shell .census-site-frame { width: 100%; height: clamp(560px, calc(100svh - 190px), 940px); border: 0; background: #fff; }
 /* Strumento incorporato: il sito prende l'area di lavoro, il gestionale la colonna. */
 .workspace-shell .census-mix-shell.is-embed-split .census-mix-main { grid-template-columns: minmax(0,1fr) minmax(0,380px); }
@@ -239,22 +238,18 @@
 }
 
 .workspace-shell .census-cyborg-view:not([hidden]) { grid-column: 1 / -1; min-width: 0; }
+/* Nella colonna accanto al sito il pannello occupa la sua colonna, non tutta la riga. */
+.workspace-shell .census-cyborg-view.is-column:not([hidden]) { grid-column: auto; }
 .workspace-shell .census-cyborg-view[hidden] { display: none; }
-/* Colonna di Sister accanto al gestionale: il CRM resta l'area principale.
-   Le larghezze stanno in media query ordinate: la colonna resta accanto finché
-   c'è spazio per due colonne utili, poi passa sotto il gestionale. */
-.workspace-shell .census-site-dock { display: grid; gap: 14px; min-width: 0; }
-.workspace-shell .census-site-dock[hidden] { display: none; }
-@media(min-width:1441px) {
-  .workspace-shell .census-mix-shell.is-split.is-tab-split .census-mix-main { grid-template-columns: minmax(0,1fr) minmax(0,420px); }
-}
-@media(min-width:1101px) and (max-width:1440px) {
-  .workspace-shell .census-mix-shell.is-split.is-tab-split .census-mix-main { grid-template-columns: minmax(0,1fr) minmax(0,360px); }
-}
-@media(max-width:1100px) {
-  .workspace-shell .census-mix-shell.is-split.is-tab-split .census-mix-main { grid-template-columns: minmax(0,1fr); }
-}
-.workspace-shell .census-site-dock .cyborg-frame { height: max(560px, calc(100svh - 320px)); }
+.workspace-shell .census-cyborg-view.is-column .cyborg-frame { height: max(560px, calc(100svh - 320px)); }
+/* Riquadro di un sito che vieta di essere incorniciato: spiega e offre la scheda. */
+.workspace-shell .census-site-blocked { display: grid; gap: 12px; justify-items: start; padding: 26px 22px; font-size: 12.5px; line-height: 1.6; color: #b9c2cf; }
+.workspace-shell .census-site-blocked-icon { color: #f0c674; }
+.workspace-shell .census-site-blocked > strong { font-size: 13.5px; color: #fff; }
+.workspace-shell .census-site-blocked p { margin: 0; max-width: 62ch; }
+.workspace-shell .census-site-blocked code { font-size: 11.5px; color: #f0c674; }
+.workspace-shell .census-site-blocked > a { display: inline-flex; align-items: center; gap: 7px; min-height: 34px !important; padding: 7px 14px !important; border-radius: 7px !important; background: var(--red) !important; color: #fff !important; font-size: 12px !important; text-decoration: none; }
+.workspace-shell .census-site-blocked-note { font-size: 11.5px; color: #8b95a4; }
 .workspace-shell .cyborg-workspace { border: 1px solid #ffffff18; border-radius: 10px; overflow: hidden; background: #141820; }
 .workspace-shell .cyborg-workspace > header, .workspace-shell .cyborg-import-preview { padding: 16px; }
 .workspace-shell .cyborg-workspace p { font-size: 12px; line-height: 1.6; }

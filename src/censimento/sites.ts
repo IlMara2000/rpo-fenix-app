@@ -1,6 +1,6 @@
 export type CensimentoSiteId = "cyborg" | "mappa" | "sister" | "cercaora" | "datagma" | "whuis";
 
-export type CensimentoSiteMode = "interno" | "embed" | "tab" | "external";
+export type CensimentoSiteMode = "interno" | "embed" | "external";
 
 export interface CensimentoSite {
   id: CensimentoSiteId;
@@ -8,20 +8,20 @@ export interface CensimentoSite {
   description: string;
   url: string;
   mode: CensimentoSiteMode;
+  /** Il sito rifiuta di essere mostrato dentro una pagina: il riquadro lo spiega. */
+  frameBlocked?: boolean;
+  /** Cosa mostrare nella colonna accanto al sito (default: i dati del censimento). */
+  sidePanel?: "crm" | "cyborg";
 }
 
 /**
  * Siti di lavoro del censimento.
- * - "interno": pagina del gestionale (la mappa).
- * - "tab": si apre in una scheda vera del browser, con l'accesso dell'operatore,
- *   e l'area di lavoro resta sul pannello CYBORG CENS che lavora su quella scheda.
- *   Serve ai siti che richiedono un accesso forte (SPID o codice temporaneo), che
- *   dentro un riquadro non funzionerebbe.
+ * - "interno": pagina del gestionale (mappa e pannello Cyborg).
  * - "embed": il sito accetta di girare dentro una pagina e si apre qui, accanto
  *   al gestionale: il sito occupa l'area di lavoro e i dati restano nella
  *   colonna di destra, così si consultano mentre il sito è aperto.
- * - "external": non ha un pannello da guidare e non si incorpora: si apre in
- *   una scheda separata come vero collegamento (target="_blank").
+ * - "external": non si incorpora e non ha un pannello da guidare: si apre in una
+ *   scheda separata come vero collegamento (target="_blank").
  */
 export const censimentoSites: CensimentoSite[] = [
   { id: "cyborg", label: "CYBORG CENS", description: "Pannello completo dell’estensione: scansioni, sessioni e iniezione.", url: "", mode: "interno" },
@@ -35,20 +35,23 @@ export const censimentoSites: CensimentoSite[] = [
   {
     id: "sister",
     label: "Sister",
-    // L'Agenzia delle Entrate risponde con `frame-ancestors 'none'`: dentro un
-    // riquadro il portale non si carica, quindi resta l'unico strumento in
-    // scheda vera, con il pannello CYBORG CENS che la guida.
-    description: "Visure catastali ufficiali dell'Agenzia delle Entrate. Si apre in una scheda con il tuo accesso: qui resta il pannello CYBORG CENS che la guida.",
+    // sister.agenziaentrate.gov.it risponde con un meta refresh verso
+    // /Main/index.jsp, che a sua volta rimanda al portale dell'Agenzia: quel
+    // portale dichiara `frame-ancestors 'none'`, quindi nessuna pagina può
+    // mostrarlo dentro di sé. Il riquadro resta, e spiega cosa succede.
+    description: "Visure catastali ufficiali dell'Agenzia delle Entrate. Il portale vieta di essere incorniciato: si apre in una scheda, con il pannello CYBORG CENS qui accanto.",
     url: "https://sister.agenziaentrate.gov.it/",
-    mode: "tab",
+    mode: "embed",
+    frameBlocked: true,
+    sidePanel: "cyborg",
   },
   {
     id: "cercaora",
     label: "CercaOra",
     description: "Telefono del proprietario partendo da codice fiscale o indirizzo. Si apre qui, accanto ai dati del censimento.",
-    // Si apre il sito, non il guscio dell'applicazione: /app/ mostra la
-    // schermata di accesso dell'app, mentre dalla home si arriva al sito con
-    // ACCEDI e Registrati. L'accesso porta poi dentro /app/ da sé.
+    // Si punta la home del sito, non le pagine /app/: /app/home rimanda a
+    // /app/login, che dentro un riquadro resta bianca (il suo script non
+    // disegna nulla sotto un genitore). Dalla home si entra con ACCEDI.
     url: "https://cercaora.online/",
     mode: "embed",
   },

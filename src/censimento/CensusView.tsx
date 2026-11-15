@@ -790,13 +790,6 @@ export function CensusView({
       onAction(`${site.label} aperto in una scheda del browser.`);
       return;
     }
-    // Gli strumenti "tab" vivono in una scheda vera del browser: il pannello
-    // Cyborg resta in questa pagina e lavora su quella scheda. Una seconda
-    // scheda a ogni clic non serve, si riapre dal riquadro.
-    if (site.mode === "tab" && activeSiteId !== id) {
-      window.open(site.url, "_blank", "noopener,noreferrer");
-      onAction(`${site.label} aperto in una scheda del browser; il pannello CYBORG CENS resta qui.`);
-    }
     setActiveSiteId(id);
   }
 
