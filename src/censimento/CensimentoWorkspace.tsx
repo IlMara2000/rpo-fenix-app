@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { ExternalLink, MapPinned, ShieldAlert, X } from "lucide-react";
 import type { CensimentoSite, CensimentoSiteId } from "./sites";
 
@@ -35,6 +35,8 @@ export function CensimentoWorkspace({
   // Sister si guida dal pannello: la sua colonna è CYBORG CENS, non i dati.
   const cyborgSide = isEmbedSite && activeSite?.sidePanel === "cyborg";
   const showCyborg = isCyborg || cyborgSide;
+  // Il suggerimento della voce compare subito, senza il ritardo del title del browser.
+  const [hintSiteId, setHintSiteId] = useState<CensimentoSiteId | null>(null);
 
   return (
     <div
@@ -48,6 +50,19 @@ export function CensimentoWorkspace({
           const hint = site.frameBlocked
             ? `Il sito vieta di essere mostrato dentro una pagina: si apre in una scheda del browser. ${site.description}`
             : site.description;
+          const hintId = `census-site-hint-${site.id}`;
+          const hintProps = {
+            "aria-describedby": hintId,
+            onMouseEnter: () => setHintSiteId(site.id),
+            onMouseLeave: () => setHintSiteId(null),
+            onFocus: () => setHintSiteId(site.id),
+            onBlur: () => setHintSiteId(null),
+          };
+          const tooltip = (
+            <span id={hintId} role="tooltip" className={`census-site-hint${hintSiteId === site.id ? " is-open" : ""}`}>
+              {hint}
+            </span>
+          );
           // Gli strumenti esterni sono veri collegamenti: il browser apre una
           // scheda nuova e il gestionale resta esattamente com'era.
           if (site.mode === "external") {
@@ -58,11 +73,13 @@ export function CensimentoWorkspace({
                 href={site.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                title={hint}
+                {...hintProps}
+                onClick={() => setHintSiteId(null)}
               >
                 <MapPinned size={16} aria-hidden="true" />
                 <span>{site.label}</span>
                 <ExternalLink size={13} aria-hidden="true" />
+                {tooltip}
               </a>
             );
           }
@@ -72,15 +89,18 @@ export function CensimentoWorkspace({
               key={site.id}
               type="button"
               className={`census-site-link${active ? " is-active" : ""}`}
-              title={hint}
               aria-pressed={active}
-              onClick={() => onSelectSite(site.id)}
+              {...hintProps}
+              onClick={() => {
+                setHintSiteId(null);
+                onSelectSite(site.id);
+              }}
             >
               <MapPinned size={16} aria-hidden="true" />
               <span>{site.label}</span>
               {/* Si sa prima di aprirlo: questo sito non sta in una pagina. */}
-              {/* Nessun title proprio: così il suggerimento della voce vale anche qui. */}
               {site.frameBlocked ? <span className="census-site-tag">scheda</span> : null}
+              {tooltip}
             </button>
           );
         })}

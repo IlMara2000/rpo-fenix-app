@@ -117,7 +117,7 @@ La colonna dei siti nel Censimento è pronta, ma i contenuti dipendono dai tuoi 
   residuo; quando finiscono i crediti le ricerche si fermano.
 - **Whuis**: è a pagamento. Si apre in una scheda separata del browser, non dentro la
   pagina, perché il loro sito vieta di essere incorniciato.
-- **Sister**: anche lei vieta di essere incorniciata, per questo resta in una scheda.
+- **Sister**: anche lei vieta di essere incorniciata: il riquadro lo spiega e la apre in una scheda con un clic.
 
 Se mi passi gli indirizzi di accesso diretti (non le password: basta il link della pagina
 di login di ciascuno), verifico che siano quelli giusti e li sistemo.
