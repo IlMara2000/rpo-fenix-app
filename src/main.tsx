@@ -1618,7 +1618,7 @@ function AccessSection({ onLogin }: { onLogin: () => void }) {
           </span>
         </button>
         {externalTools.map(({ title, href, Icon }) => (
-          <a className="access-card" href={href} key={title}>
+          <a className="access-card" href={href} key={title} target="_blank" rel="noopener noreferrer">
             <span className="access-icon" aria-hidden="true">
               <Icon size={26} strokeWidth={1.8} />
             </span>
@@ -2293,6 +2293,9 @@ function CrmTopbar({
               title={description}
               aria-current={path === "/crm" ? "page" : undefined}
               onClick={closePrograms}
+              // Gli altri programmi si aprono in una scheda nuova: il gestionale
+              // resta dov'è invece di essere sostituito.
+              {...(path === "/crm" ? {} : { target: "_blank", rel: "noopener noreferrer" })}
             >
               <Icon size={17} aria-hidden="true" />
               <span>{title.replace("PROGRAMMA ", "")}</span>
@@ -5173,7 +5176,7 @@ function UtilitiesView({
       <Panel className="span-6" title="Strumenti collegati">
         <div className="tool-grid compact-tools">
           {externalTools.map((tool) => (
-            <a className="tool-button" href={tool.href} key={tool.title}>
+            <a className="tool-button" href={tool.href} key={tool.title} target="_blank" rel="noopener noreferrer">
               <tool.Icon size={20} />
               <span>{tool.title}</span>
               <ArrowUpRight size={15} />
