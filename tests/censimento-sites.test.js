@@ -9,7 +9,7 @@ async function loadModule(relativePath) {
   return import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
 }
 
-test("censimento sites never replace the workspace: Sister in a tab with Cyborg, the others in separate tabs", async () => {
+test("censimento sites: CercaOra and Datagma inside the page, Sister in a tab, Whuis a plain link", async () => {
   const { censimentoSites, findCensimentoSite } = await loadModule("../src/censimento/sites.ts");
 
   assert.equal(censimentoSites.length, 6);
@@ -18,15 +18,15 @@ test("censimento sites never replace the workspace: Sister in a tab with Cyborg,
   assert.equal(byId.whuis.mode, "external");
   assert.match(byId.whuis.url, /^https:\/\//);
 
-  for (const id of ["cercaora", "datagma", "whuis"]) {
-    assert.equal(byId[id].mode, "external");
+  // Questi due accettano di girare dentro una pagina: si aprono nel gestionale.
+  for (const id of ["cercaora", "datagma"]) {
+    assert.equal(byId[id].mode, "embed");
     assert.match(byId[id].url, /^https:\/\//);
   }
 
-  // Nessuno strumento si apre dentro l'area di lavoro: il gestionale resta.
   assert.deepEqual(
     censimentoSites.map((site) => site.mode).sort(),
-    ["external", "external", "external", "interno", "interno", "tab"],
+    ["embed", "embed", "external", "interno", "interno", "tab"],
   );
 
   // Sister richiede l'accesso dell'operatore: scheda vera, pannello Cyborg qui.

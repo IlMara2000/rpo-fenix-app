@@ -7,6 +7,8 @@ import type { CensimentoSite, CensimentoSiteId } from "./sites";
  * sempre a sinistra, l'area di lavoro a destra cambia.
  *
  * - nessuno strumento aperto: area di lavoro a tutta larghezza
+ * - strumento incorporato ("embed"): il sito gira qui, largo, e il gestionale
+ *   resta leggibile nella colonna di destra
  * - strumento in scheda ("tab"): il gestionale resta l'area principale, il sito
  *   si apre in una scheda vera del browser e qui accanto compare la sua colonna
  *   con il pannello CYBORG CENS che lavora su quella scheda
@@ -34,10 +36,15 @@ export function CensimentoWorkspace({
   // Sister lavora in una scheda del browser: la sua colonna sta accanto al
   // gestionale, che resta al suo posto, e il pannello Cyborg non sparisce.
   const isTabSite = activeSite?.mode === "tab";
+  // CercaOra e Datagma accettano di girare dentro una pagina: si aprono qui,
+  // larghi, con i dati del censimento nella colonna accanto.
+  const isEmbedSite = activeSite?.mode === "embed";
   const showCyborg = isCyborg || isTabSite;
 
   return (
-    <div className={`census-mix-shell${activeSite ? " is-split" : ""}${isTabSite ? " is-tab-split" : ""}`}>
+    <div
+      className={`census-mix-shell${activeSite ? " is-split" : ""}${isTabSite ? " is-tab-split" : ""}${isEmbedSite ? " is-embed-split" : ""}`}
+    >
       <aside className="census-sites" aria-label="Strumenti di censimento">
         <p className="census-sites-title">Strumenti</p>
         {sites.map((site) => {
@@ -109,6 +116,38 @@ export function CensimentoWorkspace({
           ) : null}
           <div className={isTabSite ? "census-cyborg-view" : undefined}>{cyborgView}</div>
         </div>
+
+        {isEmbedSite && activeSite ? (
+          <section className="census-site-panel" aria-label={activeSite.label}>
+            <header>
+              <strong>{activeSite.label}</strong>
+              <span>{activeSite.description}</span>
+              <div className="census-site-actions">
+                <a href={activeSite.url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink size={14} aria-hidden="true" />
+                  <span>Apri in una scheda</span>
+                </a>
+                <button type="button" onClick={onClose}>
+                  <X size={14} aria-hidden="true" />
+                  <span>Chiudi</span>
+                </button>
+              </div>
+            </header>
+            <iframe
+              className="census-site-frame"
+              src={activeSite.url}
+              title={activeSite.label}
+              referrerPolicy="no-referrer"
+              allow="clipboard-write"
+            />
+          </section>
+        ) : null}
+
+        {isEmbedSite ? (
+          <aside className="census-analysis" aria-label="Dati del censimento">
+            {children}
+          </aside>
+        ) : null}
 
         {isMap ? <div className="census-main-map">{mapView}</div> : null}
       </div>

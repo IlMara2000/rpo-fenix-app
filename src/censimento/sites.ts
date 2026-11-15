@@ -1,6 +1,6 @@
 export type CensimentoSiteId = "cyborg" | "mappa" | "sister" | "cercaora" | "datagma" | "whuis";
 
-export type CensimentoSiteMode = "interno" | "tab" | "external";
+export type CensimentoSiteMode = "interno" | "embed" | "tab" | "external";
 
 export interface CensimentoSite {
   id: CensimentoSiteId;
@@ -17,11 +17,11 @@ export interface CensimentoSite {
  *   e l'area di lavoro resta sul pannello CYBORG CENS che lavora su quella scheda.
  *   Serve ai siti che richiedono un accesso forte (SPID o codice temporaneo), che
  *   dentro un riquadro non funzionerebbe.
- * - "external": non ha un pannello da guidare: si apre in una scheda separata
- *   come vero collegamento (target="_blank"), senza toccare il gestionale.
- *
- * Nessuno strumento si apre più dentro la pagina: il gestionale non viene mai
- * sostituito da un sito.
+ * - "embed": il sito accetta di girare dentro una pagina e si apre qui, accanto
+ *   al gestionale: il sito occupa l'area di lavoro e i dati restano nella
+ *   colonna di destra, così si consultano mentre il sito è aperto.
+ * - "external": non ha un pannello da guidare e non si incorpora: si apre in
+ *   una scheda separata come vero collegamento (target="_blank").
  */
 export const censimentoSites: CensimentoSite[] = [
   { id: "cyborg", label: "CYBORG CENS", description: "Pannello completo dell’estensione: scansioni, sessioni e iniezione.", url: "", mode: "interno" },
@@ -35,6 +35,9 @@ export const censimentoSites: CensimentoSite[] = [
   {
     id: "sister",
     label: "Sister",
+    // L'Agenzia delle Entrate risponde con `frame-ancestors 'none'`: dentro un
+    // riquadro il portale non si carica, quindi resta l'unico strumento in
+    // scheda vera, con il pannello CYBORG CENS che la guida.
     description: "Visure catastali ufficiali dell'Agenzia delle Entrate. Si apre in una scheda con il tuo accesso: qui resta il pannello CYBORG CENS che la guida.",
     url: "https://sister.agenziaentrate.gov.it/",
     mode: "tab",
@@ -42,19 +45,19 @@ export const censimentoSites: CensimentoSite[] = [
   {
     id: "cercaora",
     label: "CercaOra",
-    description: "Telefono del proprietario partendo da codice fiscale o indirizzo.",
+    description: "Telefono del proprietario partendo da codice fiscale o indirizzo. Si apre qui, accanto ai dati del censimento.",
     // Si apre il sito, non il guscio dell'applicazione: /app/ mostra la
     // schermata di accesso dell'app, mentre dalla home si arriva al sito con
     // ACCEDI e Registrati. L'accesso porta poi dentro /app/ da sé.
     url: "https://cercaora.online/",
-    mode: "external",
+    mode: "embed",
   },
   {
     id: "datagma",
     label: "Datagma",
-    description: "Numeri di cellulare e recapiti diretti. Si apre in una scheda separata.",
+    description: "Numeri di cellulare e recapiti diretti. Si apre qui, accanto ai dati del censimento.",
     url: "https://app.datagma.com/signin.html",
-    mode: "external",
+    mode: "embed",
   },
   {
     id: "whuis",

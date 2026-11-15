@@ -94,15 +94,19 @@ Ho controllato i quattro collegamenti uno per uno, dall'esterno:
 
 | Sito | Risposta | Si apre dentro il gestionale? |
 | --- | --- | --- |
-| Sister | funziona | sì, in una scheda a parte (serve l'accesso, il pannello Cyborg la guida) |
-| CercaOra | funziona | sì, in una scheda a parte |
-| Datagma | funziona | sì, in una scheda a parte |
+| Sister | funziona | **no**: il portale dell'Agenzia vieta di essere incorniciato, si apre in una scheda con il pannello Cyborg qui accanto |
+| CercaOra | funziona | sì: si apre dentro la pagina, con i dati del censimento nella colonna a destra |
+| Datagma | funziona | sì: si apre dentro la pagina, con i dati del censimento nella colonna a destra |
 | Whuis | funziona | **no**: il loro sito vieta di essere incorniciato, si apre in una scheda |
 
-Nessuno dei siti si apre più dentro la pagina: ognuno parte in una scheda separata del
-browser, così il gestionale resta esattamente com'era. Sister è l'unica eccezione nel
-layout: la sua scheda si apre e accanto al gestionale compare la colonna del pannello
-CYBORG CENS che lavora su quella scheda.
+CercaOra e Datagma girano dentro il gestionale: il sito prende l'area di lavoro, i dati
+del censimento restano nella colonna di destra, così si consultano mentre il sito è
+aperto. In alto ci sono sempre "Apri in una scheda" e "Chiudi".
+
+Sister resta l'eccezione, e non per scelta: `sister.agenziaentrate.gov.it` porta al
+portale `portale.agenziaentrate.gov.it`, che risponde con `frame-ancestors 'none'` e
+rifiuta di essere mostrato dentro qualunque altra pagina. Lì la scheda si apre davvero e
+accanto compare la colonna del pannello CYBORG CENS che lavora su quella scheda.
 
 La colonna dei siti nel Censimento è pronta, ma i contenuti dipendono dai tuoi rapporti:
 
@@ -112,6 +116,7 @@ La colonna dei siti nel Censimento è pronta, ma i contenuti dipendono dai tuoi 
   residuo; quando finiscono i crediti le ricerche si fermano.
 - **Whuis**: è a pagamento. Si apre in una scheda separata del browser, non dentro la
   pagina, perché il loro sito vieta di essere incorniciato.
+- **Sister**: anche lei vieta di essere incorniciata, per questo resta in una scheda.
 
 Se mi passi gli indirizzi di accesso diretti (non le password: basta il link della pagina
 di login di ciascuno), verifico che siano quelli giusti e li sistemo.
