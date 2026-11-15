@@ -33,6 +33,7 @@ import {
   type CrmCommit,
 } from "./crm/kit";
 import { portalExport } from "./crm/portalExport";
+import { pageForPath } from "./crm/routes";
 import { LEGAL_ENTITY, LegalPage, legalDocumentFor } from "./legal";
 import { privateStorage, setStorageOwner, clearPrivateStorage } from "./lib/privateStorage";
 import { StrictMode, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
@@ -819,6 +820,15 @@ function isValidModuleKey(value: string): value is ModuleKey {
   return Object.prototype.hasOwnProperty.call(modulePages, value);
 }
 
+function moduleKeyForPage(pageKey: string): ModuleKey | null {
+  for (const key of Object.keys(modulePages) as ModuleKey[]) {
+    if (modulePages[key].some((page) => page.key === pageKey)) {
+      return key;
+    }
+  }
+  return null;
+}
+
 function readWorkspaceRoute() {
   const hash = window.location.hash.replace(/^#/, "");
   const [moduleKey, pageKey] = hash.split("/").filter(Boolean);
@@ -827,6 +837,16 @@ function readWorkspaceRoute() {
     return {
       moduleKey,
       pageKey,
+    };
+  }
+
+  // Deep link leggibile: `/censimento/nominativi` vale come `#censimento/censimento-contatti`.
+  const pageFromPath = pageForPath(window.location.pathname);
+  const moduleFromPath = pageFromPath ? moduleKeyForPage(pageFromPath) : null;
+  if (pageFromPath && moduleFromPath) {
+    return {
+      moduleKey: moduleFromPath,
+      pageKey: pageFromPath,
     };
   }
 
@@ -843,6 +863,12 @@ function writeWorkspaceRoute(moduleKey: ModuleKey, pageKey: string) {
   const nextHash = `#${moduleKey}/${pageKey}`;
   if (window.location.pathname.startsWith("/crm") && window.location.hash !== nextHash) {
     window.history.replaceState(null, "", `${window.location.pathname}${nextHash}`);
+    return;
+  }
+  // Arrivando da un deep link la pagina sta nel percorso: si torna al formato
+  // canonico, così la barra degli indirizzi dice sempre dove siamo.
+  if (!window.location.pathname.startsWith("/crm") && pageForPath(window.location.pathname)) {
+    window.history.replaceState(null, "", `/crm${nextHash}`);
   }
 }
 
@@ -1367,7 +1393,7 @@ function AuthBoundary({ children, path, navigate }: {
   useEffect(() => {
     if (checking) return;
     if (!user && path !== "/login") {
-      if (/^\/(crm|pws|rpo|telefonista|planimetrie)(\/|$)/i.test(path)) {
+      if (/^\/(crm|pws|rpo|telefonista|planimetrie)(\/|$)/i.test(path) || pageForPath(path)) {
         setReturnTo(window.location.pathname + window.location.search + window.location.hash);
       }
       navigate("/login", true);
@@ -6206,72 +6232,6 @@ function downloadCrmData(data: CrmData | ReturnType<typeof portalExport>, label 
   URL.revokeObjectURL(url);
 }
 
-function pathForPage(pageKey: string) {
-  const paths: Record<string, string> = {
-    "start-dashboard": "/home",
-    "immobili-nuovo": "/immobili/nuovo",
-    "immobili-tutti": "/immobili",
-    "immobili-vendite": "/immobili/vendite",
-    "immobili-affitti": "/immobili/affitti-annuali",
-    "immobili-ricerca-op": "/immobili/ricerca-op",
-    "immobili-ricerca-cli": "/immobili/ricerca-cli",
-    "richieste-nuova": "/nominativi/richieste/nuova",
-    "richieste-elenco": "/nominativi/richieste",
-    "richieste-matching": "/nominativi/richieste/incroci",
-    "nominativi-nuovo": "/nominativi/nuovo",
-    "nominativi-elenco": "/nominativi",
-    "nominativi-richieste": "/nominativi/richieste",
-    "proprietari-elenco": "/proprietari",
-    "proprietari-collega": "/proprietari/collega",
-    "attivita-elenco": "/attivita",
-    "attivita-nuova": "/attivita/nuova",
-    "agenda-nuova": "/agenda/attivita/nuova",
-    "agenda-calendario": "/agenda",
-    "agenda-storico": "/agenda/storico",
-    "pubblicita-portali": "/pubblicita",
-    "contatti-p-nuovo": "/contatti-pubblicita/nuovo",
-    "contatti-p-elenco": "/contatti-pubblicita",
-    "censimento-nuovo-contatto": "/censimento/nominativi/create",
-    "censimento-contatti": "/censimento/nominativi",
-    "censimento-zone": "/censimento/zone",
-    "censimento-vie": "/censimento/vie",
-    "censimento-complessi": "/censimento/complessi",
-    "censimento-immobili": "/censimento/immobili",
-    "censimento-proprietari": "/censimento/proprietari",
-    "obiettivi-elenco": "/obiettivi",
-    "account-ruoli": "/account/ruoli",
-    "utilita-preferenze": "/preferenze",
-    "utilita-backup": "/utilita/copie-sicurezza",
-    "utilita-portali": "/utilita/portali/esportazioni",
-    "utilita-pubblicita": "/pubblicita",
-    "utilita-info-territoriali": "/info-territoriali",
-    "impostazioni-cantieri": "/impostazioni/cantieri",
-    "impostazioni-tipologie": "/impostazioni/tipologie",
-    "impostazioni-tipi-gestione": "/impostazioni/tipi-gestione",
-    "impostazioni-stati": "/impostazioni/stati-conservazione",
-    "impostazioni-accessori": "/impostazioni/accessori",
-    "impostazioni-accessori-tipologia": "/impostazioni/accessori/tipologia",
-    "impostazioni-accessori-gestione": "/impostazioni/accessori/tipo-gestione",
-    "impostazioni-modulistica": "/impostazioni/contratti",
-    "impostazioni-cartelli": "/impostazioni/preset-cartellini",
-    "impostazioni-distanze": "/impostazioni/distanze",
-    "impostazioni-aziende": "/impostazioni/aziende",
-    "impostazioni-tipo-attivita": "/tipo-attivita",
-    "impostazioni-azienda": "/impostazioni/agenzia",
-    "impostazioni-aree": "/impostazioni/aree-geografiche",
-    "impostazioni-frazioni": "/impostazioni/frazioni",
-    "impostazioni-localita": "/impostazioni/localita",
-    "impostazioni-provenienze": "/impostazioni/provenienze",
-    "impostazioni-provenienze-portali": "/impostazioni/provenienze/portali-personali",
-    "impostazioni-provenienze-giornalini": "/impostazioni/provenienze/giornalini",
-    "impostazioni-provenienze-siti": "/impostazioni/provenienze/siti-web",
-    "impostazioni-provenienze-altri": "/impostazioni/provenienze/altri",
-    "impostazioni-email-cp": "/impostazioni/email-contatti-pubblicita",
-    "impostazioni-email-cp-mittenti": "/impostazioni/email-contatti-pubblicita/mittenti",
-  };
-
-  return paths[pageKey] ?? "/workspace";
-}
 
 function scrollToInfo() {
   document.getElementById("richiedi")?.scrollIntoView({ behavior: "smooth" });

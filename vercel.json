@@ -3,51 +3,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/login",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/rpo",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/telefonista",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/telefonista/(.*)",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/planimetrie",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/crm",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/crm/(.*)",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/PWS",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/pws",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/privacy",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/termini",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/note-legali",
+      "source": "/((?!api/|assets/).*)",
       "destination": "/index.html"
     }
   ],
