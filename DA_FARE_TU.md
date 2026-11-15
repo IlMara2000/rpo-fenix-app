@@ -94,20 +94,20 @@ Ho controllato i quattro collegamenti uno per uno, dall'esterno:
 
 | Sito | Risposta | Si apre dentro il gestionale? |
 | --- | --- | --- |
-| Sister | funziona | sì, in un riquadro |
-| CercaOra | funziona | sì, in un riquadro |
-| Datagma | funziona | sì, in un riquadro |
+| Sister | funziona | sì, in una scheda a parte (serve l'accesso, il pannello Cyborg la guida) |
+| CercaOra | funziona | sì, in una scheda a parte |
+| Datagma | funziona | sì, in una scheda a parte |
 | Whuis | funziona | **no**: il loro sito vieta di essere incorniciato, si apre in una scheda |
 
-I primi tre non mandano segnali di blocco, quindi il riquadro si apre. Attenzione però:
-siti con accesso tramite SPID o codice temporaneo possono rifiutarsi di funzionare dentro un
-riquadro anche senza dirlo in anticipo. In quel caso basta premere "Apri in una scheda"
-accanto al riquadro: il collegamento è lo stesso.
+Nessuno dei siti si apre più dentro la pagina: ognuno parte in una scheda separata del
+browser, così il gestionale resta esattamente com'era. Sister è l'unica eccezione nel
+layout: la sua scheda si apre e accanto al gestionale compare la colonna del pannello
+CYBORG CENS che lavora su quella scheda.
 
 La colonna dei siti nel Censimento è pronta, ma i contenuti dipendono dai tuoi rapporti:
 
 - **Sister** (Agenzia delle Entrate): serve la convenzione attiva per consultare le
-  banche dati. Finché non c'è, il riquadro resta vuoto o mostra la pagina di accesso.
+  banche dati. Finché non c'è, la scheda si ferma alla pagina di accesso.
 - **CercaOra** e **Datagma**: funzionano a crediti. Serve un account attivo con credito
   residuo; quando finiscono i crediti le ricerche si fermano.
 - **Whuis**: è a pagamento. Si apre in una scheda separata del browser, non dentro la

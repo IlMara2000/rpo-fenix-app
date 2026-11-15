@@ -30,23 +30,23 @@ test("anonymous AI requests are rejected before any provider request", async () 
     assert.equal(res.headers["Cache-Control"], "no-store");
   } finally { globalThis.fetch = old; }
 });
-test("census import requires token and does not echo upstream diagnostics", async () => {
+test("the retired census import endpoint refuses every request without importing or forwarding", async () => {
   const oldFetch = globalThis.fetch;
-  const keys = ["CYBORG_IMPORT_TOKEN", "CRM_CENSUS_IMPORT_FORWARD_URL"];
-  const oldEnv = keys.map(key => process.env[key]);
-  process.env.CYBORG_IMPORT_TOKEN = "test-only-token";
-  process.env.CRM_CENSUS_IMPORT_FORWARD_URL = "https://example.invalid/import";
-  globalThis.fetch = async () => new Response("private upstream diagnostic", { status: 500 });
+  let requests = 0;
+  globalThis.fetch = async () => { requests++; throw new Error("unexpected network"); };
   try {
-    const denied = response();
-    await importHandler({ method: "POST", headers: {}, body: {} }, denied);
-    assert.equal(denied.code, 401);
+    // Anche con un token e un corpo validi la rotta non importa più nulla.
     const res = response();
-    await importHandler({ method: "POST", headers: { authorization: "Bearer test-only-token" }, body: { contacts: [{ name: "Test" }] } }, res);
-    assert.equal(res.code, 502);
-    assert.doesNotMatch(JSON.stringify(res.body), /private upstream/);
+    await importHandler({
+      method: "POST",
+      headers: { authorization: "Bearer test-only-token", origin: "https://grfenix.vercel.app" },
+      body: { contacts: [{ name: "Test" }] },
+    }, res);
+    assert.equal(res.code, 410);
+    assert.equal(requests, 0);
+    assert.equal(res.headers["Cache-Control"], "no-store");
+    assert.equal(res.headers["Access-Control-Allow-Origin"], undefined);
   } finally {
     globalThis.fetch = oldFetch;
-    keys.forEach((key, index) => { if (oldEnv[index] === undefined) delete process.env[key]; else process.env[key] = oldEnv[index]; });
   }
 });

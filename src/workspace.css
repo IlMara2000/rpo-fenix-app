@@ -29,6 +29,7 @@
 .workspace-shell .dashboard-programs a { padding: 7px 10px; border-radius: 7px; font-size: 11px; box-shadow: none; }
 .workspace-shell .workspace-status { min-height: 28px !important; padding: 4px 0 !important; margin-bottom: 12px !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
 .workspace-shell .workspace-status span { font-size: 12px !important; color: #aeb6c3 !important; }
+.workspace-shell .workspace-status.is-quiet { justify-content: flex-end !important; }
 .workspace-shell .module-heading { margin: 0 0 16px !important; padding: 0 0 12px !important; gap: 12px !important; border-bottom: 1px solid #ffffff16 !important; }
 .workspace-shell .module-heading h1 { margin: 3px 0 5px !important; font-size: 24px !important; line-height: 1.2 !important; }
 .workspace-shell .module-heading p { margin: 0 !important; font-size: 13px !important; line-height: 1.5 !important; }
@@ -63,6 +64,7 @@
 .workspace-shell .structured-form > details > p { font-size: 12px; color: #a5afbd; margin: 0 0 12px; }
 .workspace-shell .structured-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px 12px; }
 .workspace-shell .structured-form > button { grid-column: 1 / -1; }
+.workspace-shell .structured-form > .form-error { grid-column: 1 / -1; margin: 0; padding: 10px 12px; border: 1px solid #f87171; border-radius: 8px; font-size: 12px; line-height: 1.5; color: #fecaca; background: #7f1d1d33; }
 .workspace-shell .table-wrap { width: 100%; overflow-x: auto; margin: 0 !important; border-radius: 0 !important; }
 .workspace-shell table { width: 100%; }
 .workspace-shell th, .workspace-shell td { padding: 10px 12px !important; font-size: 12px !important; }
@@ -135,22 +137,17 @@
 .workspace-shell .census-site-link.is-active { background: #ffffff1a !important; color: #fff !important; box-shadow: inset 2px 0 0 var(--red) !important; }
 .workspace-shell .census-mix-main { min-width: 0; }
 .workspace-shell .census-mix-shell.is-split .census-mix-main { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,340px); gap: 14px; align-items: start; }
-.workspace-shell .census-analysis { min-width: 0; max-height: 78vh; overflow-y: auto; }
-.workspace-shell .census-analysis .workspace-grid { grid-template-columns: minmax(0,1fr) !important; }
-.workspace-shell .census-analysis .workspace-grid > .workspace-panel { grid-column: 1 / -1 !important; }
 .workspace-shell .census-site-panel { display: flex; flex-direction: column; min-width: 0; border: 1px solid #ffffff18; border-radius: 10px; background: #141820; overflow: hidden; }
 .workspace-shell .census-site-panel > header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #ffffff16; }
 .workspace-shell .census-site-panel > header strong { font-size: 13px; }
 .workspace-shell .census-site-panel > header span { font-size: 11px; color: #9aa4b2; }
 .workspace-shell .census-site-actions { display: flex; gap: 8px; margin-left: auto; }
 .workspace-shell .census-site-actions a, .workspace-shell .census-site-actions button { display: inline-flex; align-items: center; gap: 6px; min-height: 30px !important; padding: 5px 10px !important; border-radius: 6px !important; font-size: 11px !important; background: #ffffff0f !important; color: #dbe2ea !important; text-decoration: none; }
-.workspace-shell .census-site-frame { width: 100%; height: clamp(560px, calc(100svh - 180px), 940px); border: 0; background: #fff; }
 .workspace-shell .census-site-empty { padding: 18px 14px; font-size: 12px; color: #9aa4b2; }
 /* Sotto i 1440 px l'analisi andrebbe a rubare metà schermo allo strumento:
    passa sotto, a tutta larghezza, e il sito resta la finestra principale. */
 @media(max-width:1440px) {
   .workspace-shell .census-mix-shell.is-split .census-mix-main { grid-template-columns: minmax(0,1fr); }
-  .workspace-shell .census-analysis { max-height: none; }
 }
 @media(max-width:1100px) {
   .workspace-shell .census-mix-shell { grid-template-columns: minmax(0,1fr); }
@@ -158,7 +155,6 @@
   .workspace-shell .census-sites-title { display: none; }
   .workspace-shell .census-site-link { width: auto !important; }
   .workspace-shell .census-mix-shell.is-split .census-mix-main { grid-template-columns: minmax(0,1fr); }
-  .workspace-shell .census-analysis { max-height: none; }
 }
 /* Barra azioni dentro un pannello */
 .workspace-shell .panel-toolbar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px 0; }
@@ -237,6 +233,21 @@
 
 .workspace-shell .census-cyborg-view:not([hidden]) { grid-column: 1 / -1; min-width: 0; }
 .workspace-shell .census-cyborg-view[hidden] { display: none; }
+/* Colonna di Sister accanto al gestionale: il CRM resta l'area principale.
+   Le larghezze stanno in media query ordinate: la colonna resta accanto finché
+   c'è spazio per due colonne utili, poi passa sotto il gestionale. */
+.workspace-shell .census-site-dock { display: grid; gap: 14px; min-width: 0; }
+.workspace-shell .census-site-dock[hidden] { display: none; }
+@media(min-width:1441px) {
+  .workspace-shell .census-mix-shell.is-split.is-tab-split .census-mix-main { grid-template-columns: minmax(0,1fr) minmax(0,420px); }
+}
+@media(min-width:1101px) and (max-width:1440px) {
+  .workspace-shell .census-mix-shell.is-split.is-tab-split .census-mix-main { grid-template-columns: minmax(0,1fr) minmax(0,360px); }
+}
+@media(max-width:1100px) {
+  .workspace-shell .census-mix-shell.is-split.is-tab-split .census-mix-main { grid-template-columns: minmax(0,1fr); }
+}
+.workspace-shell .census-site-dock .cyborg-frame { height: max(560px, calc(100svh - 320px)); }
 .workspace-shell .cyborg-workspace { border: 1px solid #ffffff18; border-radius: 10px; overflow: hidden; background: #141820; }
 .workspace-shell .cyborg-workspace > header, .workspace-shell .cyborg-import-preview { padding: 16px; }
 .workspace-shell .cyborg-workspace p { font-size: 12px; line-height: 1.6; }

@@ -143,7 +143,7 @@ Conseguenze: consenso invalido (art. 4(11) e art. 7 GDPR), informativa assente (
 
 - Nessun rate limit né captcha sul login: la protezione dal brute force è delegata a Supabase → abilitare il captcha.
 - `HSTS` non è in `vercel.json`: Vercel lo aggiunge di default sui domini propri, ma è meglio dichiararlo esplicitamente.
-- `api/cyborg/import-census.js`: CORS di default `"*"` se `CYBORG_ALLOWED_ORIGINS` non è impostata, e fallback su `allowedOrigins[0]` invece di rifiutare. Il token è confrontato in modo timing-safe e `redirect: "error"` è corretto: la parte solida c'è, il default CORS è troppo permissivo.
+- `api/cyborg/import-census.js`: CORS di default `"*"` se `CYBORG_ALLOWED_ORIGINS` non è impostata, e fallback su `allowedOrigins[0]` invece di rifiutare. Il token è confrontato in modo timing-safe e `redirect: "error"` è corretto: la parte solida c'è, il default CORS è troppo permissivo. *(Rilievo storico: l'endpoint è stato dismesso a novembre 2026 e ora risponde 410 senza leggere il corpo, senza token e senza inoltri.)*
 - `Cache-Control: no-store` presente sulle API: corretto.
 - Preferenze UI (`fenix-suite-active-module/page`) in localStorage: innocuo.
 - Codebase A: `/api/check-server` legge un URL da file (non da input) e fa fetch: rischio SSRF basso, ma il file di configurazione non dovrebbe essere nel repo.

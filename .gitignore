@@ -14,3 +14,7 @@ output/
 
 # backup locali pre-consolidazione
 .backup-*.tar.gz
+
+# artefatti locali degli strumenti
+.freebuff/
+.cloud-attachments/

@@ -17,7 +17,9 @@ L'importazione conserva le schede esistenti: i record riconosciuti come duplicat
 
 Origini ammesse: `https://grfenix.vercel.app`, `http://localhost:5173`, `http://127.0.0.1:5173`, `http://localhost:5174`, `http://127.0.0.1:5174`.
 
-Il content script di discovery restituisce solo URL e versione dell'estensione. Non accetta comandi operativi, credenziali o richieste di lettura del DB. Il trasferimento parte dal pulsante dentro l'estensione; GRFenix verifica origine e finestra mittente prima di validare i record. Nessun token dell'estensione viene trasferito. Il nuovo flusso non usa l'adattatore HTTP `/api/cyborg/import-census`.
+Il content script di discovery restituisce solo URL e versione dell'estensione. Non accetta comandi operativi, credenziali o richieste di lettura del DB. Il trasferimento parte dal pulsante dentro l'estensione; GRFenix verifica origine e finestra mittente prima di validare i record. Nessun token dell'estensione viene trasferito.
+
+L'adattatore HTTP `/api/cyborg/import-census` è **dismesso**: risponde 410, non legge il corpo, non valida token e non inoltra nulla. L'importazione ha quindi una sola strada, quella descritta qui sopra. Le variabili `CYBORG_IMPORT_TOKEN` e `CRM_CENSUS_IMPORT_FORWARD_URL` non sono più necessarie.
 
 La CSP di GRFenix consente il frame `chrome-extension:`; le risorse accessibili dell'estensione sono limitate a `popup.html` sulle origini indicate. Le liste private sotto `assets/contact-excels` restano nella cartella originale dell'estensione: non sono copiate nel sito.
 

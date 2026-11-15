@@ -16,7 +16,7 @@ Uploads accept at most 4 MiB; XLSX archives at most 24 MiB expanded, 1,000 membe
 
 ## Intestazioni e documenti legali
 
-`vercel.json` dichiara `Content-Security-Policy` (script solo dal dominio, nessun frame in entrata, connessioni limitate a self, Supabase e ai servizi cartografici: tessere OpenFreeMap e ricerca indirizzi Nominatim), `Permissions-Policy` e `Strict-Transport-Security`. La direttiva `frame-src` elenca solo Sister, CercaOra e Datagma: gli altri siti non possono essere incorporati. La CSP può interferire con la toolbar dei deployment di preview di Vercel: verificarne il comportamento prima di usarla nelle preview condivise.
+`vercel.json` dichiara `Content-Security-Policy` (script solo dal dominio, nessun frame in entrata, connessioni limitate a self, Supabase e ai servizi cartografici: tessere OpenFreeMap e ricerca indirizzi Nominatim), `Permissions-Policy` e `Strict-Transport-Security`. La direttiva `frame-src` si limita a `'self'` e `chrome-extension:`: nessun sito esterno può essere incorporato, l'unico riquadro ammesso è il pannello dell'estensione CYBORG CENS. La CSP può interferire con la toolbar dei deployment di preview di Vercel: verificarne il comportamento prima di usarla nelle preview condivise.
 
 La mappa usa le tessere vettoriali di OpenFreeMap tramite MapLibre: servizio pubblico senza chiave, senza limiti di richieste e con uso commerciale consentito. Il server di tessere pubblico di OpenStreetMap non è adatto a un gestionale (la sua politica vieta l'uso da parte di applicazioni commerciali) e non viene usato. La ricerca degli indirizzi si appoggia a Nominatim, che ammette una richiesta al secondo: le richieste sono accodate e distanziate nel client (`src/censimento/coordinates.ts`). Se il volume di ricerche cresce, va sostituito con un servizio a chiave o con un'istanza propria.
 
@@ -26,6 +26,6 @@ Le pagine `/privacy`, `/termini` e `/note-legali` sono pubbliche, non passano da
 
 `supabase/config.toml` imposta ora `enable_signup = false`, conferma e-mail obbligatoria, password di almeno 12 caratteri con requisiti e limiti di sessione. **Il file vale per lo sviluppo locale:** le stesse opzioni vanno impostate nel progetto hostato (Authentication → Sign In / Providers, Password, Sessions) e applicate con `supabase config push` solo se il progetto è gestito da CLI.
 
-`api/cyborg/import-census.js` accetta CORS solo dalle origini elencate in `CYBORG_ALLOWED_ORIGINS` e rifiuta le altre con 403. Senza variabile impostata, i client non browser continuano a funzionare ma nessuna pagina web può chiamare l'endpoint.
+`api/cyborg/import-census.js` è dismesso: risponde sempre 410, senza leggere il corpo, senza token e senza inoltri esterni. L'importazione del Censimento passa solo dal pannello dell'estensione, con messaggi verificati per origine e finestra mittente. `CYBORG_IMPORT_TOKEN`, `CYBORG_ALLOWED_ORIGINS` e `CRM_CENSUS_IMPORT_FORWARD_URL` non servono più e vanno rimosse dalle variabili d'ambiente.
 
 Validation: `npm test`, `python3 -m unittest discover -s tests -p 'test_*.py'`, `npm run build`, `npm audit`. Remote configuration, prior history, existing account roles, production log exposure and a real-user end-to-end login have not been verified by these local checks. Review existing privileged profiles for unauthorized historic changes before rollout.
