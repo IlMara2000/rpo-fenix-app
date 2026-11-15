@@ -131,13 +131,14 @@
 .workspace-shell .census-sites { position: sticky; top: 76px; display: grid; gap: 4px; padding: 12px 10px; border: 1px solid #ffffff18; border-radius: 10px; background: #141820; }
 .workspace-shell .census-sites-title { margin: 0 0 6px; padding: 0 6px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #8b95a4; }
 .workspace-shell .census-site-link { display: flex !important; align-items: center; gap: 8px; width: 100% !important; justify-content: flex-start !important; padding: 9px 10px !important; min-height: 38px !important; border-radius: 7px !important; background: transparent !important; box-shadow: none !important; color: #cdd4de !important; text-align: left; text-decoration: none !important; }
-.workspace-shell .census-site-link span { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Solo l'etichetta si accorcia con i puntini: il suggerimento va a capo. */
+.workspace-shell .census-site-label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workspace-shell .census-site-link svg:last-child:not(:first-child) { opacity: .55; flex: 0 0 auto; }
 .workspace-shell .census-site-link:hover, .workspace-shell .census-site-link:focus-visible { background: #ffffff0f !important; color: #fff !important; }
 .workspace-shell .census-site-link.is-active { background: #ffffff1a !important; color: #fff !important; box-shadow: inset 2px 0 0 var(--red) !important; }
 /* Suggerimento della voce: compare subito, dentro l'app, accanto alla colonna. */
 .workspace-shell .census-site-link { position: relative; }
-.workspace-shell .census-site-hint { position: absolute; left: calc(100% + 10px); top: 0; z-index: 30; display: none; width: 250px; padding: 9px 11px; border: 1px solid #ffffff20; border-radius: 8px; background: #0b0e13; box-shadow: 0 12px 32px #00000066; color: #d7dee7; font-size: 11.5px; line-height: 1.55; text-align: left; }
+.workspace-shell .census-site-hint { position: absolute; left: calc(100% + 10px); top: 0; z-index: 30; display: none; width: 250px; overflow: visible; white-space: normal; padding: 9px 11px; border: 1px solid #ffffff20; border-radius: 8px; background: #0b0e13; box-shadow: 0 12px 32px #00000066; color: #d7dee7; font-size: 11.5px; line-height: 1.55; text-align: left; }
 .workspace-shell .census-site-hint.is-open { display: block; }
 /* Strumento che non può stare in una pagina: si legge prima di aprirlo. */
 .workspace-shell .census-site-tag { flex: 0 0 auto; padding: 1px 5px; border: 1px solid #f0c67455; border-radius: 4px; background: #f0c6741f; color: #f0c674; font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }

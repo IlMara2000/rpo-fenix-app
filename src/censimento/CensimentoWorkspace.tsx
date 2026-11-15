@@ -77,7 +77,7 @@ export function CensimentoWorkspace({
                 onClick={() => setHintSiteId(null)}
               >
                 <MapPinned size={16} aria-hidden="true" />
-                <span>{site.label}</span>
+                <span className="census-site-label">{site.label}</span>
                 <ExternalLink size={13} aria-hidden="true" />
                 {tooltip}
               </a>
@@ -97,7 +97,7 @@ export function CensimentoWorkspace({
               }}
             >
               <MapPinned size={16} aria-hidden="true" />
-              <span>{site.label}</span>
+              <span className="census-site-label">{site.label}</span>
               {/* Si sa prima di aprirlo: questo sito non sta in una pagina. */}
               {site.frameBlocked ? <span className="census-site-tag">scheda</span> : null}
               {tooltip}
