@@ -44,6 +44,10 @@ export function CensimentoWorkspace({
         <p className="census-sites-title">Strumenti</p>
         {sites.map((site) => {
           const active = activeSite?.id === site.id;
+          // Il motivo del blocco si legge sulla voce intera, non solo sul badge.
+          const hint = site.frameBlocked
+            ? `Il sito vieta di essere mostrato dentro una pagina: si apre in una scheda del browser. ${site.description}`
+            : site.description;
           // Gli strumenti esterni sono veri collegamenti: il browser apre una
           // scheda nuova e il gestionale resta esattamente com'era.
           if (site.mode === "external") {
@@ -54,7 +58,7 @@ export function CensimentoWorkspace({
                 href={site.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                title={site.description}
+                title={hint}
               >
                 <MapPinned size={16} aria-hidden="true" />
                 <span>{site.label}</span>
@@ -68,21 +72,15 @@ export function CensimentoWorkspace({
               key={site.id}
               type="button"
               className={`census-site-link${active ? " is-active" : ""}`}
-              title={site.description}
+              title={hint}
               aria-pressed={active}
               onClick={() => onSelectSite(site.id)}
             >
               <MapPinned size={16} aria-hidden="true" />
               <span>{site.label}</span>
               {/* Si sa prima di aprirlo: questo sito non sta in una pagina. */}
-              {site.frameBlocked ? (
-                <span
-                  className="census-site-tag"
-                  title="Il sito vieta di essere mostrato dentro una pagina: si apre in una scheda del browser"
-                >
-                  scheda
-                </span>
-              ) : null}
+              {/* Nessun title proprio: così il suggerimento della voce vale anche qui. */}
+              {site.frameBlocked ? <span className="census-site-tag">scheda</span> : null}
             </button>
           );
         })}

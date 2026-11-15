@@ -39,7 +39,7 @@ export const censimentoSites: CensimentoSite[] = [
     // /Main/index.jsp, che a sua volta rimanda al portale dell'Agenzia: quel
     // portale dichiara `frame-ancestors 'none'`, quindi nessuna pagina può
     // mostrarlo dentro di sé. Il riquadro resta, e spiega cosa succede.
-    description: "Visure catastali ufficiali dell'Agenzia delle Entrate. Il portale vieta di essere incorniciato: si apre in una scheda, con il pannello CYBORG CENS qui accanto.",
+    description: "Visure catastali ufficiali dell'Agenzia delle Entrate, con il pannello CYBORG CENS qui accanto.",
     url: "https://sister.agenziaentrate.gov.it/",
     mode: "embed",
     frameBlocked: true,
