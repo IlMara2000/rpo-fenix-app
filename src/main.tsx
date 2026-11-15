@@ -36,7 +36,7 @@ import { portalExport } from "./crm/portalExport";
 import { pageForPath } from "./crm/routes";
 import { LEGAL_ENTITY, LegalPage, legalDocumentFor } from "./legal";
 import { privateStorage, setStorageOwner, clearPrivateStorage } from "./lib/privateStorage";
-import { isCaptchaEnabled, mountCaptcha, resetCaptcha } from "./lib/captcha";
+import { isCaptchaEnabled, mountCaptcha, readCaptchaToken, resetCaptcha } from "./lib/captcha";
 import { StrictMode, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { createRoot, type Root } from "react-dom/client";
@@ -1830,7 +1830,6 @@ function LoginScreen({
 }) {
   const [error, setError] = useState(notice);
   const [loading, setLoading] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const captchaSlot = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -1839,7 +1838,7 @@ function LoginScreen({
 
   useEffect(() => {
     const container = captchaSlot.current;
-    if (container) mountCaptcha(container, setCaptchaToken);
+    if (container) mountCaptcha(container);
   }, []);
 
   async function submitLogin(event: FormEvent<HTMLFormElement>) {
@@ -1857,6 +1856,7 @@ function LoginScreen({
         passwordInput.focus();
       }
     };
+    const captchaToken = readCaptchaToken(captchaSlot.current);
     if (isCaptchaEnabled && !captchaToken) {
       setLoading(false);
       setError("Completa la verifica anti-bot prima di accedere.");
@@ -1874,7 +1874,6 @@ function LoginScreen({
         setError(italianAuthMessage(authError?.message || ""));
         clearPasswordField();
         resetCaptcha(captchaSlot.current);
-        setCaptchaToken(null);
         return;
       }
 
