@@ -74,7 +74,15 @@ export function CensimentoWorkspace({
             >
               <MapPinned size={16} aria-hidden="true" />
               <span>{site.label}</span>
-              {site.frameBlocked ? <ExternalLink size={13} aria-hidden="true" /> : null}
+              {/* Si sa prima di aprirlo: questo sito non sta in una pagina. */}
+              {site.frameBlocked ? (
+                <span
+                  className="census-site-tag"
+                  title="Il sito vieta di essere mostrato dentro una pagina: si apre in una scheda del browser"
+                >
+                  scheda
+                </span>
+              ) : null}
             </button>
           );
         })}
