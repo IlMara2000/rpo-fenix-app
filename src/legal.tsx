@@ -5,16 +5,15 @@ import type { ReactNode } from "react";
  * Sostituire ogni valore tra doppie graffe prima della pubblicazione.
  */
 export const LEGAL_ENTITY = {
-  denominazione: "{{RAGIONE SOCIALE}}",
-  forma: "{{FORMA GIURIDICA}}",
-  sede: "{{INDIRIZZO SEDE LEGALE, CAP CITTA (PROVINCIA)}}",
-  piva: "{{PARTITA IVA}}",
-  rea: "{{NUMERO REA}}",
-  pec: "{{INDIRIZZO PEC}}",
+  denominazione: "JDT S.r.l.",
+  forma: "Società a responsabilità limitata",
+  sede: "Via Pierluigi da Palestrina 14, 20124 Milano (MI)",
+  piva: "12598180961",
+  rea: "MI-2671883",
+  pec: "jdt.srl@lamiapec.it",
   email: "daniele.marangoni@grfenix.com",
-  telefono: "{{TELEFONO}}",
   hosting: "Vercel Inc.",
-  updatedAt: "1 novembre 2026",
+  updatedAt: "15 novembre 2026",
 } as const;
 
 const pendingFields = String(Object.values(LEGAL_ENTITY).join(" ")).includes("{{");
@@ -344,7 +343,6 @@ function NoteLegaliBody() {
           <li>Numero REA: {F.rea}</li>
           <li>PEC: {F.pec}</li>
           <li>E-mail: {F.email}</li>
-          <li>Telefono: {F.telefono}</li>
         </ul>
       </Section>
 

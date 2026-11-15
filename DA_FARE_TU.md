@@ -1,81 +1,73 @@
 # Cosa resta da fare a te
 
 Lista delle cose che non posso fare io, perché servono dati, accessi o decisioni tue.
-In ordine di importanza: le prime due bloccano cose visibili ai clienti.
 
 ---
 
-## 1. I dati della tua azienda nelle pagine legali
+## Fatto adesso (non devi fare niente)
 
-Le pagine **Privacy**, **Termini** e **Note legali** oggi mostrano l'avviso
-"Documento in bozza" e non puoi mandarle a un cliente così.
+**Dati della tua azienda nelle pagine legali.** Presi dal footer di `grfenix.com`, quindi
+sono dati pubblici già verificati, non inventati:
 
-Apri `src/legal.tsx` e sostituisci i valori fra doppie graffe:
+| Campo | Valore inserito |
+| --- | --- |
+| Denominazione | JDT S.r.l. |
+| Forma giuridica | Società a responsabilità limitata |
+| Sede legale | Via Pierluigi da Palestrina 14, 20124 Milano (MI) |
+| Partita IVA | 12598180961 |
+| REA | MI-2671883 |
+| PEC | jdt.srl@lamiapec.it |
+| Email | daniele.marangoni@grfenix.com |
 
-| Campo | Cosa scrivere | Esempio |
-| --- | --- | --- |
-| `denominazione` | Ragione sociale completa | Rossi Immobili S.r.l. |
-| `forma` | Forma giuridica | Società a responsabilità limitata |
-| `sede` | Indirizzo della sede legale | Via Roma 1, 20100 Milano (MI) |
-| `piva` | Partita IVA | 12345678901 |
-| `rea` | Numero REA con la sigla della provincia | MI-1234567 |
-| `pec` | Indirizzo PEC | rossi@pec.it |
-| `telefono` | Telefono pubblico | +39 02 1234567 |
+Gli stessi valori sono in `LICENSE`, con il foro competente di Milano. L'avviso
+"Documento in bozza" è sparito da Privacy, Termini e Note legali.
 
-L'email `daniele.marangoni@grfenix.com` è già corretta, non toccarla.
-Quando non resta nessuna doppia graffa, l'avviso "Documento in bozza" sparisce da solo.
+Ho tolto la riga **Telefono** perché sul sito non c'è un numero pubblico: se mi passi
+quello che vuoi mostrare lo rimetto in dieci secondi.
 
-Gli stessi dati servono nel file **`LICENSE`**, dove ho lasciato `[RAGIONE SOCIALE]`,
-`[SEDE LEGALE]`, `[PARTITA IVA]`, `[PEC]` e `[FORO COMPETENTE]` (la città del tribunale,
-ess. Milano). Se mi dai i valori li metto in tutti e due i file in una volta.
+**Impostazioni Supabase.** Il progetto online (`grfenix`) aveva ancora `http://localhost:3000`
+come indirizzo del sito e nessun indirizzo di ritorno autorizzato. Ora punta a
+`https://grfenix.vercel.app` e accetta i ritorni da quell'indirizzo e da `localhost:5173`
+(serve per provare in locale). Erano già a posto: registrazione libera disattivata,
+conferma dell'email obbligatoria, password di almeno 12 caratteri.
 
-Se preferisci, passami i valori e li inserisco io: non sono segreti, sono dati
-che finiscono comunque in una pagina pubblica.
-
----
-
-## 2. Le impostazioni di Supabase (il database e gli accessi)
-
-Nel file `supabase/config.toml` ho scritto le regole giuste, **ma quel file vale
-solo sul tuo computer**. Il progetto online ha ancora le impostazioni vecchie.
-Vai su [supabase.com](https://supabase.com) → il tuo progetto → **Authentication**:
-
-1. **Sign In / Providers → Email**: lascia **disattivato** "Allow new users to sign up".
-   La registrazione deve essere possibile solo a te dalla dashboard, non dalla piattaforma.
-2. **Email → Confirm email**: attivalo.
-3. **Password**: lunghezza minima **12**, con maiuscola, minuscola, numero e simbolo.
-4. **Attack Protection**: attiva il captcha (hCaptcha o Cloudflare Turnstile) e recupera
-   la chiave del sito e quella segreta.
-5. **URL Configuration → Site URL**: oggi punta a `http://localhost:3000`.
-   Va messo l'indirizzo vero, cioè `https://grfenix.vercel.app`, e in
-   "Redirect URLs" la stessa cosa con `/**` in coda.
-
-Poi, nel file `src/main.tsx` (o dove sta la creazione del client Supabase), il captcha
-va collegato: quando hai le due chiavi passamele e lo faccio io, oppure le metti tu
-nelle variabili d'ambiente del progetto su Vercel.
-
-Come verificare: dalla pagina di accesso, "Password dimenticata" deve mandare
-l'email di recupero, e un tentativo di registrazione dall'esterno deve essere rifiutato.
+**Migrazione del database.** Il file `supabase/migrations/20261023201115_secure_profile_authority.sql`
+risultava **già applicato** al database online: ho controllato le 8 regole che bloccano gli
+account sospesi, la regola sui piani PWS, la tabella della quota giornaliera e le funzioni
+del tetto di 10 generazioni AI al giorno. Ci sono tutte.
 
 ---
 
-## 3. La migrazione del database da applicare
+## 1. Il captcha (mi servono due chiavi)
 
-Il file `supabase/migrations/20261023201115_secure_profile_authority.sql` contiene le
-regole che bloccano gli account sospesi e mettono il tetto di **10 generazioni AI al
-giorno per utente**. È testato, ma **non è ancora stato applicato al database online**.
+L'ultima cosa della configurazione di Supabase che non posso fare da solo: l'anti-bot.
+Serve un account hCaptcha o Cloudflare Turnstile, da cui si ottengono una chiave del sito
+(pubblica) e una segreta. Le metti su Vercel → Settings → Environment Variables, oppure
+mandami solo i nomi e le collego io nel codice. Finché non c'è, chiunque conosca
+l'indirizzo può provare password a ripetizione: dopo qualche tentativo Supabase blocca
+comunque l'indirizzo per un po', quindi non è scoperto.
 
-Due modi, scegli quello che ti è più comodo:
+Due note tecniche:
 
-- **Dalla dashboard**: Supabase → **SQL Editor** → apri il file, copia tutto, incolla, esegui.
-- **Da terminale**, se hai la CLI collegata al progetto: `supabase db push`.
+- il controllo delle password rubate (HaveIBeenPwned) è riservato ai piani Pro di Supabase,
+  quindi sul tuo piano non si può attivare: me l'ha rifiutato il sistema;
+- l'obbligo di maiuscola, numero e simbolo non l'ho forzato via API perché sbagliando la
+  sintassi si rischia di rifiutare password valide. Si attiva in un clic da
+  **Authentication → Passwords → Password requirements**, scegliendo
+  `lower_upper_letters_digits_symbols`. La lunghezza minima di 12 è già attiva.
 
-Come verificare: dopo l'esecuzione, nella tabella dei profili un account sospeso non deve
-più poter leggere i dati. Se vuoi lo provo io con un utente di test.
+## 2. "Password dimenticata" non esiste ancora nella pagina di accesso
 
----
+Nella schermata di login c'è solo "Accedi": non c'è il collegamento per recuperare la
+password. Chi la dimentica oggi va servito a mano: **Supabase → Authentication → Users →
+utente → Reset password**, che gli manda l'email di recupero (l'indirizzo del sito ora è
+quello giusto, quindi il link funziona).
 
-## 4. Le due chiavi da rigenerare
+Aggiungere il pulsante non è solo un link: il link di recupero riporta l'utente alla
+pagina con un gettone da usare per scegliere la nuova password, quindi serve anche la
+schermata "imposta nuova password". Se vuoi lo faccio io, dimmelo e lo metto.
+
+## 3. Le due chiavi da rigenerare
 
 Sono state usate in chiaro durante lo sviluppo e vanno considerate compromesse:
 
@@ -84,47 +76,40 @@ Sono state usate in chiaro durante lo sviluppo e vanno considerate compromesse:
 - **La chiave di Hugging Face** (`HF_TOKEN`): stessa cosa, dal tuo account Hugging Face.
 
 Quando le hai rigenerate, non incollarle qui: mettile tu su Vercel → Settings →
-Environment Variables, oppure dimmi che sono pronte e ti dico il nome esatto della variabile.
+Environment Variables. I nomi delle variabili sono esattamente quelli fra parentesi.
 
----
-
-## 5. Gli account dei quattro siti esterni
+## 4. Gli account dei quattro siti esterni
 
 Ho controllato i quattro collegamenti uno per uno, dall'esterno:
 
 | Sito | Risposta | Si apre dentro il gestionale? |
 | --- | --- | --- |
 | Sister | funziona | **no**: il portale dell'Agenzia vieta di essere incorniciato; il riquadro lo spiega e apre la scheda con un clic |
-| CercaOra | funziona | sì: si apre dentro la pagina dalla home del sito, poi si entra con ACCEDI (le pagine interne dell'app restano bianche in un riquadro) |
+| CercaOra | funziona | sì: si apre dentro la pagina dalla home del sito, poi si entra con ACCEDI |
 | Datagma | funziona | sì: si apre dentro la pagina, con i dati del censimento nella colonna a destra |
 | Whuis | funziona | **no**: il loro sito vieta di essere incorniciato, si apre in una scheda |
 
-Tutti e tre girano nello stesso riquadro dentro il gestionale: il sito prende l'area di
-lavoro, la colonna di destra tiene i dati del censimento (per Sister, il pannello CYBORG
-CENS che la guida). In alto ci sono sempre "Apri in una scheda" e "Chiudi".
+Tutti girano nello stesso riquadro dentro il gestionale: il sito prende l'area di lavoro,
+la colonna di destra tiene i dati del censimento (per Sister, il pannello CYBORG CENS che
+la guida). In alto ci sono sempre "Apri in una scheda" e "Chiudi".
 
 Sister è l'unica che non può riempire il riquadro, e non per un difetto nostro:
 `sister.agenziaentrate.gov.it` rimanda a `/Main/index.jsp` (302) e da lì a
 `portale.agenziaentrate.gov.it`, che risponde `frame-ancestors 'none'` e rifiuta di essere
-mostrato dentro qualunque altra pagina. Il riquadro quindi spiega la cosa e apre la scheda
-con un clic, mentre il pannello CYBORG CENS resta nella colonna accanto.
+mostrato dentro qualunque altra pagina.
 
-La colonna dei siti nel Censimento è pronta, ma i contenuti dipendono dai tuoi rapporti:
+I contenuti dipendono dai tuoi rapporti:
 
-- **Sister** (Agenzia delle Entrate): serve la convenzione attiva per consultare le
-  banche dati. Finché non c'è, la scheda si ferma alla pagina di accesso.
+- **Sister** (Agenzia delle Entrate): serve la convenzione attiva per consultare le banche
+  dati. Finché non c'è, la scheda si ferma alla pagina di accesso.
 - **CercaOra** e **Datagma**: funzionano a crediti. Serve un account attivo con credito
   residuo; quando finiscono i crediti le ricerche si fermano.
-- **Whuis**: è a pagamento. Si apre in una scheda separata del browser, non dentro la
-  pagina, perché il loro sito vieta di essere incorniciato.
-- **Sister**: anche lei vieta di essere incorniciata: il riquadro lo spiega e la apre in una scheda con un clic.
+- **Whuis**: è a pagamento e si apre in una scheda separata del browser.
 
 Se mi passi gli indirizzi di accesso diretti (non le password: basta il link della pagina
 di login di ciascuno), verifico che siano quelli giusti e li sistemo.
 
----
-
-## 6. Documenti e contratti
+## 5. Documenti e contratti
 
 Queste non sono cose da codice e vanno fatte con chi ti segue:
 
@@ -134,9 +119,9 @@ Queste non sono cose da codice e vanno fatte con chi ti segue:
 - **Registro dei trattamenti** (art. 30 GDPR): l'elenco di quali dati tratti e perché.
 - **Contratti di nomina a responsabile** (DPA) con Vercel e Supabase: si accettano dalle
   loro pagine, sono documenti standard.
-- **Licenza del software**: il file `LICENSE` c'è già, scritto come licenza
-  proprietaria. Restano da riempire i segnaposto e da farla controllare a chi ti segue
-  per l'aspetto legale (in particolare il foro competente).
+- **Licenza del software**: `LICENSE` ora è completa, resta da farla controllare a chi ti
+  segue per l'aspetto legale (in particolare il foro competente, che ho messo su Milano
+  perché è la sede legale).
 
 ---
 
@@ -147,17 +132,15 @@ Queste non sono cose da codice e vanno fatte con chi ti segue:
 - Colonna dei siti nel Censimento, con gestionale attivo a destra.
 - Una sola mappa immobiliare al posto delle due finte, con attribuzione obbligatoria
   e senza nomi di proprietari. Le tessere ora vengono da **OpenFreeMap**: gratuito, senza
-  chiave, senza limiti di richieste e con uso commerciale consentito, quindi non ti blocca
-  anche se la usi tutto il giorno. In più il motore della mappa si scarica solo quando
-  apri la mappa, non su ogni pagina.
-- Sistemato il blocco che impediva alla mappa di funzionare sul sito online: una regola di
-  sicurezza del sito vietava al browser di collegarsi ai servizi esterni, quindi la ricerca
-  degli indirizzi veniva bloccata prima ancora di partire. Ora è permessa solo verso i
-  servizi che servono davvero.
+  chiave, senza limiti di richieste e con uso commerciale consentito. In più il motore
+  della mappa si scarica solo quando apri la mappa, non su ogni pagina.
+- Sistemato il blocco che impediva alla mappa di funzionare sul sito online.
 - La posizione scelta sulla mappa ora si salva **sull'immobile**, non più in una memoria
-  separata: finisce anche nelle copie di sicurezza che scarichi e non si perde se si
-  pulisce la memoria del browser. In più puoi posizionare a mano un immobile cliccando
-  sulla mappa, senza dipendere dalla ricerca dell'indirizzo.
+  separata: finisce anche nelle copie di sicurezza che scarichi.
+- Indirizzi leggibili: `/censimento/nominativi`, `/immobili`, `/impostazioni/...` aprono
+  direttamente la pagina giusta del gestionale.
+- I programmi esterni (PWS, RPO, Telefonista, Planimetrie) si aprono in una scheda nuova,
+  senza sostituire il gestionale.
 - Test automatici, controllo dei tipi e build: tutti verdi.
 
 ---
@@ -166,21 +149,19 @@ Queste non sono cose da codice e vanno fatte con chi ti segue:
 
 La mappa in sé non ha limiti. La **ricerca automatica dell'indirizzo** invece usa un
 servizio pubblico gratuito che ammette una ricerca al secondo: il programma le mette in
-fila e le distanzia da solo, quindi puoi cliccare quanto vuoi senza combinare guai. Se un
-giorno assumete altre persone e fate centinaia di ricerche al giorno, quel servizio non
-basta più e conviene passare a uno a pagamento (pochi euro al mese) o all'inserimento a
-mano, che funziona sempre cliccando il punto sulla mappa.
+fila e le distanzia da solo. Se un giorno fate centinaia di ricerche al giorno, conviene
+passare a uno a pagamento (pochi euro al mese) o all'inserimento a mano, che funziona
+sempre cliccando il punto sulla mappa.
 
 ---
 
 ## Una cosa da sapere (non è un compito)
 
 Il gestionale salva i dati **dentro il browser del computer che stai usando**, legati al
-tuo account. Questo vale per immobili, contatti, richieste e adesso anche per le mappe.
-Vuol dire che se lavori da un altro computer, o da un altro browser, non ritrovi i dati:
-non sono sincronizzati. Le copie di sicurezza che scarichi invece sono complete e
-contengono anche le posizioni sulla mappa.
+tuo account. Vale per immobili, contatti, richieste e mappe. Se lavori da un altro
+computer, o da un altro browser, non ritrovi i dati: non sono sincronizzati. Le copie di
+sicurezza che scarichi invece sono complete.
 
 Se in futuro vorrai che due persone o due computer vedano gli stessi dati in tempo reale,
 si passa a salvarli sul database Supabase invece che nel browser. È un lavoro a parte,
-dimmi quando ha senso farlo.
+dimmelo quando ha senso farlo.
