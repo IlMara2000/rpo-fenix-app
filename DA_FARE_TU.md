@@ -69,12 +69,65 @@ Due note tecniche:
   **Authentication → Passwords → Password requirements**, scegliendo
   `lower_upper_letters_digits_symbols`. La lunghezza minima di 12 è già attiva.
 
-## 2. Recupero password: c'è
+## 2. Recupero password: c'è, e ora si può verificare
 
 Nella pagina di accesso c'è **"Password dimenticata?"**: si scrive l'indirizzo, Supabase
 manda l'email con il link, e il link porta alla schermata `/imposta-password` dove si
 sceglie la nuova password (almeno 12 caratteri, ripetuta due volte). Il link scade dopo
 un'ora e vale una sola volta.
+
+Tre cose che la schermata fa adesso:
+
+- **chi arriva dal link** sceglie subito la nuova password, senza altre conferme;
+- **chi ha solo il browser aperto**, senza essere arrivato da un link, deve scrivere la
+  password attuale: dal computer incustodito nessuno può prendersi l'account;
+- **il permesso dura quindici minuti**: passati quelli la sessione nata dal link viene
+  chiusa e serve un link nuovo.
+
+L'unico segno accettato che la sessione nasce dal link è l'annuncio che il client Supabase
+manda dopo aver verificato il gettone col server. Scrivere `type=recovery` nell'indirizzo
+non basta: quel trucco l'ho provato e non funziona.
+
+### Vedere il percorso senza aspettare la posta
+
+Con la chiave di servizio del progetto nella shell — mai nel codice, mai in chat:
+
+```bash
+export SUPABASE_SERVICE_ROLE_KEY=...
+node scripts/recovery-link.js --email prova@example.invalid --create --json > a.json
+node scripts/recovery-link.js --email prova@example.invalid --json > b.json
+```
+
+Il primo comando crea l'account di prova e ne stampa la password una volta sola; entrambi
+restituiscono un link valido. Aprendone uno nel browser vedi il percorso vero, senza
+aspettare l'email. Servono due link perché ognuno vale una sola volta.
+
+C'è anche una prova automatica che apre quei due link da sola e controlla le quattro cose
+che contano: nessuna richiesta di password attuale, salvataggio, sessione chiusa, scadenza.
+La scadenza non accorcia nulla nel programma: la prova fa avanzare un orologio finto di
+sedici minuti, quindi il codice che gira per gli utenti resta identico.
+
+```bash
+FENIX_RECOVERY_LINK=<link di a.json> \
+FENIX_RECOVERY_LINK_SCADENZA=<link di b.json> \
+FENIX_NEW_PASSWORD='PasswordDiProva-2026' npm test
+```
+
+Senza i due link quella prova si salta da sola e `npm test` resta verde.
+
+### Cosa resta da fare a te qui
+
+1. **Eseguire la prova almeno una volta.** È l'unico pezzo del recupero che non ho potuto
+   vedere funzionare: serve la chiave di servizio e un account di prova, e il percorso
+   positivo non l'ho mai eseguito. Se qualcosa non torna, dimmelo e lo sistemo.
+2. **Spegnere l'account di prova** quando hai finito:
+
+   ```bash
+   node scripts/recovery-link.js --email prova@example.invalid --delete
+   ```
+
+   La prova cambia davvero la password di quell'account: usala solo con l'account di prova,
+   mai con un account vero.
 
 Una cosa da sapere: le email di recupero partono dal servizio di posta di Supabase, che sul
 piano gratuito ha un limite stretto (pochissime email all'ora) e un aspetto poco
@@ -155,6 +208,13 @@ Queste non sono cose da codice e vanno fatte con chi ti segue:
   direttamente la pagina giusta del gestionale.
 - I programmi esterni (PWS, RPO, Telefonista, Planimetrie) si aprono in una scheda nuova,
   senza sostituire il gestionale.
+- Recupero password: link dalla pagina di accesso, schermata `/imposta-password`, password
+  attuale obbligatoria quando la sessione non nasce dal link, permesso di quindici minuti
+  che alla scadenza chiude la sessione. La regola del permesso ha due test automatici.
+- `scripts/recovery-link.js`: genera un link di recupero di prova con l'API di
+  amministrazione (senza posta) e sa rimuovere l'account di prova.
+- `tests/recovery-flow.e2e.test.js`: prova end-to-end del percorso di recupero, con
+  l'orologio finto per vedere la scadenza senza aspettare.
 - Test automatici, controllo dei tipi e build: tutti verdi.
 
 ---

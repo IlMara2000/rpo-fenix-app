@@ -15,6 +15,7 @@
  *   --email <indirizzo>  account di prova (o variabile FENIX_TEST_EMAIL)
  *   --local              porta il link su http://localhost:5173 invece che in produzione
  *   --create             crea l'account di prova se non esiste (password stampata una volta)
+ *   --delete             rimuove l'account di prova dal progetto, finita la prova
  *   --json               stampa solo un oggetto JSON, per usarlo in uno script
  *   --help               questo testo
  */
@@ -26,6 +27,7 @@ const redirectLocale = "http://localhost:5173/imposta-password";
 
 function usage() {
   console.log(`Uso: node scripts/recovery-link.js --email <indirizzo> [--local] [--create] [--json]`);
+  console.log(`Per rimuovere l'account di prova: --delete invece di generare il link.`);
   console.log(`La chiave di servizio si legge da SUPABASE_SERVICE_ROLE_KEY, l'indirizzo del`);
   console.log(`progetto da SUPABASE_URL o VITE_SUPABASE_URL.`);
 }
@@ -35,6 +37,7 @@ function readOptions(argv) {
     email: process.env.FENIX_TEST_EMAIL || "",
     local: false,
     create: false,
+    deleteAccount: false,
     json: false,
     help: false,
   };
@@ -47,6 +50,8 @@ function readOptions(argv) {
       options.local = true;
     } else if (flag === "--create") {
       options.create = true;
+    } else if (flag === "--delete") {
+      options.deleteAccount = true;
     } else if (flag === "--json") {
       options.json = true;
     } else if (flag === "--help" || flag === "-h") {
@@ -143,6 +148,20 @@ async function main() {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
   const redirectTo = options.local ? redirectLocale : redirectProduzione;
+
+  // Pulizia: l'account di prova non deve restare nel progetto con una password conosciuta.
+  // Le tabelle collegate spariscono da sole (la chiave esterna è in cascata).
+  if (options.deleteAccount) {
+    const utente = await findUserByEmail(admin, options.email);
+    if (!utente) {
+      console.log(`Nessun account per ${options.email}: niente da rimuovere.`);
+      return;
+    }
+    const { error: deleteError } = await admin.auth.admin.deleteUser(utente.id);
+    if (deleteError) throw new Error(`Rimozione non riuscita: ${deleteError.message}`);
+    console.log(`Account di prova rimosso: ${options.email}`);
+    return;
+  }
 
   let password = "";
   if (!(await findUserByEmail(admin, options.email))) {
