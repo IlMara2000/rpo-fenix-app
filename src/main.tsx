@@ -1896,9 +1896,11 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
     if (container) mountCaptcha(container);
   }, [state]);
 
+  // Chiude solo questa sessione: quando il recupero viene abbandonato non bisogna
+  // scollegare l'utente dagli altri dispositivi dove era già entrato legittimamente.
   async function closeRecoverySession() {
     const { supabase } = await import("./lib/supabase");
-    await supabase?.auth.signOut();
+    await supabase?.auth.signOut({ scope: "local" });
   }
 
   // Chi ha aperto il link e poi ricaricato la pagina non ha più il gettone: senza uscire
@@ -1975,7 +1977,9 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
       setError(italianAuthMessage(updateError.message));
       return;
     }
-    await supabase.auth.signOut();
+    // Dopo il cambio la sessione corrente e tutte le altre vanno chiuse: una sessione
+    // rubata non deve restare collegata altrove.
+    await supabase.auth.signOut({ scope: "global" });
     setLoading(false);
     setState("fatto");
   }
