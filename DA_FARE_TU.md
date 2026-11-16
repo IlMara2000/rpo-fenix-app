@@ -60,6 +60,21 @@ risultato, il sito va creato come «Invisible» nella loro dashboard.
 pubblica su Vercel, nessuno riesce più a entrare. Finché le due variabili mancano il
 riquadro non compare e l'accesso funziona come sempre.
 
+Per verificare che la configurazione del progetto hostato corrisponda a quella attesa
+(site_url, indirizzi di ritorno, conferma email, registrazione, lunghezza password,
+captcha) senza aprire la dashboard:
+
+```bash
+export SUPABASE_ACCESS_TOKEN=sbp_...
+export SUPABASE_URL=https://<ref>.supabase.co
+node scripts/check-supabase-config.js
+```
+
+Il token è personale (Supabase Dashboard → Account → Access Tokens), con permesso
+`auth_config_read`: non è la chiave di servizio e non va nel codice. Con `--expected file.json`
+si sovrascrivono i valori attesi di default; con `--json` l'output è leggibile da uno script.
+Codice di uscita 1 se c'è almeno una differenza.
+
 Due note tecniche:
 
 - il controllo delle password rubate (HaveIBeenPwned) è riservato ai piani Pro di Supabase,
