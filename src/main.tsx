@@ -1826,13 +1826,32 @@ function italianAuthMessage(raw: string) {
   return raw || "Accesso non riuscito: controlla i dati o contatta un responsabile.";
 }
 
+const passwordRecoveryMark = "fenix-suite-password-recovery";
+
+/**
+ * Il link di recupero lascia `type=recovery` nel frammento dell'URL: è l'unico segnale
+ * che distingue una sessione nata dal gettone da un accesso normale. Il segno resta per
+ * la scheda, così ricaricare la pagina non chiede una password che l'utente non ha.
+ */
+function hasRecoveryGrant(): boolean {
+  if (window.location.hash.includes("type=recovery")) {
+    sessionStorage.setItem(passwordRecoveryMark, "1");
+    return true;
+  }
+  return sessionStorage.getItem(passwordRecoveryMark) === "1";
+}
+
 function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: boolean) => void }) {
   const [state, setState] = useState<"verifica" | "pronta" | "fatto" | "negata">("verifica");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [needsCurrentPassword, setNeedsCurrentPassword] = useState(false);
+  const captchaSlot = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    // Va letto prima di importare il client: detectSessionInUrl consuma il frammento.
+    const fromRecoveryLink = hasRecoveryGrant();
     void (async () => {
       const { isSupabaseConfigured, supabase } = await import("./lib/supabase");
       if (cancelled) return;
@@ -1852,6 +1871,7 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
       }
       // Il gettone non serve più: si toglie dalla barra degli indirizzi.
       window.history.replaceState(null, "", "/imposta-password");
+      setNeedsCurrentPassword(!fromRecoveryLink);
       setState("pronta");
     })();
     return () => {
@@ -1859,12 +1879,19 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
     };
   }, []);
 
+  useEffect(() => {
+    if (state !== "pronta") return;
+    const container = captchaSlot.current;
+    if (container) mountCaptcha(container);
+  }, [state]);
+
   async function submitNewPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     const form = new FormData(event.currentTarget);
     const password = String(form.get("password") || "");
     const conferma = String(form.get("conferma") || "");
+    const attuale = String(form.get("attuale") || "");
     if (password.length < 12) {
       setError("La password deve avere almeno 12 caratteri.");
       return;
@@ -1880,12 +1907,39 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
       setError("Accesso non disponibile: configura Supabase.");
       return;
     }
+    // Sessione normale: senza la password attuale chiunque abbia il browser aperto
+    // potrebbe prendere il controllo dell'account.
+    if (needsCurrentPassword) {
+      if (!attuale) {
+        setLoading(false);
+        setError("Scrivi la password attuale: serve a confermare che sei tu.");
+        return;
+      }
+      const { data: current } = await supabase.auth.getSession();
+      const captchaToken = readCaptchaToken(captchaSlot.current);
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: current.session?.user.email || "",
+        password: attuale,
+        options: captchaToken ? { captchaToken } : undefined,
+      });
+      if (verifyError) {
+        setLoading(false);
+        setError(
+          /invalid login credentials/i.test(verifyError.message)
+            ? "La password attuale non è corretta."
+            : italianAuthMessage(verifyError.message),
+        );
+        resetCaptcha(captchaSlot.current);
+        return;
+      }
+    }
     const { error: updateError } = await supabase.auth.updateUser({ password });
     if (updateError) {
       setLoading(false);
       setError(italianAuthMessage(updateError.message));
       return;
     }
+    sessionStorage.removeItem(passwordRecoveryMark);
     await supabase.auth.signOut();
     setLoading(false);
     setState("fatto");
@@ -1900,8 +1954,22 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
           {state === "pronta" ? (
             <>
               <p className="login-note">
-                Scegli la nuova password del tuo account. Servono almeno 12 caratteri.
+                {needsCurrentPassword
+                  ? "Conferma la password attuale e poi scegli quella nuova (almeno 12 caratteri)."
+                  : "Scegli la nuova password del tuo account. Servono almeno 12 caratteri."}
               </p>
+              {needsCurrentPassword ? (
+                <label>
+                  Password attuale
+                  <input
+                    name="attuale"
+                    required
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="la password che usi oggi"
+                  />
+                </label>
+              ) : null}
               <label>
                 Nuova password
                 <input
@@ -1922,6 +1990,9 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
                   placeholder="ripeti la password"
                 />
               </label>
+              {isCaptchaEnabled ? (
+                <div className="login-captcha" ref={captchaSlot} aria-label="Verifica anti-bot" />
+              ) : null}
               {error ? (
                 <p className="login-error" role="alert">
                   {error}
@@ -2162,6 +2233,8 @@ function LoginScreen({
         return;
       }
 
+      // Un accesso normale non è un permesso di recupero: il segno non deve sopravvivere.
+      sessionStorage.removeItem(passwordRecoveryMark);
       setLoading(false);
       onSuccess(user);
       return;
