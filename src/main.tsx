@@ -37,6 +37,7 @@ import { pageForPath } from "./crm/routes";
 import { LEGAL_ENTITY, LegalPage, legalDocumentFor } from "./legal";
 import { privateStorage, setStorageOwner, clearPrivateStorage } from "./lib/privateStorage";
 import { isCaptchaEnabled, mountCaptcha, readCaptchaToken, resetCaptcha } from "./lib/captcha";
+import { isRecoveryGrantActive, recoveryGrantMs } from "./lib/recoveryGrant";
 import { StrictMode, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { createRoot, type Root } from "react-dom/client";
@@ -1826,10 +1827,8 @@ function italianAuthMessage(raw: string) {
   return raw || "Accesso non riuscito: controlla i dati o contatta un responsabile.";
 }
 
-// Quanto dura il permesso concesso dal link di recupero. Allo scadere si chiude anche la
-// sessione nata dal link: chi abbandona il recupero non lascia aperta una finestra per
-// cambiare password né un accesso al gestionale.
-const recoveryGrantMs = 15 * 60 * 1000;
+// Allo scadere non basta togliere il permesso: si chiude anche la sessione nata dal link,
+// così chi abbandona il recupero non resta collegato al gestionale.
 const recoveryExpiredMessage =
   "Il tempo per impostare la nuova password è scaduto e la sessione è stata chiusa: richiedi un nuovo link dalla pagina di accesso.";
 
@@ -1843,12 +1842,9 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
   const [recoveryUntil, setRecoveryUntil] = useState<number | null>(null);
   const captchaSlot = useRef<HTMLDivElement | null>(null);
 
-  function recoveryGrantActive(): boolean {
-    return recoveryUntil !== null && Date.now() < recoveryUntil;
-  }
   // Sessione normale, o permesso di recupero scaduto: senza la password attuale chiunque
   // abbia il browser aperto potrebbe prendere il controllo dell'account.
-  const needsCurrentPassword = state === "pronta" && !recoveryGrantActive();
+  const needsCurrentPassword = state === "pronta" && !isRecoveryGrantActive(recoveryUntil, Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -1938,7 +1934,7 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
     }
     // Scadenza raggiunta mentre il timer era in ritardo (scheda in secondo piano): il
     // controllo all'invio non si fa ingannare e chiude subito la sessione.
-    if (recoveryUntil !== null && !recoveryGrantActive()) {
+    if (recoveryUntil !== null && !isRecoveryGrantActive(recoveryUntil, Date.now())) {
       expireRecoveryGrant();
       return;
     }
@@ -1949,7 +1945,7 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
       setError("Accesso non disponibile: configura Supabase.");
       return;
     }
-    if (!recoveryGrantActive()) {
+    if (!isRecoveryGrantActive(recoveryUntil, Date.now())) {
       if (!attuale) {
         setLoading(false);
         setError("Scrivi la password attuale: serve a confermare che sei tu.");
