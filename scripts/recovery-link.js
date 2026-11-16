@@ -92,6 +92,30 @@ function generatePassword() {
   return `Fenix-${randomBytes(9).toString("base64url")}`;
 }
 
+/**
+ * Cerca l'account fra gli utenti del progetto. L'esistenza va accertata con una lettura, non
+ * dal testo di un errore, che il server può riformulare quando vuole. L'elenco è paginato:
+ * si scorre fino a un limite dichiarato invece di fidarsi della sola prima pagina.
+ */
+async function findUserByEmail(admin, email) {
+  const perPage = 1000;
+  const maxPages = 50;
+  const cercato = email.trim().toLowerCase();
+  for (let page = 1; page <= maxPages; page += 1) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) throw new Error(`Lettura degli utenti non riuscita: ${error.message}`);
+    const utenti = data?.users ?? [];
+    const trovato = utenti.find(
+      (utente) => String(utente.email || "").trim().toLowerCase() === cercato,
+    );
+    if (trovato) return trovato;
+    if (utenti.length < perPage) return null;
+  }
+  throw new Error(
+    `Elenco degli utenti più lungo di ${maxPages * perPage} voci: cerca l'account a mano invece di crearlo.`,
+  );
+}
+
 async function generateLinkFor(admin, email, redirectTo) {
   return admin.auth.admin.generateLink({ type: "recovery", email, options: { redirectTo } });
 }
@@ -121,8 +145,7 @@ async function main() {
   const redirectTo = options.local ? redirectLocale : redirectProduzione;
 
   let password = "";
-  let { data, error } = await generateLinkFor(admin, options.email, redirectTo);
-  if (error && /not found|user.*missing|does not exist/i.test(error.message)) {
+  if (!(await findUserByEmail(admin, options.email))) {
     if (!options.create) {
       throw new Error(
         `L'indirizzo ${options.email} non ha un account. Aggiungi --create per creare l'account di prova.`,
@@ -135,8 +158,8 @@ async function main() {
       email_confirm: true,
     });
     if (createError) throw new Error(`Creazione dell'account non riuscita: ${createError.message}`);
-    ({ data, error } = await generateLinkFor(admin, options.email, redirectTo));
   }
+  const { data, error } = await generateLinkFor(admin, options.email, redirectTo);
   if (error) throw new Error(`Generazione del link non riuscita: ${error.message}`);
   if (!data?.properties?.action_link) throw new Error("Supabase non ha restituito nessun link.");
 
