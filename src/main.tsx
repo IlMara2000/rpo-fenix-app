@@ -1826,10 +1826,12 @@ function italianAuthMessage(raw: string) {
   return raw || "Accesso non riuscito: controlla i dati o contatta un responsabile.";
 }
 
-// Quanto dura il permesso concesso dal link di recupero. Allo scadere il modulo torna a
-// chiedere la password attuale, come in una sessione normale: chi abbandona il recupero
-// non lascia aperta una finestra per cambiare password.
+// Quanto dura il permesso concesso dal link di recupero. Allo scadere si chiude anche la
+// sessione nata dal link: chi abbandona il recupero non lascia aperta una finestra per
+// cambiare password né un accesso al gestionale.
 const recoveryGrantMs = 15 * 60 * 1000;
+const recoveryExpiredMessage =
+  "Il tempo per impostare la nuova password è scaduto e la sessione è stata chiusa: richiedi un nuovo link dalla pagina di accesso.";
 
 function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: boolean) => void }) {
   const [state, setState] = useState<"verifica" | "pronta" | "fatto" | "negata">("verifica");
@@ -1888,10 +1890,7 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
 
   useEffect(() => {
     if (recoveryUntil === null) return;
-    const timer = window.setTimeout(
-      () => setRecoveryUntil(null),
-      Math.max(recoveryUntil - Date.now(), 0),
-    );
+    const timer = window.setTimeout(expireRecoveryGrant, Math.max(recoveryUntil - Date.now(), 0));
     return () => window.clearTimeout(timer);
   }, [recoveryUntil]);
 
@@ -1901,12 +1900,25 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
     if (container) mountCaptcha(container);
   }, [state]);
 
+  async function closeRecoverySession() {
+    const { supabase } = await import("./lib/supabase");
+    await supabase?.auth.signOut();
+  }
+
   // Chi ha aperto il link e poi ricaricato la pagina non ha più il gettone: senza uscire
   // resterebbe bloccato davanti a una password che non ricorda.
   async function backToRecovery() {
-    const { supabase } = await import("./lib/supabase");
-    await supabase?.auth.signOut();
+    await closeRecoverySession();
     navigate("/login", true);
+  }
+
+  // Scaduto il permesso, tenere aperto l'accesso non serve più a niente: si chiude subito
+  // la sessione e si riparte da un link nuovo.
+  function expireRecoveryGrant() {
+    setRecoveryUntil(null);
+    setError(recoveryExpiredMessage);
+    setState("negata");
+    void closeRecoverySession();
   }
 
   async function submitNewPassword(event: FormEvent<HTMLFormElement>) {
@@ -1922,6 +1934,12 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
     }
     if (password !== conferma) {
       setError("Le due password non coincidono.");
+      return;
+    }
+    // Scadenza raggiunta mentre il timer era in ritardo (scheda in secondo piano): il
+    // controllo all'invio non si fa ingannare e chiude subito la sessione.
+    if (recoveryUntil !== null && !recoveryGrantActive()) {
+      expireRecoveryGrant();
       return;
     }
     setLoading(true);
@@ -2050,11 +2068,7 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
                   {error}
                 </p>
               ) : null}
-              <button
-                className="primary-action form-button"
-                type="button"
-                onClick={() => navigate("/login", true)}
-              >
+              <button className="primary-action form-button" type="button" onClick={backToRecovery}>
                 Torna all'accesso
               </button>
             </>
