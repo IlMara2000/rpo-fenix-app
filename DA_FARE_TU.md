@@ -69,16 +69,17 @@ Due note tecniche:
   **Authentication → Passwords → Password requirements**, scegliendo
   `lower_upper_letters_digits_symbols`. La lunghezza minima di 12 è già attiva.
 
-## 2. "Password dimenticata" non esiste ancora nella pagina di accesso
+## 2. Recupero password: c'è
 
-Nella schermata di login c'è solo "Accedi": non c'è il collegamento per recuperare la
-password. Chi la dimentica oggi va servito a mano: **Supabase → Authentication → Users →
-utente → Reset password**, che gli manda l'email di recupero (l'indirizzo del sito ora è
-quello giusto, quindi il link funziona).
+Nella pagina di accesso c'è **"Password dimenticata?"**: si scrive l'indirizzo, Supabase
+manda l'email con il link, e il link porta alla schermata `/imposta-password` dove si
+sceglie la nuova password (almeno 12 caratteri, ripetuta due volte). Il link scade dopo
+un'ora e vale una sola volta.
 
-Aggiungere il pulsante non è solo un link: il link di recupero riporta l'utente alla
-pagina con un gettone da usare per scegliere la nuova password, quindi serve anche la
-schermata "imposta nuova password". Se vuoi lo faccio io, dimmelo e lo metto.
+Una cosa da sapere: le email di recupero partono dal servizio di posta di Supabase, che sul
+piano gratuito ha un limite stretto (pochissime email all'ora) e un aspetto poco
+riconoscibile. Se il gestionale cresce, conviene collegare un servizio di posta proprio
+(Resend, SendGrid o simili): si configura in Supabase → Authentication → Email.
 
 ## 3. Le due chiavi da rigenerare
 

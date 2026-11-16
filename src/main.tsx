@@ -1426,6 +1426,10 @@ function AppRouter() {
   const legalDocument = legalDocumentFor(path);
   if (legalDocument) return <LegalPage documentKey={legalDocument} />;
 
+  // Link di recupero password: la sessione nasce dal gettone nell'URL, quindi la
+  // schermata resta fuori da AuthBoundary e non richiede un accesso già attivo.
+  if (/^\/imposta-password\/?$/i.test(path)) return <ResetPasswordScreen navigate={navigate} />;
+
   let content: ReactNode = <CrmApp />;
   if (/^\/pws(?:\/|$)/i.test(path)) content = <PwsTool onNavigate={navigate} />;
   else if (/^\/planimetrie(?:\/|$)/.test(path)) content = <PlanimetrieTool onNavigate={navigate} />;
@@ -1816,7 +1820,167 @@ function italianAuthMessage(raw: string) {
   if (message.includes("email") && message.includes("invalid")) {
     return "Indirizzo email non valido.";
   }
+  if (message.includes("password should be at least") || message.includes("weak password")) {
+    return "La password è troppo corta: serve almeno 12 caratteri.";
+  }
+  if (message.includes("different from the old")) {
+    return "La nuova password deve essere diversa da quella precedente.";
+  }
   return raw || "Accesso non riuscito: controlla i dati o contatta un responsabile.";
+}
+
+function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: boolean) => void }) {
+  const [state, setState] = useState<"verifica" | "pronta" | "fatto" | "negata">("verifica");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function prepare() {
+      const { isSupabaseConfigured, supabase } = await import("./lib/supabase");
+      if (!isSupabaseConfigured || !supabase) {
+        if (cancelled) return;
+        setState("negata");
+        setError("Accesso non disponibile: configura Supabase.");
+        return;
+      }
+      const code = new URLSearchParams(window.location.search).get("code");
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (cancelled) return;
+        if (exchangeError) {
+          setState("negata");
+          setError("Link non valido o scaduto: richiedi un nuovo recupero dalla pagina di accesso.");
+          return;
+        }
+        window.history.replaceState(null, "", "/imposta-password");
+      }
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (!data.session) {
+        setState("negata");
+        setError("Link non valido o scaduto: richiedi un nuovo recupero dalla pagina di accesso.");
+        return;
+      }
+      // Toglie il gettone dalla barra degli indirizzi: non serve più e non va lasciato in giro.
+      window.history.replaceState(null, "", "/imposta-password");
+      setState("pronta");
+    }
+    void prepare();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function submitNewPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    const form = new FormData(event.currentTarget);
+    const password = String(form.get("password") || "");
+    const conferma = String(form.get("conferma") || "");
+    if (password.length < 12) {
+      setError("La password deve avere almeno 12 caratteri.");
+      return;
+    }
+    if (password !== conferma) {
+      setError("Le due password non coincidono.");
+      return;
+    }
+    setLoading(true);
+    const { supabase } = await import("./lib/supabase");
+    if (!supabase) {
+      setLoading(false);
+      setError("Accesso non disponibile: configura Supabase.");
+      return;
+    }
+    const { error: updateError } = await supabase.auth.updateUser({ password });
+    if (updateError) {
+      setLoading(false);
+      setError(italianAuthMessage(updateError.message));
+      return;
+    }
+    await supabase.auth.signOut();
+    setLoading(false);
+    setState("fatto");
+  }
+
+  return (
+    <main className="login-screen">
+      <section className="login-panel" aria-label="Imposta una nuova password">
+        <form className="login-form" onSubmit={submitNewPassword}>
+          <h2 className="login-form-title">Nuova password</h2>
+          {state === "verifica" ? <p className="login-note">Verifica del link in corso…</p> : null}
+          {state === "pronta" ? (
+            <>
+              <p className="login-note">
+                Scegli la nuova password del tuo account. Servono almeno 12 caratteri.
+              </p>
+              <label>
+                Nuova password
+                <input
+                  name="password"
+                  required
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={12}
+                  placeholder="almeno 12 caratteri"
+                />
+              </label>
+              <label>
+                Ripeti la nuova password
+                <input
+                  name="conferma"
+                  required
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={12}
+                  placeholder="ripeti la password"
+                />
+              </label>
+              {error ? (
+                <p className="login-error" role="alert">
+                  {error}
+                </p>
+              ) : null}
+              <button className="primary-action form-button" type="submit" disabled={loading}>
+                {loading ? "Salvataggio..." : "Salva la nuova password"}
+              </button>
+            </>
+          ) : null}
+          {state === "fatto" ? (
+            <>
+              <p className="login-note">
+                Password aggiornata. Puoi entrare nel gestionale con la nuova password.
+              </p>
+              <button
+                className="primary-action form-button"
+                type="button"
+                onClick={() => navigate("/login", true)}
+              >
+                Vai all'accesso
+              </button>
+            </>
+          ) : null}
+          {state === "negata" ? (
+            <>
+              {error ? (
+                <p className="login-error" role="alert">
+                  {error}
+                </p>
+              ) : null}
+              <button
+                className="primary-action form-button"
+                type="button"
+                onClick={() => navigate("/login", true)}
+              >
+                Torna all'accesso
+              </button>
+            </>
+          ) : null}
+        </form>
+      </section>
+    </main>
+  );
 }
 
 function LoginScreen({
@@ -1830,7 +1994,9 @@ function LoginScreen({
 }) {
   const [error, setError] = useState(notice);
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"login" | "recupero" | "inviata">("login");
   const captchaSlot = useRef<HTMLDivElement | null>(null);
+  const recoveryCaptchaSlot = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setError(notice);
@@ -1840,6 +2006,12 @@ function LoginScreen({
     const container = captchaSlot.current;
     if (container) mountCaptcha(container);
   }, []);
+
+  useEffect(() => {
+    if (mode !== "recupero") return;
+    const container = recoveryCaptchaSlot.current;
+    if (container) mountCaptcha(container);
+  }, [mode]);
 
   async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1927,6 +2099,38 @@ function LoginScreen({
     setError("Accesso non disponibile: configura Supabase.");
   }
 
+  async function submitRecovery(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") || "").trim().toLowerCase();
+    const captchaToken = readCaptchaToken(recoveryCaptchaSlot.current);
+    if (isCaptchaEnabled && !captchaToken) {
+      setLoading(false);
+      setError("Completa la verifica anti-bot prima di inviare la richiesta.");
+      return;
+    }
+    const { isSupabaseConfigured, supabase } = await import("./lib/supabase");
+    if (!isSupabaseConfigured || !supabase) {
+      setLoading(false);
+      setError("Accesso non disponibile: configura Supabase.");
+      return;
+    }
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/imposta-password`,
+      ...(captchaToken ? { captchaToken } : {}),
+    });
+    setLoading(false);
+    if (resetError) {
+      setError(italianAuthMessage(resetError.message));
+      resetCaptcha(recoveryCaptchaSlot.current);
+      return;
+    }
+    // Conferma generica: non si rivela se l'indirizzo è registrato o no.
+    setMode("inviata");
+  }
+
   return (
     <main className="login-screen">
       {onBack && <button className="back-link button-reset" type="button" onClick={onBack}>
@@ -1959,6 +2163,7 @@ function LoginScreen({
             </span>
           </div>
         </div>
+        {mode === "login" ? (
         <form className="login-form" onSubmit={submitLogin}>
           <label>
             Email
@@ -1991,6 +2196,16 @@ function LoginScreen({
           <button className="primary-action form-button" type="submit" disabled={loading}>
             {loading ? "Verifica..." : "Accedi a Fenix Suite"}
           </button>
+          <button
+            className="login-switch button-reset"
+            type="button"
+            onClick={() => {
+              setError("");
+              setMode("recupero");
+            }}
+          >
+            Password dimenticata?
+          </button>
           <p className="login-note">
             Le credenziali sono gestite da Supabase Auth: la password non è memorizzata in
             chiaro nell'applicazione.
@@ -2003,6 +2218,68 @@ function LoginScreen({
             <a href="/note-legali">Note legali</a>
           </p>
         </form>
+        ) : null}
+        {mode === "recupero" ? (
+          <form className="login-form" onSubmit={submitRecovery}>
+            <h2 className="login-form-title">Recupera l'accesso</h2>
+            <p className="login-note">
+              Scrivi l'indirizzo del tuo account: riceverai un'email con il link per scegliere
+              una nuova password. Il link scade dopo un'ora e vale una sola volta.
+            </p>
+            <label>
+              Email
+              <input
+                name="email"
+                required
+                type="email"
+                autoComplete="username"
+                placeholder="nome@grfenix.com"
+              />
+            </label>
+            {isCaptchaEnabled ? (
+              <div
+                className="login-captcha"
+                ref={recoveryCaptchaSlot}
+                aria-label="Verifica anti-bot"
+              />
+            ) : null}
+            {error ? (
+              <p className="login-error" role="alert">
+                {error}
+              </p>
+            ) : null}
+            <button className="primary-action form-button" type="submit" disabled={loading}>
+              {loading ? "Invio..." : "Invia il link di recupero"}
+            </button>
+            <button
+              className="login-switch button-reset"
+              type="button"
+              onClick={() => {
+                setError("");
+                setMode("login");
+              }}
+            >
+              Torna all'accesso
+            </button>
+          </form>
+        ) : null}
+        {mode === "inviata" ? (
+          <div className="login-form" role="status">
+            <h2 className="login-form-title">Controlla la posta</h2>
+            <p className="login-note">
+              Se l'indirizzo è registrato riceverai entro pochi minuti un'email con il link per
+              impostare una nuova password. Se non arriva, controlla la cartella spam o chiedi a
+              un responsabile di reimpostarla.
+            </p>
+            <button
+              className="primary-action form-button"
+              type="button"
+              onClick={() => setMode("login")}
+            >
+              Torna all'accesso
+            </button>
+          </div>
+        ) : null}
       </section>
     </main>
   );
