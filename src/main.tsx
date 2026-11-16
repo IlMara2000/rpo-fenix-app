@@ -1826,32 +1826,22 @@ function italianAuthMessage(raw: string) {
   return raw || "Accesso non riuscito: controlla i dati o contatta un responsabile.";
 }
 
-const passwordRecoveryMark = "fenix-suite-password-recovery";
-
-/**
- * Il link di recupero lascia `type=recovery` nel frammento dell'URL: è l'unico segnale
- * che distingue una sessione nata dal gettone da un accesso normale. Il segno resta per
- * la scheda, così ricaricare la pagina non chiede una password che l'utente non ha.
- */
-function hasRecoveryGrant(): boolean {
-  if (window.location.hash.includes("type=recovery")) {
-    sessionStorage.setItem(passwordRecoveryMark, "1");
-    return true;
-  }
-  return sessionStorage.getItem(passwordRecoveryMark) === "1";
-}
-
 function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: boolean) => void }) {
   const [state, setState] = useState<"verifica" | "pronta" | "fatto" | "negata">("verifica");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [needsCurrentPassword, setNeedsCurrentPassword] = useState(false);
+  // Unica prova che la sessione non è un accesso normale: il client annuncia
+  // PASSWORD_RECOVERY solo dopo aver scambiato col server un gettone di recupero.
+  // Scrivere `type=recovery` nell'indirizzo non basta, quindi non si può aggirare.
+  const [fromRecoveryLink, setFromRecoveryLink] = useState(false);
   const captchaSlot = useRef<HTMLDivElement | null>(null);
+  // Sessione normale: senza la password attuale chiunque abbia il browser aperto
+  // potrebbe prendere il controllo dell'account.
+  const needsCurrentPassword = state === "pronta" && !fromRecoveryLink;
 
   useEffect(() => {
     let cancelled = false;
-    // Va letto prima di importare il client: detectSessionInUrl consuma il frammento.
-    const fromRecoveryLink = hasRecoveryGrant();
+    let unsubscribe: (() => void) | null = null;
     void (async () => {
       const { isSupabaseConfigured, supabase } = await import("./lib/supabase");
       if (cancelled) return;
@@ -1860,8 +1850,14 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
         setState("negata");
         return;
       }
-      // Il gettone del link viene letto da detectSessionInUrl all'avvio: se non
-      // esiste una sessione, il link è scaduto, rovinato o già usato.
+      // L'evento arriva all'avvio, quando il client scambia il gettone: senza un
+      // iscritto andrebbe perso. Se non arriva, si chiede la password attuale.
+      const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+        if (event === "PASSWORD_RECOVERY") setFromRecoveryLink(true);
+      });
+      unsubscribe = () => listener.subscription.unsubscribe();
+      // Il gettone viene scambiato all'avvio da detectSessionInUrl: se non resta una
+      // sessione, il link è scaduto, rovinato o già usato.
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
       if (!data.session) {
@@ -1869,13 +1865,15 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
         setState("negata");
         return;
       }
-      // Il gettone non serve più: si toglie dalla barra degli indirizzi.
-      window.history.replaceState(null, "", "/imposta-password");
-      setNeedsCurrentPassword(!fromRecoveryLink);
+      // Un turno d'attesa, così l'annuncio del client è già stato ricevuto: il campo
+      // "Password attuale" non appare per un istante a chi arriva dal link.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      if (cancelled) return;
       setState("pronta");
     })();
     return () => {
       cancelled = true;
+      unsubscribe?.();
     };
   }, []);
 
@@ -1884,6 +1882,14 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
     const container = captchaSlot.current;
     if (container) mountCaptcha(container);
   }, [state]);
+
+  // Chi ha aperto il link e poi ricaricato la pagina non ha più il gettone: senza uscire
+  // resterebbe bloccato davanti a una password che non ricorda.
+  async function backToRecovery() {
+    const { supabase } = await import("./lib/supabase");
+    await supabase?.auth.signOut();
+    navigate("/login", true);
+  }
 
   async function submitNewPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1907,8 +1913,6 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
       setError("Accesso non disponibile: configura Supabase.");
       return;
     }
-    // Sessione normale: senza la password attuale chiunque abbia il browser aperto
-    // potrebbe prendere il controllo dell'account.
     if (needsCurrentPassword) {
       if (!attuale) {
         setLoading(false);
@@ -1939,7 +1943,6 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
       setError(italianAuthMessage(updateError.message));
       return;
     }
-    sessionStorage.removeItem(passwordRecoveryMark);
     await supabase.auth.signOut();
     setLoading(false);
     setState("fatto");
@@ -2001,6 +2004,11 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
               <button className="primary-action form-button" type="submit" disabled={loading}>
                 {loading ? "Salvataggio..." : "Salva la nuova password"}
               </button>
+              {needsCurrentPassword ? (
+                <button className="login-switch button-reset" type="button" onClick={backToRecovery}>
+                  Non conosci la password attuale? Ricevi un nuovo link
+                </button>
+              ) : null}
             </>
           ) : null}
           {state === "fatto" ? (
@@ -2233,8 +2241,6 @@ function LoginScreen({
         return;
       }
 
-      // Un accesso normale non è un permesso di recupero: il segno non deve sopravvivere.
-      sessionStorage.removeItem(passwordRecoveryMark);
       setLoading(false);
       onSuccess(user);
       return;
