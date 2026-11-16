@@ -1,6 +1,6 @@
 # CYBORG CENS nel Censimento GRFenix
 
-Il Censimento contiene lo strumento **CYBORG CENS**, che incorpora il pannello originale dell'estensione. Tutte le funzioni condividono DB, PDF e sessioni del popup installato. Il codice delle automazioni resta nell'estensione: la pagina web non acquisisce accesso generale alle schede del browser.
+Il Censimento contiene lo strumento **CYBORG CENS**. Il gestionale gestisce in proprio il database dei record, le sessioni, l'esportazione (CSV) e l'anteprima/importazione nel Censimento: queste funzioni restano disponibili anche quando l'estensione non è collegata, con i dati salvati nel browser dell'account. Quando l'estensione CYBORG CENS è collegata, il suo pannello completo resta incorporato per le sole automazioni sulle schede esterne (Sister, Area, CercaOra, iniezioni e simili): il codice delle automazioni resta nell'estensione e la pagina web non acquisisce accesso generale alle schede del browser.
 
 ## Attivazione
 
@@ -8,10 +8,10 @@ Il Censimento contiene lo strumento **CYBORG CENS**, che incorpora il pannello o
 2. Avviare la versione aggiornata di GRFenix e ricaricare la pagina.
 3. Aprire **Censimento → CYBORG CENS**.
 4. Aprire Area o Sister in una scheda separata, effettuare l'accesso e scegliere la **Scheda operativa** nel pannello. Aggiornare la lista se si aprono altre schede.
-5. Usare i comandi esistenti, comprese le sessioni e CHECK AREA. Per quest'ultimo partire dalla prima pagina e togliere i filtri se si vuole controllare l'intero elenco.
-6. **IMPORTA DB IN CENSIMENTO** trasferisce il DB attualmente caricato a GRFenix. Controllare il riepilogo e confermare per aggiungere i contatti e gli immobili al salvataggio CRM del proprio account.
+5. Usare il pannello dell'estensione per le automazioni e per CHECK AREA. Per quest'ultimo partire dalla prima pagina e togliere i filtri se si vuole controllare l'intero elenco.
+6. **Importare nel Censimento** dal gestionale: usa il database dei record e le sessioni salvati nel gestionale (o importati da file). Se l'estensione è collegata, il pulsante **IMPORTA DB IN CENSIMENTO** del pannello estensione invia il DB corrente al gestionale, che ne tiene una copia e mostra l'anteprima prima del salvataggio.
 
-L'importazione conserva le schede esistenti: i record riconosciuti come duplicati non vengono sovrascritti. Ogni record importato conserva il sorgente in `details.cyborgOriginalRecord`. Le sessioni complete restano nello storage dell'estensione e possono essere salvate, caricate ed esportate dal pannello.
+L'importazione conserva le schede esistenti: i record riconosciuti come duplicati non vengono sovrascritti. Ogni record importato conserva il sorgente in `details.cyborgOriginalRecord`. Le sessioni possono essere salvate, caricate, esportate e importate nel gestionale (formato compatibile con i file `.cyborg-cens-session.json` dell'estensione); le sessioni presenti solo nello storage dell'estensione restano gestibili dal pannello estensione quando è collegato.
 
 ## Collegamento
 

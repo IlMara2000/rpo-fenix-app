@@ -259,10 +259,22 @@
 .workspace-shell .census-site-blocked > a { display: inline-flex; align-items: center; gap: 7px; min-height: 34px !important; padding: 7px 14px !important; border-radius: 7px !important; background: var(--red) !important; color: #fff !important; font-size: 12px !important; text-decoration: none; }
 .workspace-shell .census-site-blocked-note { font-size: 11.5px; color: #8b95a4; }
 .workspace-shell .cyborg-workspace { border: 1px solid #ffffff18; border-radius: 10px; overflow: hidden; background: #141820; }
-.workspace-shell .cyborg-workspace > header, .workspace-shell .cyborg-import-preview { padding: 16px; }
-.workspace-shell .cyborg-workspace p { font-size: 12px; line-height: 1.6; }
+.workspace-shell .cyborg-workspace > header, .workspace-shell .cyborg-import-preview, .workspace-shell .cyborg-local-db, .workspace-shell .cyborg-sessions, .workspace-shell .cyborg-automation { padding: 16px; }
+.workspace-shell .cyborg-local-db, .workspace-shell .cyborg-sessions, .workspace-shell .cyborg-automation { border-top: 1px solid #ffffff18; display: grid; gap: 10px; }
+.workspace-shell .cyborg-workspace h3 { margin: 0; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; }
+.workspace-shell .cyborg-workspace p { font-size: 12px; line-height: 1.6; margin: 0; }
 .workspace-shell .cyborg-workspace button { margin: 4px 8px 4px 0; padding: 8px 12px; border: 1px solid #ffffff30; border-radius: 6px; color: inherit; background: #ffffff10; cursor: pointer; }
+.workspace-shell .cyborg-workspace button:disabled { opacity: 0.45; cursor: not-allowed; }
+.workspace-shell .cyborg-workspace input[type="text"] { margin-left: 6px; padding: 7px 10px; border: 1px solid #ffffff30; border-radius: 6px; color: inherit; background: #0f172a; font-size: 12px; }
+.workspace-shell .cyborg-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .workspace-shell .cyborg-import-preview { border-block: 1px solid #38bdf8; }
+.workspace-shell .cyborg-table-wrap { overflow: auto; max-height: 420px; border: 1px solid #ffffff18; border-radius: 8px; }
+.workspace-shell .cyborg-records-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.workspace-shell .cyborg-records-table th, .workspace-shell .cyborg-records-table td { padding: 6px 8px; border-bottom: 1px solid #ffffff12; text-align: left; white-space: nowrap; }
+.workspace-shell .cyborg-records-table th { position: sticky; top: 0; background: #1b2130; }
+.workspace-shell .cyborg-session-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.workspace-shell .cyborg-session-list li { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid #ffffff18; border-radius: 8px; background: #10151d; }
+.workspace-shell .cyborg-session-list li > div:first-child { display: grid; gap: 2px; font-size: 12px; }
 .workspace-shell .cyborg-frame { width: 100%; height: max(720px, calc(100svh - 260px)); border: 0; background: #0f172a; }
 
 .workspace-shell .vault-archive { display: grid; gap: 22px; min-width: 0; }
