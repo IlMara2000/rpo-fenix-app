@@ -1744,6 +1744,7 @@ textarea:focus {
 }
 
 .login-form {
+  position: relative;
   display: grid;
   gap: 18px;
   align-self: center;
@@ -1753,10 +1754,21 @@ textarea:focus {
   background: rgba(8, 9, 12, 0.62);
 }
 
+/* Il riquadro anti-bot resta fuori dal flusso finché non ha qualcosa da mostrare. */
 .login-captcha {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.login-captcha.is-visible {
+  position: static;
   display: grid;
   justify-items: start;
-  min-height: 65px;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .login-error {

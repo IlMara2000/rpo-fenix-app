@@ -41,8 +41,12 @@ del tetto di 10 generazioni AI al giorno. Ci sono tutte.
 ## 1. Il captcha: mancano solo le due chiavi
 
 Il widget è già collegato al form di accesso e la regola di sicurezza del sito lo lascia
-caricare: mancano le chiavi del fornitore, perché senza quelle non posso né disegnare il
-riquadro né far verificare il gettone a Supabase.
+caricare: mancano le chiavi del fornitore, perché senza quelle non posso né chiedere il
+gettone né farlo verificare a Supabase.
+
+Il riquadro resta **invisibile**: non occupa spazio nel form e compare soltanto se
+Cloudflare decide che serve un'azione dell'utente. Con hCaptcha, per avere lo stesso
+risultato, il sito va creato come «Invisible» nella loro dashboard.
 
 1. crea il sito su Cloudflare Turnstile (gratuito) o hCaptcha e prendi le **due** chiavi:
    quella pubblica del sito e quella segreta;

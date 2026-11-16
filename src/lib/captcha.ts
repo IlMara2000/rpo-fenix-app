@@ -76,6 +76,20 @@ function loadProviderScript(provider: CaptchaProvider): Promise<void> {
 }
 
 /**
+ * Modalità invisibile: il riquadro non occupa spazio e compare solo se il fornitore
+ * chiede davvero un'azione all'utente.
+ * - Turnstile: `appearance: "interaction-only"` vale per qualunque chiave;
+ * - hCaptcha: `size: "invisible"` richiede un sito creato come "Invisible" nella
+ *   loro dashboard, altrimenti si ripiega sul riquadro normale.
+ */
+function renderOptions(provider: CaptchaProvider): Record<string, unknown> {
+  const base = { sitekey: siteKeyValue, theme: "dark" };
+  return provider === "turnstile"
+    ? { ...base, appearance: "interaction-only" }
+    : { ...base, size: "invisible" };
+}
+
+/**
  * Disegna il widget una sola volta nel contenitore indicato.
  * Chiamato più volte (React in modalità strict monta due volte) non duplica il widget.
  */
@@ -89,16 +103,33 @@ export function mountCaptcha(container: HTMLElement): void {
     .then(() => {
       const api = captureApi(provider);
       if (!api) throw new Error("captcha-api");
-      const widgetId = api.render(container, {
-        sitekey: siteKeyValue,
-        theme: "dark",
-      });
+      let widgetId: string;
+      try {
+        widgetId = api.render(container, renderOptions(provider));
+      } catch {
+        // Configurazione invisibile non ammessa dalla chiave: riquadro normale.
+        widgetId = api.render(container, { sitekey: siteKeyValue, theme: "dark" });
+      }
       container.dataset.captchaWidgetId = widgetId;
+      watchVisibility(container);
     })
     .catch(() => {
       // Widget non disponibile: l'accesso resta possibile, il server deciderà.
       delete container.dataset.captchaMounted;
     });
+}
+
+/**
+ * Finché il riquadro è vuoto resta fuori dal flusso del form (nessuno spazio sprecato);
+ * quando Cloudflare chiede un'azione prende il suo posto tra i campi.
+ */
+function watchVisibility(container: HTMLElement): void {
+  if (typeof ResizeObserver === "undefined") return;
+  const observer = new ResizeObserver(() => {
+    const height = container.getBoundingClientRect().height;
+    container.classList.toggle("is-visible", height > 1);
+  });
+  observer.observe(container);
 }
 
 const tokenFields: Record<CaptchaProvider, string> = {
