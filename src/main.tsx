@@ -1826,6 +1826,11 @@ function italianAuthMessage(raw: string) {
   return raw || "Accesso non riuscito: controlla i dati o contatta un responsabile.";
 }
 
+// Quanto dura il permesso concesso dal link di recupero. Allo scadere il modulo torna a
+// chiedere la password attuale, come in una sessione normale: chi abbandona il recupero
+// non lascia aperta una finestra per cambiare password.
+const recoveryGrantMs = 15 * 60 * 1000;
+
 function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: boolean) => void }) {
   const [state, setState] = useState<"verifica" | "pronta" | "fatto" | "negata">("verifica");
   const [error, setError] = useState("");
@@ -1833,11 +1838,15 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
   // Unica prova che la sessione non è un accesso normale: il client annuncia
   // PASSWORD_RECOVERY solo dopo aver scambiato col server un gettone di recupero.
   // Scrivere `type=recovery` nell'indirizzo non basta, quindi non si può aggirare.
-  const [fromRecoveryLink, setFromRecoveryLink] = useState(false);
+  const [recoveryUntil, setRecoveryUntil] = useState<number | null>(null);
   const captchaSlot = useRef<HTMLDivElement | null>(null);
-  // Sessione normale: senza la password attuale chiunque abbia il browser aperto
-  // potrebbe prendere il controllo dell'account.
-  const needsCurrentPassword = state === "pronta" && !fromRecoveryLink;
+
+  function recoveryGrantActive(): boolean {
+    return recoveryUntil !== null && Date.now() < recoveryUntil;
+  }
+  // Sessione normale, o permesso di recupero scaduto: senza la password attuale chiunque
+  // abbia il browser aperto potrebbe prendere il controllo dell'account.
+  const needsCurrentPassword = state === "pronta" && !recoveryGrantActive();
 
   useEffect(() => {
     let cancelled = false;
@@ -1853,7 +1862,7 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
       // L'evento arriva all'avvio, quando il client scambia il gettone: senza un
       // iscritto andrebbe perso. Se non arriva, si chiede la password attuale.
       const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-        if (event === "PASSWORD_RECOVERY") setFromRecoveryLink(true);
+        if (event === "PASSWORD_RECOVERY") setRecoveryUntil(Date.now() + recoveryGrantMs);
       });
       unsubscribe = () => listener.subscription.unsubscribe();
       // Il gettone viene scambiato all'avvio da detectSessionInUrl: se non resta una
@@ -1876,6 +1885,15 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
       unsubscribe?.();
     };
   }, []);
+
+  useEffect(() => {
+    if (recoveryUntil === null) return;
+    const timer = window.setTimeout(
+      () => setRecoveryUntil(null),
+      Math.max(recoveryUntil - Date.now(), 0),
+    );
+    return () => window.clearTimeout(timer);
+  }, [recoveryUntil]);
 
   useEffect(() => {
     if (state !== "pronta") return;
@@ -1913,7 +1931,7 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
       setError("Accesso non disponibile: configura Supabase.");
       return;
     }
-    if (needsCurrentPassword) {
+    if (!recoveryGrantActive()) {
       if (!attuale) {
         setLoading(false);
         setError("Scrivi la password attuale: serve a confermare che sei tu.");
@@ -1959,7 +1977,7 @@ function ResetPasswordScreen({ navigate }: { navigate: (path: string, replace?: 
               <p className="login-note">
                 {needsCurrentPassword
                   ? "Conferma la password attuale e poi scegli quella nuova (almeno 12 caratteri)."
-                  : "Scegli la nuova password del tuo account. Servono almeno 12 caratteri."}
+                  : `Scegli la nuova password del tuo account. Servono almeno 12 caratteri e ${recoveryGrantMs / 60000} minuti di tempo.`}
               </p>
               {needsCurrentPassword ? (
                 <label>
