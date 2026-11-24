@@ -93,7 +93,7 @@ test("migrazione: crea il proprietario, lo collega all'immobile e ricostruisce l
   assert.equal(migrated.contacts.length, 1);
   assert.equal(migrated.contacts[0].name, "Mario Rossi");
   assert.equal(migrated.properties[0].ownerContactId, migrated.contacts[0].id);
-  assert.deepEqual(report.linkedProperties, ["FS-001 · Via Roma 10"]);
+  assert.equal(report.linkedProperties, 1);
 
   assert.equal(migrated.mandates.length, 1);
   const mandate = migrated.mandates[0];

@@ -13,6 +13,7 @@ import {
 import {
   addDays,
   addMonths,
+  dealStageOrder,
   leaseDeadlines,
   leaseTypeOptions,
   mandateExclusivityOptions,
@@ -43,12 +44,8 @@ type OperationsViewProps = {
   onOpenModule: (moduleKey: WorkspaceModuleKey, pageKey?: string, filterTerm?: string) => void;
 };
 
-function propertyOptionLabel(property: PropertyRecord) {
-  return property.code ? `${property.code} · ${property.title}` : property.title;
-}
-
 function findPropertyByLabel(data: CrmData, label: string) {
-  return data.properties.find((property) => propertyOptionLabel(property) === label);
+  return data.properties.find((property) => propertyLabel(property) === label);
 }
 
 function propertyOf(data: CrmData, propertyId: string) {
@@ -146,7 +143,7 @@ export function AcquisitionView({ pageKey, query, data, onCommit, onAction }: Op
       title: "Nuovo incarico",
       description: "Il mandato e' l'oggetto che autorizza a vendere o locare: senza, l'immobile non e' in portafoglio.",
       fields: [
-        { name: "property", label: "Immobile", type: "select", required: true, options: data.properties.map(propertyOptionLabel), placeholder: "Seleziona immobile" },
+        { name: "property", label: "Immobile", type: "select", required: true, options: data.properties.map(propertyLabel), placeholder: "Seleziona immobile" },
         { name: "type", label: "Tipo", type: "select", required: true, options: ["Vendita", "Locazione"] },
         { name: "exclusivity", label: "Forma dell'incarico", type: "select", required: true, options: mandateExclusivityOptions },
         { name: "askingPrice", label: "Prezzo o canone richiesto", type: "number" },
@@ -378,14 +375,14 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
     .slice()
     .sort((first, second) => first.expiryDate.localeCompare(second.expiryDate));
 
-  const stages = ["Proposta", "Controproposta", "Accettata", "Compromesso", "Rogito", "Chiusa", "Persa"] as const;
+  const stages = [...dealStageOrder, "Persa"];
 
   const sections: StructuredFormSection[] = [
     {
       title: "Nuova proposta",
       description: "La proposta e' un impegno con una scadenza: registrala subito, cosi' non si perde nessun esito.",
       fields: [
-        { name: "property", label: "Immobile", type: "select", required: true, options: data.properties.map(propertyOptionLabel), placeholder: "Seleziona immobile" },
+        { name: "property", label: "Immobile", type: "select", required: true, options: data.properties.map(propertyLabel), placeholder: "Seleziona immobile" },
         { name: "clientName", label: "Acquirente o conduttore", required: true },
         { name: "type", label: "Tipo", type: "select", required: true, options: ["Vendita", "Affitto"] },
         { name: "offerAmount", label: "Importo offerto", type: "number", required: true },
@@ -602,7 +599,7 @@ export function LeasesView({ pageKey, query, data, onCommit, onAction }: Operati
       title: "Nuovo contratto di locazione",
       description: "Registrazione entro 30 giorni, disdetta 6 mesi prima della scadenza: le scadenze si calcolano da qui.",
       fields: [
-        { name: "property", label: "Immobile", type: "select", required: true, options: data.properties.map(propertyOptionLabel), placeholder: "Seleziona immobile" },
+        { name: "property", label: "Immobile", type: "select", required: true, options: data.properties.map(propertyLabel), placeholder: "Seleziona immobile" },
         { name: "tenantName", label: "Inquilino", required: true },
         { name: "contractType", label: "Tipo contratto", type: "select", required: true, options: leaseTypeOptions },
         { name: "rent", label: "Canone mensile", type: "number", required: true },
@@ -858,7 +855,7 @@ export function LeasesView({ pageKey, query, data, onCommit, onAction }: Operati
 /* Sedi                                                                */
 /* ------------------------------------------------------------------ */
 
-export function OfficesView({ data, onCommit, onAction }: Pick<OperationsViewProps, "data" | "onCommit" | "onAction"> & { pageKey?: string }) {
+export function OfficesView({ data, onCommit, onAction }: Pick<OperationsViewProps, "data" | "onCommit" | "onAction">) {
   const sections: StructuredFormSection[] = [
     {
       title: "Nuova sede",
@@ -1003,7 +1000,7 @@ export function MigrationPanel({
   }
 
   const totalChanges =
-    report.ownerContacts + report.mandates + report.leases + report.deals + report.linkedProperties.length;
+    report.ownerContacts + report.mandates + report.leases + report.deals + report.linkedProperties;
 
   return (
     <section className="area-card area-actions-card">
@@ -1021,7 +1018,7 @@ export function MigrationPanel({
         <div className="migration-summary">
           <MigrationStat value={report.offices} label="Sedi" />
           <MigrationStat value={report.ownerContacts} label="Proprietari creati" />
-          <MigrationStat value={report.linkedProperties.length} label="Immobili collegati" />
+          <MigrationStat value={report.linkedProperties} label="Immobili collegati" />
           <MigrationStat value={report.mandates} label="Incarichi" />
           <MigrationStat value={report.leases} label="Contratti" />
           <MigrationStat value={report.deals} label="Trattative" />

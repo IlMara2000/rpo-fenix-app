@@ -6,6 +6,7 @@ import {
   defaultOfficeId,
   formatDateIt,
   leaseDeadlines,
+  leaseTypeOptions,
   mandateState,
   propertyLabel,
   suggestedLeaseEnd,
@@ -36,12 +37,11 @@ export type MigrationReport = {
   ownerContacts: number;
   notes: string[];
   /** Dettaglio leggibile nell'anteprima, prima di applicare la migrazione. */
-  officeNames: string[];
   ownerContactNames: string[];
   mandateDetails: string[];
   leaseDetails: string[];
   dealDetails: string[];
-  linkedProperties: string[];
+  linkedProperties: number;
 };
 
 /** Anteprima senza effetti: calcola il report di cosa verrebbe creato o collegato. */
@@ -65,11 +65,6 @@ function slug(value: string) {
     .slice(0, 60);
 }
 
-function numeric(value?: string) {
-  const parsed = Number.parseFloat(String(value || "").replace(/\./g, "").replace(",", "."));
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
 function ownerNames(property: PropertyRecord) {
   return property.owner
     .split(",")
@@ -80,6 +75,22 @@ function ownerNames(property: PropertyRecord) {
 function findContactByName(contacts: ContactRecord[], name: string) {
   const needle = name.trim().toLowerCase();
   return contacts.find((contact) => contact.name.trim().toLowerCase() === needle);
+}
+
+const mandateExclusivities: MandateExclusivity[] = ["Esclusiva", "Non esclusiva", "Collaborazione", "Segnalazione"];
+
+function normalizeExclusivity(value?: string): MandateExclusivity {
+  const raw = (value || "").trim();
+  if (/esclusiva/i.test(raw) && !/non/i.test(raw)) {
+    return "Esclusiva";
+  }
+  return mandateExclusivities.includes(raw as MandateExclusivity)
+    ? (raw as MandateExclusivity)
+    : "Non esclusiva";
+}
+
+function normalizeContractType(value?: string): LeaseType {
+  return leaseTypeOptions.includes(value as LeaseType) ? (value as LeaseType) : "4+4 canone libero";
 }
 
 /** Ricostruisce gli oggetti operativi dagli archivi esistenti. */
@@ -94,12 +105,11 @@ export function migrateOperationsData(data: CrmData, today = new Date()): Operat
         deals: data.deals?.length ?? 0,
         ownerContacts: 0,
         notes: [],
-        officeNames: (data.offices ?? []).map((office) => office.name),
         ownerContactNames: [],
         mandateDetails: [],
         leaseDetails: [],
         dealDetails: [],
-        linkedProperties: [],
+        linkedProperties: 0,
       },
       changed: false,
     };
@@ -116,8 +126,8 @@ export function migrateOperationsData(data: CrmData, today = new Date()): Operat
   const mandateDetails: string[] = [];
   const leaseDetails: string[] = [];
   const dealDetails: string[] = [];
-  const linkedPropertyLabels: string[] = [];
   let ownerContacts = 0;
+  let linkedPropertiesCount = 0;
 
   // 1. Ogni proprietario citato su un immobile diventa una persona in rubrica,
   //    con un id stabile, cosi' la scheda persona mostra subito i suoi immobili.
@@ -151,7 +161,7 @@ export function migrateOperationsData(data: CrmData, today = new Date()): Operat
       }
       if (index === 0) {
         propertyOwnerIds.set(property.id, contact.id);
-        linkedPropertyLabels.push(propertyLabel(property));
+        linkedPropertiesCount += 1;
       }
     });
     if (names.length === 0) {
@@ -174,22 +184,19 @@ export function migrateOperationsData(data: CrmData, today = new Date()): Operat
       return;
     }
     const type: MandateType = property.kind === "affitto" ? "Locazione" : "Vendita";
-    const exclusivity = /esclusiva/i.test(details.mandateType || "") && !/non/i.test(details.mandateType || "")
-      ? "Esclusiva"
-      : (details.mandateType as MandateExclusivity) || "Non esclusiva";
+    const exclusivity = normalizeExclusivity(details.mandateType);
+    const endDate = details.mandateEndDate || addMonths(todayIso(today), 6);
     mandates.push({
       id: `mandate-${property.id}`,
       propertyId: property.id,
       ownerContactId: property.ownerContactId,
       type,
-      exclusivity: ["Esclusiva", "Non esclusiva", "Collaborazione", "Segnalazione"].includes(exclusivity)
-        ? exclusivity
-        : "Non esclusiva",
+      exclusivity,
       askingPrice: details.askingPrice || property.price || "",
       minimumPrice: details.minimumPrice || "",
       commission: details.commissionTerms || details.commission || "",
       startDate: details.mandateStartDate || details.acquisitionDate || todayIso(today),
-      endDate: details.mandateEndDate || addMonths(todayIso(today), 6),
+      endDate,
       status: property.status === "Venduto" || property.status === "Affittato" ? "Concluso" : "Attivo",
       officeId: property.officeId || defaultOfficeId,
       agent: details.assignedAgent || "",
@@ -197,7 +204,7 @@ export function migrateOperationsData(data: CrmData, today = new Date()): Operat
       updatedAt: todayIso(today),
     });
     mandateDetails.push(
-      `${propertyLabel(property)} \u00b7 ${type} ${exclusivity.toLowerCase()} \u00b7 scade ${details.mandateEndDate || addMonths(todayIso(today), 6)}`,
+      `${propertyLabel(property)} \u00b7 ${type} ${exclusivity.toLowerCase()} \u00b7 scade ${endDate}`,
     );
   });
 
@@ -211,15 +218,13 @@ export function migrateOperationsData(data: CrmData, today = new Date()): Operat
       return;
     }
     const startDate = details.leaseStartDate || details.availabilityDate || todayIso(today);
-    const contractType = (details.contractType as LeaseType) || "4+4 canone libero";
+    const contractType = normalizeContractType(details.contractType);
     const rent = details.monthlyRent || property.price || "";
     leases.push({
       id: `lease-${property.id}`,
       propertyId: property.id,
       tenantName: details.tenantName || "Inquilino da associare",
-      contractType: ["4+4 canone libero", "3+2 canone concordato", "Transitorio", "Studenti"].includes(contractType)
-        ? contractType
-        : "4+4 canone libero",
+      contractType,
       rent,
       deposit: details.deposit || "",
       startDate,
@@ -297,12 +302,11 @@ export function migrateOperationsData(data: CrmData, today = new Date()): Operat
       deals: deals.length,
       ownerContacts,
       notes,
-      officeNames: offices.map((office) => office.name),
       ownerContactNames,
       mandateDetails,
       leaseDetails,
       dealDetails,
-      linkedProperties: linkedPropertyLabels,
+      linkedProperties: linkedPropertiesCount,
     },
     changed: true,
   };
@@ -320,8 +324,7 @@ export type NextActionKind =
   | "Richiesta"
   | "Contatto"
   | "Censimento"
-  | "Immobile"
-  | "Sede";
+  | "Immobile";
 
 export type NextAction = {
   id: string;
@@ -336,10 +339,7 @@ export type NextAction = {
   contactId?: string;
 };
 
-function priorityForDays(days: number | null) {
-  if (days === null) {
-    return 4;
-  }
+function priorityForDays(days: number) {
   if (days < 0) {
     return 1;
   }
@@ -352,10 +352,7 @@ function priorityForDays(days: number | null) {
   return 4;
 }
 
-function whenLabel(days: number | null) {
-  if (days === null) {
-    return "";
-  }
+function whenLabel(days: number) {
   if (days < 0) {
     return `scaduto da ${Math.abs(days)} gg`;
   }

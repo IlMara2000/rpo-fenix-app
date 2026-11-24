@@ -220,18 +220,6 @@ export function formatDateIt(value?: string): string {
   return date ? new Intl.DateTimeFormat("it-IT", { dateStyle: "short" }).format(date) : "-";
 }
 
-export function formatMoney(value?: string | number): string {
-  const numeric = typeof value === "number" ? value : Number.parseFloat(String(value || "").replace(/\./g, "").replace(",", "."));
-  if (!Number.isFinite(numeric) || numeric === 0) {
-    return "-";
-  }
-  return new Intl.NumberFormat("it-IT", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(numeric);
-}
-
 export function propertyLabel(property: { code?: string; title: string } | undefined) {
   if (!property) {
     return "Immobile non trovato";
@@ -245,10 +233,7 @@ export function propertyLabel(property: { code?: string; title: string } | undef
 
 export type DeadlineTone = "scaduto" | "urgente" | "vicino" | "ok";
 
-export function toneForDays(days: number | null): DeadlineTone {
-  if (days === null) {
-    return "ok";
-  }
+export function toneForDays(days: number): DeadlineTone {
   if (days < 0) {
     return "scaduto";
   }
@@ -307,23 +292,15 @@ export function leaseDeadlines(lease: LeaseRecord, from = new Date()): LeaseDead
   return deadlines.sort((first, second) => first.days - second.days);
 }
 
-export function leaseDurationMonths(type: LeaseType): number {
-  switch (type) {
-    case "4+4 canone libero":
-      return 48;
-    case "3+2 canone concordato":
-      return 36;
-    case "Transitorio":
-      return 12;
-    case "Studenti":
-      return 12;
-    default:
-      return 48;
-  }
-}
+const leaseMonths: Record<LeaseType, number> = {
+  "4+4 canone libero": 48,
+  "3+2 canone concordato": 36,
+  "Transitorio": 12,
+  "Studenti": 12,
+};
 
 export function suggestedLeaseEnd(startDate: string, type: LeaseType): string {
-  return addMonths(startDate, leaseDurationMonths(type));
+  return addMonths(startDate, leaseMonths[type] ?? 48);
 }
 
 export function nextDealStage(stage: DealStage): DealStage | null {
