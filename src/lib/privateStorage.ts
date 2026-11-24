@@ -9,6 +9,10 @@ export const privateStorage = {
     if (!owner) throw new Error("Sessione richiesta per salvare dati.");
     localStorage.setItem(`fenix-private:${owner}:${key}`, value);
   },
+  removeItem(key: string) {
+    if (!owner) return;
+    localStorage.removeItem(`fenix-private:${owner}:${key}`);
+  },
 };
 export function clearPrivateStorage() {
   // Keep the user's saved work, but stop exposing it to the next session.

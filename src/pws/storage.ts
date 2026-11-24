@@ -53,13 +53,19 @@ export function savePlan(plan: DailyPlan) {
 }
 
 export function updateCrmActivity(sourceId: string, status: string, outcome: string) {
-  const data = loadCrmSnapshot();
+  // Si rilegge e si riscrive l'intero archivio: salvare solo le chiavi note
+  // cancellerebbe incarichi, trattative e locazioni dal gestionale.
+  const data = parse<Record<string, unknown>>(privateStorage.getItem(crmStorageKey), {});
   const now = new Date().toLocaleString("it-IT");
-  data.activities = data.activities.map((activity) =>
+  const activities = Array.isArray(data.activities)
+    ? (data.activities as Array<Record<string, unknown>>)
+    : [];
+  data.activities = activities.map((activity) =>
     String(activity.id) === sourceId
-      ? { ...activity, status, note: outcome || activity.note, updatedAt: now }
+      ? { ...activity, status, note: outcome || String(activity.note ?? ""), updatedAt: now }
       : activity,
   );
-  data.activityLog = [`${now} · Esito PWS sincronizzato: ${outcome || status}`, ...data.activityLog].slice(0, 80);
+  const activityLog = Array.isArray(data.activityLog) ? (data.activityLog as string[]) : [];
+  data.activityLog = [`${now} · Esito PWS sincronizzato: ${outcome || status}`, ...activityLog].slice(0, 80);
   privateStorage.setItem(crmStorageKey, JSON.stringify(data));
 }

@@ -6,6 +6,12 @@ import type {
   PropertyDetails,
   RequestDetails,
 } from "./domain";
+import type {
+  DealRecord,
+  LeaseRecord,
+  MandateRecord,
+  OfficeRecord,
+} from "./operationsDomain";
 
 /**
  * Tipi, costanti e funzioni condivisi dai moduli del gestionale.
@@ -43,6 +49,9 @@ export type PropertyRecord = {
   /** Posizione sulla mappa: unica, condivisa da mappa, elenco e schede. */
   lat?: number;
   lng?: number;
+  /** Sede operativa e scheda persona del proprietario (legame per id). */
+  officeId?: string;
+  ownerContactId?: string;
   details?: PropertyDetails;
   updatedAt: string;
 };
@@ -154,6 +163,12 @@ export type CrmData = {
   censusComplexes: CensusComplexRecord[];
   goals: GoalRecord[];
   activityLog: string[];
+  offices: OfficeRecord[];
+  mandates: MandateRecord[];
+  deals: DealRecord[];
+  leases: LeaseRecord[];
+  /** 1 = migrazione al modello operativo gia' eseguita. */
+  operationsModel?: number;
 };
 
 export type CrmCommit = (updater: (data: CrmData) => CrmData, message: string) => void;

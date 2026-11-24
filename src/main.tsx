@@ -46,6 +46,7 @@ import {
   ArrowLeft,
   ArrowUpRight,
   BadgeCheck,
+  Banknote,
   BarChart3,
   Bell,
   Blocks,
@@ -61,10 +62,12 @@ import {
   Cloud,
   DatabaseBackup,
   FileBadge,
+  FileSignature,
   Filter,
   GalleryVerticalEnd,
   Gauge,
   Globe2,
+  Handshake,
   Home,
   KeyRound,
   LayoutDashboard,
@@ -78,6 +81,7 @@ import {
   PanelsTopLeft,
   PhoneCall,
   Plus,
+  ReceiptText,
   RefreshCcwDot,
   Search,
   X,
@@ -99,6 +103,15 @@ import { PlanimetrieTool } from "./PlanimetrieTool";
 import { RpoTool } from "./RpoTool";
 import { TelefonistaTool } from "./TelefonistaTool";
 import { PwsTool } from "./PwsTool";
+import {
+  AcquisitionView,
+  DealsView,
+  LeasesView,
+  MigrationPanel,
+  NextActionsPanel,
+  OfficesView,
+} from "./crm/operationsViews";
+import { migrateOperationsData } from "./crm/operations";
 import {
   InformationArchivePanel,
   type ArchiveCandidate,
@@ -146,6 +159,9 @@ type ModuleKey =
   | "pubblicita"
   | "contattiPubblicita"
   | "censimento"
+  | "acquisizione"
+  | "trattative"
+  | "locazioni"
   | "obiettivi"
   | "utilita"
   | "impostazioni";
@@ -235,6 +251,8 @@ const crmSchemaVersion = 3;
 const noticeAutoHideMs = 6000;
 const migrationStorageKey = "fenix-suite-migration-v3";
 const deviceStorageKey = "fenix-suite-device-id";
+/** Copia integrale scritta subito prima della conversione al nuovo modello. */
+const migrationBackupKey = "fenix-suite-crm-pre-migration-v1";
 const legacyCrmStorageKeys = [
   "fenix-suite-crm-data",
   "fenix-suite-crm-data-v1",
@@ -363,6 +381,24 @@ const modules: ModuleItem[] = [
     Icon: MapPinned,
   },
   {
+    key: "acquisizione",
+    label: "Acquisizione",
+    description: "Incarichi, scadenze, valutazioni e proprietari da coltivare.",
+    Icon: Handshake,
+  },
+  {
+    key: "trattative",
+    label: "Trattative",
+    description: "Proposte, controproposte, compromessi e rogiti.",
+    Icon: FileSignature,
+  },
+  {
+    key: "locazioni",
+    label: "Locazioni",
+    description: "Contratti di affitto, canoni, incassi e scadenze.",
+    Icon: ReceiptText,
+  },
+  {
     key: "nominativi",
     label: "Rubrica",
     description: "Database clienti, esigenze, telefoni, note e prossimo contatto.",
@@ -425,8 +461,9 @@ const modules: ModuleItem[] = [
 ];
 
 const navigationModuleKeys: ModuleKey[] = [
-  "start", "agenda", "censimento", "richieste", "nominativi",
-  "proprietari", "immobili", "obiettivi", "utilita", "impostazioni",
+  "start", "agenda", "censimento", "acquisizione", "nominativi",
+  "proprietari", "immobili", "richieste", "trattative", "locazioni",
+  "obiettivi", "utilita", "impostazioni",
 ];
 
 const modulePages: Record<ModuleKey, ModulePage[]> = {
@@ -636,6 +673,66 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
       Icon: MapPinned,
     },
   ],
+  acquisizione: [
+    {
+      key: "acquisizione-incarichi",
+      label: "Incarichi",
+      description: "Mandati attivi, scadenze, rinnovi e immobili senza incarico.",
+      Icon: Handshake,
+    },
+    {
+      key: "acquisizione-nuovo",
+      label: "Nuovo",
+      description: "Registra un incarico di vendita o di locazione con la sua scadenza.",
+      Icon: Plus,
+    },
+    {
+      key: "acquisizione-coltivazione",
+      label: "Coltivazione",
+      description: "Proprietari che oggi non vendono: ricontatti programmati per non perderli.",
+      Icon: UsersRound,
+    },
+  ],
+  trattative: [
+    {
+      key: "trattative-elenco",
+      label: "Elenco",
+      description: "Proposte e trattative con importi, scadenze ed esiti.",
+      Icon: FileSignature,
+    },
+    {
+      key: "trattative-nuova",
+      label: "Nuova",
+      description: "Registra una proposta con la sua scadenza e la caparra.",
+      Icon: Plus,
+    },
+    {
+      key: "trattative-pipeline",
+      label: "Percorso",
+      description: "Quante pratiche sono ferme in ogni stadio della trattativa.",
+      Icon: ChartNoAxesCombined,
+    },
+  ],
+  locazioni: [
+    {
+      key: "locazioni-elenco",
+      label: "Contratti",
+      description: "Contratti di locazione, registrazione, rinnovi e disdette.",
+      Icon: ReceiptText,
+    },
+    {
+      key: "locazioni-nuova",
+      label: "Nuovo",
+      description: "Registra un contratto 4+4, 3+2, transitorio o per studenti.",
+      Icon: Plus,
+    },
+    {
+      key: "locazioni-incassi",
+      label: "Incassi",
+      description: "Canoni da incassare, solleciti e ritardi.",
+      Icon: Banknote,
+    },
+  ],
   obiettivi: [
     {
       key: "obiettivi-elenco",
@@ -677,6 +774,12 @@ const modulePages: Record<ModuleKey, ModulePage[]> = {
     },
   ],
   impostazioni: [
+    {
+      key: "impostazioni-sedi",
+      label: "Sedi",
+      description: "Sedi del gruppo: ogni incarico, trattativa e contratto ha la sua.",
+      Icon: Building2,
+    },
     {
       key: "impostazioni-cantieri",
       label: "Cantieri",
@@ -1264,6 +1367,11 @@ const initialCrmData: CrmData = {
   censusComplexes: [],
   goals: [],
   activityLog: [],
+  offices: [],
+  mandates: [],
+  deals: [],
+  leases: [],
+  operationsModel: 0,
 };
 
 function getOrCreateDeviceId() {
@@ -2399,6 +2507,10 @@ function Workspace({
   const [noticeVersion, setNoticeVersion] = useState(0);
   const [crmData, setCrmData] = usePersistentCrmData();
   const [accounts, setAccounts] = usePersistentAccounts();
+  const [migrationDismissed, setMigrationDismissed] = useState(false);
+  const [migrationBackup, setMigrationBackup] = useState(
+    () => privateStorage.getItem(migrationBackupKey) !== null,
+  );
   const [agendaResetVersion, setAgendaResetVersion] = useState(0);
   const moduleNavRef = useScrollEdges<HTMLElement>();
   const submenuRef = useScrollEdges<HTMLElement>();
@@ -2463,6 +2575,50 @@ function Workspace({
       };
     });
     setNotice(message);
+  }
+
+  function applyDataMigration() {
+    try {
+      privateStorage.setItem(
+        migrationBackupKey,
+        JSON.stringify({ savedAt: new Date().toISOString(), data: crmData }),
+      );
+    } catch {
+      runAction("Spazio insufficiente per la copia di sicurezza: migrazione non applicata.");
+      return;
+    }
+
+    const result = migrateOperationsData(crmData);
+    commitData(
+      () => result.data,
+      `Migrazione completata: ${result.report.mandates} incarichi, ${result.report.leases} contratti, ${result.report.deals} trattative, ${result.report.ownerContacts} proprietari collegati.`,
+    );
+    setMigrationBackup(true);
+  }
+
+  function undoDataMigration() {
+    const raw = privateStorage.getItem(migrationBackupKey);
+    if (!raw) {
+      setMigrationBackup(false);
+      runAction("Nessuna copia di migrazione disponibile.");
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as { data?: CrmData };
+      if (!parsed?.data) {
+        throw new Error("backup vuoto");
+      }
+      // Ripristino esatto: non si passa da commitData, che aggiungerebbe una riga
+      // di storico al dato appena recuperato.
+      setCrmData(() => parsed.data as CrmData);
+      privateStorage.removeItem(migrationBackupKey);
+      setMigrationBackup(false);
+      setMigrationDismissed(false);
+      runAction("Migrazione annullata: i dati sono tornati a prima della conversione.");
+    } catch {
+      runAction("Copia di migrazione illeggibile: nessuna modifica ai dati.");
+    }
   }
 
   function updateAccounts(updater: (accountList: AccountRecord[]) => AccountRecord[], message: string) {
@@ -2614,6 +2770,17 @@ function Workspace({
               </button>
             ) : null}
           </section>
+
+          {safeActiveModule === "start" ? (
+            <MigrationPanel
+              data={crmData}
+              pending={crmData.operationsModel !== 1 && !migrationDismissed}
+              backupAvailable={migrationBackup}
+              onApply={applyDataMigration}
+              onUndo={undoDataMigration}
+              onDismiss={() => setMigrationDismissed(true)}
+            />
+          ) : null}
 
           <AnimatePresence mode="wait">
             <motion.div
@@ -2842,6 +3009,16 @@ function PersonCard({
 }) {
   const details = contact.details ?? {};
   const properties = propertiesForContact(contact, data.properties);
+  const propertyIds = new Set(properties.map((property) => property.id));
+  const mandates = data.mandates.filter(
+    (mandate) => mandate.ownerContactId === contact.id || propertyIds.has(mandate.propertyId),
+  );
+  const deals = data.deals.filter(
+    (deal) => deal.clientContactId === contact.id || propertyIds.has(deal.propertyId),
+  );
+  const leases = data.leases.filter(
+    (lease) => lease.tenantContactId === contact.id || propertyIds.has(lease.propertyId),
+  );
   const requests = data.requests.filter((request) => sameLabel(request.client, contact.name));
   const activities = data.activities
     .filter((activity) => sameLabel(activity.contact, contact.name))
@@ -2941,6 +3118,40 @@ function PersonCard({
           </section>
 
           <section>
+            <h3>Incarichi, trattative e contratti</h3>
+            {mandates.length || deals.length || leases.length ? (
+              <ul className="person-card-list">
+                {mandates.map((mandate) => (
+                  <li key={mandate.id}>
+                    <button type="button" onClick={() => { onClose(); onOpenModule("acquisizione", "acquisizione-incarichi"); }}>
+                      <strong>Incarico {mandate.type.toLowerCase()}</strong>
+                      <small>{[mandate.exclusivity, `scade ${mandate.endDate}`, mandate.status].filter(Boolean).join(" · ")}</small>
+                    </button>
+                  </li>
+                ))}
+                {deals.map((deal) => (
+                  <li key={deal.id}>
+                    <button type="button" onClick={() => { onClose(); onOpenModule("trattative", "trattative-elenco"); }}>
+                      <strong>Trattativa {deal.type.toLowerCase()}</strong>
+                      <small>{[deal.stage, deal.offerAmount, deal.expiryDate ? `scade ${deal.expiryDate}` : ""].filter(Boolean).join(" · ")}</small>
+                    </button>
+                  </li>
+                ))}
+                {leases.map((lease) => (
+                  <li key={lease.id}>
+                    <button type="button" onClick={() => { onClose(); onOpenModule("locazioni", "locazioni-elenco"); }}>
+                      <strong>Contratto di locazione</strong>
+                      <small>{[lease.contractType, lease.rent, lease.endDate ? `fino al ${lease.endDate}` : ""].filter(Boolean).join(" · ")}</small>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="person-card-empty">Nessun incarico, trattativa o contratto collegato.</p>
+            )}
+          </section>
+
+          <section>
             <h3>Richieste</h3>
             {requests.length ? (
               <ul className="person-card-list">
@@ -3021,6 +3232,15 @@ function ModuleView({
   if (moduleKey === "immobili") {
     return <PropertiesView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenMap={() => onOpenModule("censimento", "censimento-mappa")} />;
   }
+  if (moduleKey === "acquisizione") {
+    return <AcquisitionView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenModule={onOpenModule} />;
+  }
+  if (moduleKey === "trattative") {
+    return <DealsView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenModule={onOpenModule} />;
+  }
+  if (moduleKey === "locazioni") {
+    return <LeasesView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenModule={onOpenModule} />;
+  }
   if (moduleKey === "richieste") {
     return <RequestsView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} onOpenPerson={onOpenPerson} />;
   }
@@ -3071,6 +3291,9 @@ function ModuleView({
     return <UtilitiesView pageKey={pageKey} query={query} data={data} onCommit={onCommit} onAction={onAction} />;
   }
   if (moduleKey === "impostazioni") {
+    if (pageKey === "impostazioni-sedi") {
+      return <OfficesView data={data} onCommit={onCommit} onAction={onAction} />;
+    }
     return <SettingsView pageKey={pageKey} query={query} onCommit={onCommit} />;
   }
   return (
@@ -3182,6 +3405,8 @@ function StartView({
   const objectives = data.goals.filter((goal) => isInScope(goal.owner));
 
   return (
+    <>
+    <NextActionsPanel data={data} onOpenModule={onOpenModule} />
     <div className="area-dashboard">
       <section className="area-card area-card-news">
         <AreaCardHeader title="Notizie Censimento" filter={accountScope.label} />
@@ -3272,6 +3497,7 @@ function StartView({
       </section>
 
     </div>
+    </>
   );
 }
 
@@ -3642,6 +3868,10 @@ function PropertiesView({
               return;
             }
             const managementType = fieldValue(values, "managementType", "Vendita");
+            const ownerName = fieldValue(values, "ownerName", "Proprietario da associare");
+            const existingOwner = data.contacts.find((contact) => sameLabel(contact.name, ownerName));
+            const newOwnerId =
+              !existingOwner && ownerName && !/da associare/i.test(ownerName) ? makeId("contact") : undefined;
             const newProperty: PropertyRecord = {
               id: makeId("property"),
               code: fieldValue(
@@ -3657,7 +3887,9 @@ function PropertiesView({
               ),
               status: fieldValue(values, "commercialStatus", "Bozza"),
               price: fieldValue(values, "askingPrice", "Da valutare"),
-              owner: fieldValue(values, "ownerName", "Proprietario da associare"),
+              owner: ownerName,
+              ownerContactId: existingOwner?.id ?? newOwnerId,
+              officeId: data.offices[0]?.id,
               portals: fieldValue(values, "publishOnPortals") === "Si" ? "Da sincronizzare" : "Bozza",
               kind: managementType.toLowerCase().includes("affitto") ? "affitto" : "vendita",
               phone: fieldValue(values, "ownerPhone"),
@@ -3675,6 +3907,24 @@ function PropertiesView({
               (currentData) => ({
                 ...currentData,
                 properties: [newProperty, ...currentData.properties],
+                contacts: newOwnerId
+                  ? [
+                      {
+                        id: newOwnerId,
+                        name: ownerName,
+                        type: "Proprietario",
+                        status: "Da censire",
+                        source: "Scheda immobile",
+                        owner: fieldValue(values, "assignedAgent", ""),
+                        phone: fieldValue(values, "ownerPhone"),
+                        email: "",
+                        note: `Proprietario della scheda ${newProperty.code}.`,
+                        nextStep: "Primo contatto da programmare",
+                        updatedAt: nowLabel(),
+                      },
+                      ...currentData.contacts,
+                    ]
+                  : currentData.contacts,
                 activities: [
                   createActivity({
                     title: `Nuova scheda ${newProperty.code}`,
@@ -6453,7 +6703,7 @@ function usePersistentAccounts() {
 
 /** Segnala quale bordo di una striscia scorrevole ha ancora schede oltre il taglio. */
 function hydrateCrmData(savedData: Partial<CrmData>): CrmData {
-  return {
+  const hydrated: CrmData = {
     properties: Array.isArray(savedData.properties) ? savedData.properties : initialCrmData.properties,
     requests: Array.isArray(savedData.requests) ? savedData.requests : initialCrmData.requests,
     contacts: Array.isArray(savedData.contacts) ? savedData.contacts : initialCrmData.contacts,
@@ -6470,7 +6720,16 @@ function hydrateCrmData(savedData: Partial<CrmData>): CrmData {
       : initialCrmData.censusComplexes,
     goals: Array.isArray(savedData.goals) ? savedData.goals : initialCrmData.goals,
     activityLog: Array.isArray(savedData.activityLog) ? savedData.activityLog : initialCrmData.activityLog,
+    offices: Array.isArray(savedData.offices) ? savedData.offices : initialCrmData.offices,
+    mandates: Array.isArray(savedData.mandates) ? savedData.mandates : initialCrmData.mandates,
+    deals: Array.isArray(savedData.deals) ? savedData.deals : initialCrmData.deals,
+    leases: Array.isArray(savedData.leases) ? savedData.leases : initialCrmData.leases,
+    operationsModel: typeof savedData.operationsModel === "number" ? savedData.operationsModel : 0,
   };
+
+  // La conversione al nuovo modello non parte da sola: viene mostrata in
+  // anteprima in "Oggi" e applicata solo su conferma, con copia di ripristino.
+  return hydrated;
 }
 
 function localIsoDate(date: Date) {

@@ -294,3 +294,19 @@
 .workspace-shell .vault-feedback.error { border: 1px solid #f87171; color: #fecaca; background: #7f1d1d33; }
 .workspace-shell .vault-feedback.ok { border: 1px solid #4ade80; color: #bbf7d0; background: #14532d33; }
 .workspace-shell .vault-warning { margin: 0; font-size: 12px; line-height: 1.6; color: #fde68a; }
+
+/* Prossimi passi: card a tutta larghezza sopra la dashboard di Oggi. */
+.workspace-shell .area-actions-card { margin: 0 0 16px; }
+.workspace-shell .area-actions-card .area-recall-list { max-height: 320px; overflow-y: auto; }
+
+/* Anteprima della migrazione: conteggi e dettaglio prima di applicare. */
+.workspace-shell .migration-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; padding: 12px 0 4px; }
+.workspace-shell .migration-stat { padding: 10px 12px; border: 1px solid #ffffff18; border-radius: 8px; background: #1d232d; }
+.workspace-shell .migration-stat strong { display: block; font-size: 20px; line-height: 1.1; color: #f8f8fa; }
+.workspace-shell .migration-stat span { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #9aa4b2; }
+.workspace-shell .migration-detail { display: grid; gap: 4px; padding: 4px 0 12px; }
+.workspace-shell .migration-detail h3 { margin: 8px 0 0; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: #9aa4b2; }
+.workspace-shell .migration-detail ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 12px; color: #dbe2ea; }
+.workspace-shell .migration-detail p { margin: 6px 0 0; font-size: 12px; color: #dbe2ea; }
+.workspace-shell .migration-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 2px; }
+.workspace-shell .migration-actions .toolbar-button.is-primary { background: var(--red) !important; color: #fff !important; border-color: transparent !important; }
