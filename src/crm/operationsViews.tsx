@@ -19,7 +19,9 @@ import {
   mandateExclusivityOptions,
   mandateState,
   nextDealStage,
+  officeOptionLabel,
   propertyLabel,
+  propertyOptionLabel,
   suggestedLeaseEnd,
   todayIso,
   type DealRecord,
@@ -45,8 +47,13 @@ type OperationsViewProps = {
 };
 
 /** Il select porta l'id: due immobili con lo stesso titolo restano distinti. */
-function propertyOptions(data: CrmData) {
-  return data.properties.map((property) => ({ value: property.id, label: propertyLabel(property) }));
+export function propertyOptions(data: CrmData) {
+  return data.properties.map((property) => ({ value: property.id, label: propertyOptionLabel(property) }));
+}
+
+/** Select contatti per l'acquirente/conduttore: il valore e' l'id. */
+export function contactOptions(data: CrmData) {
+  return data.contacts.map((contact) => ({ value: contact.id, label: contact.name }));
 }
 
 function propertyOf(data: CrmData, propertyId: string) {
@@ -58,10 +65,10 @@ function officeOf(data: CrmData, officeId: string) {
 }
 
 /** Come per gli immobili, il select porta l'id: due sedi omonime restano distinte. */
-function officeOptions(data: CrmData) {
+export function officeOptions(data: CrmData) {
   return data.offices
     .filter((office) => office.active === "Si")
-    .map((office) => ({ value: office.id, label: office.name }));
+    .map((office) => ({ value: office.id, label: officeOptionLabel(office) }));
 }
 
 /** Barra sedi: compare solo quando il gruppo ne ha piu' di una. */
@@ -383,7 +390,8 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
       description: "La proposta e' un impegno con una scadenza: registrala subito, cosi' non si perde nessun esito.",
       fields: [
         { name: "property", label: "Immobile", type: "select", required: true, options: propertyOptions(data), placeholder: "Seleziona immobile" },
-        { name: "clientName", label: "Acquirente o conduttore", required: true },
+        { name: "clientContact", label: "Acquirente o conduttore (contatto)", type: "select", required: false, options: contactOptions(data), placeholder: "Seleziona contatto esistente" },
+        { name: "clientName", label: "Nuovo acquirente o conduttore", required: false },
         { name: "type", label: "Tipo", type: "select", required: true, options: ["Vendita", "Affitto"] },
         { name: "offerAmount", label: "Importo offerto", type: "number", required: true },
         { name: "deposit", label: "Caparra", type: "number" },
@@ -478,11 +486,19 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
                 onAction("Immobile non trovato: ricarica la pagina e riprova.");
                 return;
               }
-              const client = data.contacts.find((contact) => contact.name === values.clientName);
+              const selectedContact = values.clientContact
+                ? data.contacts.find((contact) => contact.id === values.clientContact)
+                : undefined;
+              const clientName = (selectedContact?.name || values.clientName || "").trim();
+              if (!clientName) {
+                onAction("Inserisci un acquirente o seleziona un contatto.");
+                return;
+              }
+              const client = selectedContact ?? data.contacts.find((contact) => contact.name === clientName);
               const deal: DealRecord = {
                 id: makeId("deal"),
                 propertyId: property.id,
-                clientName: values.clientName,
+                clientName,
                 clientContactId: client?.id,
                 type: values.type === "Affitto" ? "Affitto" : "Vendita",
                 stage: "Proposta",

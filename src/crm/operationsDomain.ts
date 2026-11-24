@@ -227,6 +227,36 @@ export function propertyLabel(property: { code?: string; title: string } | undef
   return property.code ? `${property.code} · ${property.title}` : property.title;
 }
 
+/** Etichetta del select immobile: base + indirizzo e citta' per distinguere omonimi. */
+export function propertyOptionLabel(property: any) {
+  const base = propertyLabel(property);
+  if (!property) {
+    return base;
+  }
+  const details = (property.details ?? {}) as Record<string, string | undefined>;
+  const city = details.municipality || property.zone;
+  const street = details.street
+    ? `${details.street}${details.streetNumber ? ` ${details.streetNumber}` : ""}`
+    : "";
+  const streetPart = street && street.trim().toLowerCase() !== String(property.title || "").trim().toLowerCase()
+    ? street
+    : "";
+  const parts = [streetPart, city].filter(Boolean);
+  if (!parts.length) {
+    return base;
+  }
+  return `${base} — ${parts.join(", ")}`;
+}
+
+/** Etichetta del select sede: nome + indirizzo e citta'. */
+export function officeOptionLabel(office: { name: string; address?: string; city?: string } | undefined) {
+  if (!office) {
+    return "Sede";
+  }
+  const parts = [office.address, office.city].filter(Boolean);
+  return parts.length ? `${office.name} — ${parts.join(", ")}` : office.name;
+}
+
 /* ------------------------------------------------------------------ */
 /* Stati e scadenze                                                    */
 /* ------------------------------------------------------------------ */
