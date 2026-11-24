@@ -57,12 +57,11 @@ function officeOf(data: CrmData, officeId: string) {
   return data.offices.find((office) => office.id === officeId)?.name ?? "Sede principale";
 }
 
+/** Come per gli immobili, il select porta l'id: due sedi omonime restano distinte. */
 function officeOptions(data: CrmData) {
-  return data.offices.filter((office) => office.active === "Si").map((office) => office.name);
-}
-
-function officeIdByName(data: CrmData, name: string) {
-  return data.offices.find((office) => office.name === name)?.id ?? data.offices[0]?.id ?? "";
+  return data.offices
+    .filter((office) => office.active === "Si")
+    .map((office) => ({ value: office.id, label: office.name }));
 }
 
 /** Barra sedi: compare solo quando il gruppo ne ha piu' di una. */
@@ -173,7 +172,7 @@ export function AcquisitionView({ pageKey, query, data, onCommit, onAction }: Op
       startDate: values?.startDate || today,
       endDate: values?.endDate || addMonths(today, 6),
       status: "Attivo",
-      officeId: values?.office ? officeIdByName(data, values.office) : property.officeId || data.offices[0]?.id || "",
+      officeId: values?.office || property.officeId || data.offices[0]?.id || "",
       agent: values?.agent || property.details?.assignedAgent || "",
       notes: values?.notes || "",
       updatedAt: nowLabel(),
@@ -494,7 +493,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
                 closingDate: "",
                 commission: values.commission,
                 agent: values.agent || "",
-                officeId: values.office ? officeIdByName(data, values.office) : property.officeId || data.offices[0]?.id || "",
+                officeId: values.office || property.officeId || data.offices[0]?.id || "",
                 notes: values.notes,
                 stageChangedAt: new Date().toISOString(),
                 updatedAt: nowLabel(),
@@ -748,7 +747,7 @@ export function LeasesView({ pageKey, query, data, onCommit, onAction }: Operati
                 status: "Attivo",
                 payments: buildPayments(leaseId, startDate, values.rent),
                 agent: values.agent || "",
-                officeId: values.office ? officeIdByName(data, values.office) : property.officeId || data.offices[0]?.id || "",
+                officeId: values.office || property.officeId || data.offices[0]?.id || "",
                 notes: values.notes,
                 updatedAt: nowLabel(),
               };
