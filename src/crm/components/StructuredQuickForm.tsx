@@ -1,5 +1,8 @@
 import { useState, type FormEvent } from "react";
 
+/** Un'opzione puo' essere il valore stesso oppure una coppia valore/etichetta. */
+export type StructuredFormOption = string | { value: string; label: string };
+
 export type StructuredFormField = {
   name: string;
   label: string;
@@ -14,7 +17,7 @@ export type StructuredFormField = {
     | "select"
     | "checkbox";
   required?: boolean;
-  options?: string[];
+  options?: StructuredFormOption[];
   placeholder?: string;
   wide?: boolean;
 };
@@ -124,11 +127,14 @@ export function StructuredQuickForm({
                     <option disabled={required} value="">
                       {field.placeholder || (required ? "Seleziona…" : "Non specificato")}
                     </option>
-                    {(field.options ?? []).filter(Boolean).map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
+                    {(field.options ?? []).map((option) => {
+                      const value = typeof option === "string" ? option : option.value;
+                      return value ? (
+                        <option key={value} value={value}>
+                          {typeof option === "string" ? option : option.label}
+                        </option>
+                      ) : null;
+                    })}
                   </select>
                 ) : (
                   <input

@@ -44,8 +44,9 @@ type OperationsViewProps = {
   onOpenModule: (moduleKey: WorkspaceModuleKey, pageKey?: string, filterTerm?: string) => void;
 };
 
-function findPropertyByLabel(data: CrmData, label: string) {
-  return data.properties.find((property) => propertyLabel(property) === label);
+/** Il select porta l'id: due immobili con lo stesso titolo restano distinti. */
+function propertyOptions(data: CrmData) {
+  return data.properties.map((property) => ({ value: property.id, label: propertyLabel(property) }));
 }
 
 function propertyOf(data: CrmData, propertyId: string) {
@@ -143,7 +144,7 @@ export function AcquisitionView({ pageKey, query, data, onCommit, onAction }: Op
       title: "Nuovo incarico",
       description: "Il mandato e' l'oggetto che autorizza a vendere o locare: senza, l'immobile non e' in portafoglio.",
       fields: [
-        { name: "property", label: "Immobile", type: "select", required: true, options: data.properties.map(propertyLabel), placeholder: "Seleziona immobile" },
+        { name: "property", label: "Immobile", type: "select", required: true, options: propertyOptions(data), placeholder: "Seleziona immobile" },
         { name: "type", label: "Tipo", type: "select", required: true, options: ["Vendita", "Locazione"] },
         { name: "exclusivity", label: "Forma dell'incarico", type: "select", required: true, options: mandateExclusivityOptions },
         { name: "askingPrice", label: "Prezzo o canone richiesto", type: "number" },
@@ -266,7 +267,7 @@ export function AcquisitionView({ pageKey, query, data, onCommit, onAction }: Op
             sections={sections}
             submitLabel="Registra incarico"
             onSubmit={(values) => {
-              const property = findPropertyByLabel(data, values.property);
+              const property = propertyOf(data, values.property);
               if (!property) {
                 onAction("Immobile non trovato: ricarica la pagina e riprova.");
                 return;
@@ -382,7 +383,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
       title: "Nuova proposta",
       description: "La proposta e' un impegno con una scadenza: registrala subito, cosi' non si perde nessun esito.",
       fields: [
-        { name: "property", label: "Immobile", type: "select", required: true, options: data.properties.map(propertyLabel), placeholder: "Seleziona immobile" },
+        { name: "property", label: "Immobile", type: "select", required: true, options: propertyOptions(data), placeholder: "Seleziona immobile" },
         { name: "clientName", label: "Acquirente o conduttore", required: true },
         { name: "type", label: "Tipo", type: "select", required: true, options: ["Vendita", "Affitto"] },
         { name: "offerAmount", label: "Importo offerto", type: "number", required: true },
@@ -473,7 +474,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
             sections={sections}
             submitLabel="Registra proposta"
             onSubmit={(values) => {
-              const property = findPropertyByLabel(data, values.property);
+              const property = propertyOf(data, values.property);
               if (!property) {
                 onAction("Immobile non trovato: ricarica la pagina e riprova.");
                 return;
@@ -599,7 +600,7 @@ export function LeasesView({ pageKey, query, data, onCommit, onAction }: Operati
       title: "Nuovo contratto di locazione",
       description: "Registrazione entro 30 giorni, disdetta 6 mesi prima della scadenza: le scadenze si calcolano da qui.",
       fields: [
-        { name: "property", label: "Immobile", type: "select", required: true, options: data.properties.map(propertyLabel), placeholder: "Seleziona immobile" },
+        { name: "property", label: "Immobile", type: "select", required: true, options: propertyOptions(data), placeholder: "Seleziona immobile" },
         { name: "tenantName", label: "Inquilino", required: true },
         { name: "contractType", label: "Tipo contratto", type: "select", required: true, options: leaseTypeOptions },
         { name: "rent", label: "Canone mensile", type: "number", required: true },
@@ -724,7 +725,7 @@ export function LeasesView({ pageKey, query, data, onCommit, onAction }: Operati
             sections={sections}
             submitLabel="Registra contratto"
             onSubmit={(values) => {
-              const property = findPropertyByLabel(data, values.property);
+              const property = propertyOf(data, values.property);
               if (!property) {
                 onAction("Immobile non trovato: ricarica la pagina e riprova.");
                 return;
