@@ -343,12 +343,31 @@ export function suggestedLeaseEnd(startDate: string, type: LeaseType): string {
 }
 
 /**
+ * Legge un importo scritto a mano: "250.000" e "1.250,50" all'italiana,
+ * "1,250.50" all'inglese. Un separatore seguito da una o due cifre e'
+ * decimale, altrimenti tutti i separatori sono migliaia (250.000 = 250000).
+ */
+function parseAmount(value: string): number {
+  const digits = String(value || "").replace(/[^\d.,]/g, "");
+  if (!/\d/.test(digits)) {
+    return NaN;
+  }
+  const trailing = /[.,](\d+)$/.exec(digits);
+  const normalized =
+    trailing && trailing[1].length <= 2
+      ? `${digits.slice(0, -trailing[1].length - 1).replace(/[.,]/g, "")}.${trailing[1]}`
+      : digits.replace(/[.,]/g, "");
+  const amount = Number(normalized);
+  return Number.isFinite(amount) ? amount : NaN;
+}
+
+/**
  * Provvigione in euro da una percentuale concordata ("3% + IVA") e da una
  * base: serve a rendere sommabile anche chi scrive solo la percentuale.
  */
 export function commissionInEuro(commission: string, base: string): string {
   const percent = /(\d+(?:[.,]\d+)?)\s*%/.exec(commission || "");
-  const amount = Number(String(base || "").replace(/[^\d.,]/g, "").replace(",", "."));
+  const amount = parseAmount(base);
   if (!percent || !(amount > 0)) {
     return "";
   }

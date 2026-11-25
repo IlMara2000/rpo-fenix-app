@@ -147,6 +147,15 @@ test("la provvigione in euro si ricava dalla percentuale concordata", () => {
   assert.equal(domain.commissionInEuro("3%", ""), "", "senza base non c'e' importo");
 });
 
+test("i prezzi scritti all'italiana non gonfiano la provvigione", () => {
+  assert.equal(domain.commissionInEuro("3%", "250.000"), "7500", "il punto separa le migliaia");
+  assert.equal(domain.commissionInEuro("3%", "€ 250.000"), "7500", "il simbolo dell'euro non conta");
+  assert.equal(domain.commissionInEuro("3%", "250.000,00"), "7500");
+  assert.equal(domain.commissionInEuro("3%", "1.250,50"), "38", "la virgola separa i decimali");
+  assert.equal(domain.commissionInEuro("3%", "1,250.50"), "38", "il formato inglese resta leggibile");
+  assert.equal(domain.commissionInEuro("3%", "250,000"), "7500", "senza decimali la virgola e' migliaia");
+});
+
 test("l'importo concordato in euro vince sulla percentuale alla chiusura", () => {
   const closing = domain.dealClosingValues(dealRecord({ commission: "3%", commissionAmount: "5000" }), "2026-11-25");
   assert.equal(closing.commissionEarned, "5000");

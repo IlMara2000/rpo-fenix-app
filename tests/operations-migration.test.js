@@ -460,17 +460,19 @@ function makeDeal(overrides = {}) {
 }
 
 test("backfill: le provvigioni chiuse come testo diventano importi sommabili", () => {
-  const [asText, alreadyEuro, open, notDerivable] = backfillDealCommissions([
+  const [asText, alreadyEuro, open, notDerivable, italianPrice] = backfillDealCommissions([
     makeDeal({ commission: "3% + IVA", commissionEarned: "3% + IVA" }),
     makeDeal({ id: "deal-2", commission: "3%", commissionEarned: "7350" }),
     makeDeal({ id: "deal-3", stage: "Proposta", commissionEarned: "" }),
     makeDeal({ id: "deal-4", commission: "a corpo", commissionEarned: "" }),
+    makeDeal({ id: "deal-5", closingPrice: "250.000", commissionEarned: "3%" }),
   ]);
 
   assert.equal(asText.commissionEarned, "7500");
   assert.equal(alreadyEuro.commissionEarned, "7350", "un importo gia' in euro non si tocca");
   assert.equal(open.commissionEarned, "", "le trattative aperte restano come sono");
   assert.equal(notDerivable.commissionEarned, "", "senza percentuale non si inventa un importo");
+  assert.equal(italianPrice.commissionEarned, "7500", "un prezzo scritto all'italiana non gonfia il backfill");
 });
 
 test("chiudere o perdere una trattativa chiude la richiesta collegata", () => {
