@@ -136,8 +136,29 @@ test("closing a deal fixes the final price and the earned commission", () => {
   assert.deepEqual(domain.dealClosingValues(dealRecord(), "2026-11-25"), {
     closingDate: "2026-11-25",
     closingPrice: "250000",
-    commissionEarned: "3%",
+    commissionEarned: "7500",
   });
+});
+
+test("la provvigione in euro si ricava dalla percentuale concordata", () => {
+  assert.equal(domain.commissionInEuro("3% + IVA", "250000"), "7500");
+  assert.equal(domain.commissionInEuro("3,5 %", "200000"), "7000");
+  assert.equal(domain.commissionInEuro("a corpo", "250000"), "", "senza percentuale non si inventa un importo");
+  assert.equal(domain.commissionInEuro("3%", ""), "", "senza base non c'e' importo");
+});
+
+test("l'importo concordato in euro vince sulla percentuale alla chiusura", () => {
+  const closing = domain.dealClosingValues(dealRecord({ commission: "3%", commissionAmount: "5000" }), "2026-11-25");
+  assert.equal(closing.commissionEarned, "5000");
+});
+
+test("senza data di incasso la provvigione resta dovuta", () => {
+  assert.equal(domain.commissionLabel(dealRecord({ stage: "Chiusa", commissionEarned: "7500" })), "7500 € · dovuta");
+  assert.match(
+    domain.commissionLabel(dealRecord({ stage: "Chiusa", commissionEarned: "7500", commissionPaidAt: "2026-11-20" })),
+    /^7500 € · incassata il 20\/11\/(20)?26$/,
+  );
+  assert.equal(domain.commissionLabel(dealRecord()), "-", "senza importo non c'e' niente da incassare");
 });
 
 test("a deal that already carries closing values keeps them", () => {

@@ -1,6 +1,7 @@
 import {
   addDays,
   addMonths,
+  commissionInEuro,
   daysUntil,
   defaultOffice,
   defaultOfficeId,
@@ -558,6 +559,21 @@ export function closeLinkedRequest(
       ? { ...request, status: "Chiusa", stageChangedAt: new Date().toISOString(), updatedAt: todayIso(today) }
       : request,
   );
+}
+
+/**
+ * Le trattative chiuse prima del campo in euro hanno la provvigione come
+ * testo ("3%"): qui diventa un importo, una volta sola e senza toccare
+ * quelle che un importo ce l'hanno gia'.
+ */
+export function backfillDealCommissions(deals: DealRecord[]): DealRecord[] {
+  return deals.map((deal) => {
+    if (deal.stage !== "Chiusa" || (deal.commissionEarned && !/%/.test(deal.commissionEarned))) {
+      return deal;
+    }
+    const earned = commissionInEuro(deal.commission, deal.closingPrice || deal.offerAmount);
+    return earned ? { ...deal, commissionEarned: earned } : deal;
+  });
 }
 
 /** Etichetta compatta dello stato di un pagamento. */

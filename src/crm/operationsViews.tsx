@@ -13,6 +13,7 @@ import {
 import {
   addDays,
   addMonths,
+  commissionLabel,
   dealClosingValues,
   dealStageOrder,
   leaseDeadlines,
@@ -433,7 +434,8 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
         { name: "deposit", label: "Caparra", type: "number" },
         { name: "proposalDate", label: "Data proposta", type: "date", required: true },
         { name: "expiryDate", label: "Scadenza proposta", type: "date", required: true },
-        { name: "commission", label: "Provvigione" },
+        { name: "commission", label: "Provvigione concordata (%)", placeholder: "Es. 3% + IVA" },
+        { name: "commissionAmount", label: "Provvigione in euro", type: "number" },
         { name: "office", label: "Sede", type: "select", required: true, options: officeOptions(data) },
         { name: "agent", label: "Agente" },
         { name: "notes", label: "Note", type: "textarea", wide: true },
@@ -496,6 +498,27 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
     );
   }
 
+  function collectCommission(deal: DealRecord) {
+    if (deal.stage !== "Chiusa") {
+      onAction("La provvigione si incassa dopo la chiusura della trattativa.");
+      return;
+    }
+    if (!deal.commissionEarned) {
+      onAction("Manca l'importo della provvigione: inseriscilo nella proposta o chiudi con una percentuale.");
+      return;
+    }
+    const date = todayIso();
+    onCommit(
+      (currentData) => ({
+        ...currentData,
+        deals: currentData.deals.map((item) =>
+          item.id === deal.id ? { ...item, commissionPaidAt: date, updatedAt: nowLabel() } : item,
+        ),
+      }),
+      `Provvigione di ${deal.clientName} segnata incassata il ${date}.`,
+    );
+  }
+
   function loseDeal(deal: DealRecord) {
     onCommit(
       (currentData) => ({
@@ -548,6 +571,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
                 expiryDate: values.expiryDate || addDays(todayIso(), 15),
                 closingDate: "",
                 commission: values.commission,
+                commissionAmount: values.commissionAmount,
                 agent: values.agent || "",
                 officeId: values.office || property.officeId || data.offices[0]?.id || "",
                 notes: values.notes,
@@ -598,7 +622,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
         <DealStageFilter value={stageFilter} onChange={setStageFilter} />
         <DataTable
           emptyMessage={`Nessuna trattativa ${dealFilterLabels[stageFilter]}: registra una proposta da «Nuova».`}
-          columns={["Immobile", "Cliente", "Tipo", "Stadio", "Offerta", "Prezzo finale", "Provvigione incassata", "Scadenza", "Sede"]}
+          columns={["Immobile", "Cliente", "Tipo", "Stadio", "Offerta", "Prezzo finale", "Provvigione", "Scadenza", "Sede"]}
           rows={visibleDeals.map((deal) => [
             propertyLabel(propertyOf(data, deal.propertyId)),
             deal.clientName,
@@ -606,12 +630,13 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
             deal.stage,
             deal.offerAmount || "-",
             deal.closingPrice || "-",
-            deal.commissionEarned || "-",
+            commissionLabel(deal),
             deal.expiryDate || "-",
             officeOf(data, deal.officeId),
           ])}
           actions={[
             { label: "Avanza", onClick: (rowIndex) => { const deal = visibleDeals[rowIndex]; if (deal) advanceDeal(deal); } },
+            { label: "Incassa", onClick: (rowIndex) => { const deal = visibleDeals[rowIndex]; if (deal) collectCommission(deal); } },
             { label: "Persa", onClick: (rowIndex) => { const deal = visibleDeals[rowIndex]; if (deal) loseDeal(deal); } },
           ]}
         />

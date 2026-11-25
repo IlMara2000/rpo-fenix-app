@@ -21,7 +21,8 @@ async function loadOperations() {
   return import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
 }
 
-const { migrateOperationsData, buildNextActions, closeLinkedRequest, previewOperationsMigration } = await loadOperations();
+const { migrateOperationsData, buildNextActions, backfillDealCommissions, closeLinkedRequest, previewOperationsMigration } =
+  await loadOperations();
 const TODAY = new Date(2026, 10, 24);
 
 function emptyData() {
@@ -433,6 +434,43 @@ test("prossimi passi: un incarico revocato o chiuso non genera azioni", () => {
 
   const actions = buildNextActions(data, TODAY);
   assert.equal(actions.some((action) => action.kind === "Incarico"), false);
+});
+
+function makeDeal(overrides = {}) {
+  return {
+    id: "deal-1",
+    propertyId: "property-1",
+    clientName: "Cliente",
+    type: "Vendita",
+    stage: "Chiusa",
+    offerAmount: "250000",
+    deposit: "",
+    proposalDate: "2026-11-01",
+    expiryDate: "2026-11-15",
+    closingDate: "2026-11-10",
+    closingPrice: "250000",
+    commission: "3%",
+    agent: "",
+    officeId: "office-sede-principale",
+    notes: "",
+    stageChangedAt: "2026-11-01T10:00:00.000Z",
+    updatedAt: "2026-11-24",
+    ...overrides,
+  };
+}
+
+test("backfill: le provvigioni chiuse come testo diventano importi sommabili", () => {
+  const [asText, alreadyEuro, open, notDerivable] = backfillDealCommissions([
+    makeDeal({ commission: "3% + IVA", commissionEarned: "3% + IVA" }),
+    makeDeal({ id: "deal-2", commission: "3%", commissionEarned: "7350" }),
+    makeDeal({ id: "deal-3", stage: "Proposta", commissionEarned: "" }),
+    makeDeal({ id: "deal-4", commission: "a corpo", commissionEarned: "" }),
+  ]);
+
+  assert.equal(asText.commissionEarned, "7500");
+  assert.equal(alreadyEuro.commissionEarned, "7350", "un importo gia' in euro non si tocca");
+  assert.equal(open.commissionEarned, "", "le trattative aperte restano come sono");
+  assert.equal(notDerivable.commissionEarned, "", "senza percentuale non si inventa un importo");
 });
 
 test("chiudere o perdere una trattativa chiude la richiesta collegata", () => {

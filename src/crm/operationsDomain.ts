@@ -115,7 +115,12 @@ export type DealRecord = {
   expiryDate: string;
   closingDate: string;
   closingPrice?: string;
+  /** Provvigione dovuta o incassata, in euro: e' il valore sommabile. */
   commissionEarned?: string;
+  /** Data in cui il cliente ha pagato la provvigione: se c'e', e' incassata. */
+  commissionPaidAt?: string;
+  /** Provvigione concordata in euro, accanto alla percentuale scritta in `commission`. */
+  commissionAmount?: string;
   commission: string;
   agent: string;
   officeId: string;
@@ -338,15 +343,41 @@ export function suggestedLeaseEnd(startDate: string, type: LeaseType): string {
 }
 
 /**
+ * Provvigione in euro da una percentuale concordata ("3% + IVA") e da una
+ * base: serve a rendere sommabile anche chi scrive solo la percentuale.
+ */
+export function commissionInEuro(commission: string, base: string): string {
+  const percent = /(\d+(?:[.,]\d+)?)\s*%/.exec(commission || "");
+  const amount = Number(String(base || "").replace(/[^\d.,]/g, "").replace(",", "."));
+  if (!percent || !(amount > 0)) {
+    return "";
+  }
+  const rate = Number(percent[1].replace(",", "."));
+  return String(Math.round((amount * rate) / 100));
+}
+
+/**
  * Valori da fissare alla chiusura, salvo quelli gia' impostati: il prezzo
- * finale e' l'offerta accettata, la provvigione incassata quella concordata.
+ * finale e' l'offerta accettata, la provvigione dovuta quella concordata.
  */
 export function dealClosingValues(deal: DealRecord, today: string) {
+  const closingPrice = deal.closingPrice || deal.offerAmount;
   return {
     closingDate: deal.closingDate || today,
-    closingPrice: deal.closingPrice || deal.offerAmount,
-    commissionEarned: deal.commissionEarned || deal.commission,
+    closingPrice,
+    commissionEarned:
+      deal.commissionEarned || deal.commissionAmount || commissionInEuro(deal.commission, closingPrice),
   };
+}
+
+/** Stato della provvigione derivato dalla data di incasso: dovuta o incassata. */
+export function commissionLabel(deal: DealRecord): string {
+  if (!deal.commissionEarned) {
+    return "-";
+  }
+  return deal.commissionPaidAt
+    ? `${deal.commissionEarned} € · incassata il ${formatDateIt(deal.commissionPaidAt)}`
+    : `${deal.commissionEarned} € · dovuta`;
 }
 
 export function nextDealStage(stage: DealStage): DealStage | null {

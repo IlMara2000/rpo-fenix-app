@@ -111,7 +111,7 @@ import {
   NextActionsPanel,
   OfficesView,
 } from "./crm/operationsViews";
-import { migrateOperationsData } from "./crm/operations";
+import { backfillDealCommissions, migrateOperationsData } from "./crm/operations";
 import {
   InformationArchivePanel,
   type ArchiveCandidate,
@@ -6722,7 +6722,8 @@ function hydrateCrmData(savedData: Partial<CrmData>): CrmData {
     activityLog: Array.isArray(savedData.activityLog) ? savedData.activityLog : initialCrmData.activityLog,
     offices: Array.isArray(savedData.offices) ? savedData.offices : initialCrmData.offices,
     mandates: Array.isArray(savedData.mandates) ? savedData.mandates : initialCrmData.mandates,
-    deals: Array.isArray(savedData.deals) ? savedData.deals : initialCrmData.deals,
+    // Le provvigioni chiuse come testo diventano importi sommabili al caricamento.
+    deals: backfillDealCommissions(Array.isArray(savedData.deals) ? savedData.deals : initialCrmData.deals),
     leases: Array.isArray(savedData.leases) ? savedData.leases : initialCrmData.leases,
     operationsModel: typeof savedData.operationsModel === "number" ? savedData.operationsModel : 0,
   };

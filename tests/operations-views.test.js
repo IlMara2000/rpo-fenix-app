@@ -73,6 +73,7 @@ test("acquisizione: il select immobile e sede portano gli id", () => {
 
 test("trattative: il select immobile, sede e contatti portano gli id", () => {
   const html = globalThis.renderDeals(baseData());
+  assert.match(html, /name="commissionAmount"/, "la provvigione ha il campo in euro accanto alla percentuale");
   assert.match(html, /value="property-1"/);
   assert.match(html, /value="property-2"/);
   assert.match(html, /value="office-1"/);
