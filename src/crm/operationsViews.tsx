@@ -13,6 +13,7 @@ import {
 import {
   addDays,
   addMonths,
+  dealClosingValues,
   dealStageOrder,
   leaseDeadlines,
   leaseTypeOptions,
@@ -413,6 +414,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
     }
     const closed = next === "Chiusa";
     const property = propertyOf(data, deal.propertyId);
+    const closing = closed ? dealClosingValues(deal, todayIso()) : {};
     onCommit(
       (currentData) => ({
         ...currentData,
@@ -422,7 +424,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
                 ...item,
                 stage: next,
                 stageChangedAt: new Date().toISOString(),
-                closingDate: closed ? todayIso() : item.closingDate,
+                ...closing,
                 updatedAt: nowLabel(),
               }
             : item,
@@ -557,13 +559,15 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
         <OfficeFilter offices={data.offices} value={officeFilter} onChange={setOfficeFilter} />
         <DataTable
           emptyMessage="Nessuna trattativa aperta: registra una proposta da «Nuova»."
-          columns={["Immobile", "Cliente", "Tipo", "Stadio", "Offerta", "Scadenza", "Sede"]}
+          columns={["Immobile", "Cliente", "Tipo", "Stadio", "Offerta", "Prezzo finale", "Provvigione incassata", "Scadenza", "Sede"]}
           rows={visibleDeals.map((deal) => [
             propertyLabel(propertyOf(data, deal.propertyId)),
             deal.clientName,
             deal.type,
             deal.stage,
             deal.offerAmount || "-",
+            deal.closingPrice || "-",
+            deal.commissionEarned || "-",
             deal.expiryDate || "-",
             officeOf(data, deal.officeId),
           ])}

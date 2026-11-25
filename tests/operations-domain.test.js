@@ -110,6 +110,46 @@ test("deal stages advance only inside the pipeline", () => {
   assert.equal(domain.nextDealStage("Persa"), null);
 });
 
+function dealRecord(overrides = {}) {
+  return {
+    id: "deal-1",
+    propertyId: "property-1",
+    clientName: "Cliente",
+    type: "Vendita",
+    stage: "Rogito",
+    offerAmount: "250000",
+    deposit: "",
+    proposalDate: "2026-11-01",
+    expiryDate: "2026-11-15",
+    closingDate: "",
+    commission: "3%",
+    agent: "",
+    officeId: "office-sede-principale",
+    notes: "",
+    stageChangedAt: "2026-11-01T10:00:00.000Z",
+    updatedAt: "2026-11-24",
+    ...overrides,
+  };
+}
+
+test("closing a deal fixes the final price and the earned commission", () => {
+  assert.deepEqual(domain.dealClosingValues(dealRecord(), "2026-11-25"), {
+    closingDate: "2026-11-25",
+    closingPrice: "250000",
+    commissionEarned: "3%",
+  });
+});
+
+test("a deal that already carries closing values keeps them", () => {
+  const deal = dealRecord({ closingDate: "2026-11-20", closingPrice: "245000", commissionEarned: "7350" });
+
+  assert.deepEqual(domain.dealClosingValues(deal, "2026-11-25"), {
+    closingDate: "2026-11-20",
+    closingPrice: "245000",
+    commissionEarned: "7350",
+  });
+});
+
 test("lease end date follows the contract type", () => {
   assert.equal(domain.suggestedLeaseEnd("2026-11-01", "4+4 canone libero"), "2030-11-01");
   assert.equal(domain.suggestedLeaseEnd("2026-11-01", "3+2 canone concordato"), "2029-11-01");

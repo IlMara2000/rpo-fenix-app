@@ -112,6 +112,8 @@ export type DealRecord = {
   proposalDate: string;
   expiryDate: string;
   closingDate: string;
+  closingPrice?: string;
+  commissionEarned?: string;
   commission: string;
   agent: string;
   officeId: string;
@@ -331,6 +333,18 @@ const leaseMonths: Record<LeaseType, number> = {
 
 export function suggestedLeaseEnd(startDate: string, type: LeaseType): string {
   return addMonths(startDate, leaseMonths[type] ?? 48);
+}
+
+/**
+ * Valori da fissare alla chiusura, salvo quelli gia' impostati: il prezzo
+ * finale e' l'offerta accettata, la provvigione incassata quella concordata.
+ */
+export function dealClosingValues(deal: DealRecord, today: string) {
+  return {
+    closingDate: deal.closingDate || today,
+    closingPrice: deal.closingPrice || deal.offerAmount,
+    commissionEarned: deal.commissionEarned || deal.commission,
+  };
 }
 
 export function nextDealStage(stage: DealStage): DealStage | null {
