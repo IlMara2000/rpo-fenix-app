@@ -21,7 +21,7 @@ async function loadOperations() {
   return import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
 }
 
-const { migrateOperationsData, buildNextActions, previewOperationsMigration } = await loadOperations();
+const { migrateOperationsData, buildNextActions, closeLinkedRequest, previewOperationsMigration } = await loadOperations();
 const TODAY = new Date(2026, 10, 24);
 
 function emptyData() {
@@ -433,4 +433,35 @@ test("prossimi passi: un incarico revocato o chiuso non genera azioni", () => {
 
   const actions = buildNextActions(data, TODAY);
   assert.equal(actions.some((action) => action.kind === "Incarico"), false);
+});
+
+test("chiudere o perdere una trattativa chiude la richiesta collegata", () => {
+  const requests = [
+    { id: "request-1", client: "Giulia Neri", target: "Trilocale", area: "", match: "", proposal: "", status: "Trattativa", stageChangedAt: "2026-07-01T10:00:00.000Z", updatedAt: "2026-07-01" },
+    { id: "request-2", client: "Paolo Bianchi", target: "Bilocale", area: "", match: "", proposal: "", status: "Visita", updatedAt: "2026-07-01" },
+  ];
+
+  const closed = closeLinkedRequest(requests, { requestId: "request-1" }, TODAY);
+
+  assert.equal(closed[0].status, "Chiusa");
+  assert.equal(closed[0].updatedAt, "2026-11-24");
+  assert.equal(closed[1].status, "Visita", "le altre richieste restano come sono");
+  assert.equal(requests[0].status, "Trattativa", "l'archivio di partenza non viene modificato");
+  assert.equal(closed.length, requests.length);
+
+  assert.equal(closeLinkedRequest(requests, {}, TODAY)[0].status, "Trattativa", "senza legame non si chiude nulla");
+  assert.equal(closeLinkedRequest(requests, { requestId: "request-missing" }, TODAY)[0].status, "Trattativa");
+});
+
+test("la migrazione collega la trattativa alla richiesta che l'ha generata", () => {
+  const data = emptyData();
+  data.properties = [makeProperty()];
+  data.requests = [
+    { id: "request-1", client: "Giulia Neri", target: "Trilocale", area: "", match: "", proposal: "Via Roma 10", status: "Trattativa", updatedAt: "2026-11-24" },
+  ];
+
+  const { data: migrated } = migrateOperationsData(data, TODAY);
+
+  assert.equal(migrated.deals[0].requestId, "request-1");
+  assert.equal(closeLinkedRequest(migrated.requests, migrated.deals[0], TODAY)[0].status, "Chiusa");
 });

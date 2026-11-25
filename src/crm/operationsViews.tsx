@@ -19,6 +19,8 @@ import {
   leaseTypeOptions,
   mandateExclusivityOptions,
   mandateState,
+  markLeaseRegistered,
+  matchesDealFilter,
   nextDealStage,
   officeOptionLabel,
   propertyLabel,
@@ -26,6 +28,7 @@ import {
   suggestedLeaseEnd,
   todayIso,
   type DealRecord,
+  type DealFilter,
   type LeasePayment,
   type LeaseRecord,
   type LeaseType,
@@ -34,7 +37,7 @@ import {
   type OfficeRecord,
   type WorkspaceModuleKey,
 } from "./operationsDomain";
-import { buildNextActions, paymentTone, previewOperationsMigration } from "./operations";
+import { buildNextActions, closeLinkedRequest, paymentTone, previewOperationsMigration } from "./operations";
 import { StructuredQuickForm, type StructuredFormSection } from "./components/StructuredQuickForm";
 import { DataTable, Panel } from "../ui/primitives";
 
@@ -55,6 +58,13 @@ export function propertyOptions(data: CrmData) {
 /** Select contatti per l'acquirente/conduttore: il valore e' l'id. */
 export function contactOptions(data: CrmData) {
   return data.contacts.map((contact) => ({ value: contact.id, label: contact.name }));
+}
+
+/** Select delle richieste ancora aperte: la proposta nasce da una di queste. */
+export function requestOptions(data: CrmData) {
+  return data.requests
+    .filter((request) => !/chiusa|persa/i.test(request.status))
+    .map((request) => ({ value: request.id, label: `${request.client} — ${request.target}` }));
 }
 
 function propertyOf(data: CrmData, propertyId: string) {
@@ -104,6 +114,28 @@ function OfficeFilter({
           onClick={() => onChange(office.id)}
         >
           {office.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const dealFilters: DealFilter[] = ["Aperte", "Chiuse", "Perse"];
+const dealFilterLabels: Record<DealFilter, string> = { Aperte: "aperta", Chiuse: "chiusa", Perse: "persa" };
+
+/** Le trattative chiuse restano in archivio, ma non si mescolano a quelle in corso. */
+function DealStageFilter({ value, onChange }: { value: DealFilter; onChange: (filter: DealFilter) => void }) {
+  return (
+    <div className="panel-toolbar" aria-label="Filtro trattative">
+      {dealFilters.map((filter) => (
+        <button
+          className="toolbar-button"
+          key={filter}
+          type="button"
+          aria-pressed={value === filter}
+          onClick={() => onChange(filter)}
+        >
+          {filter}
         </button>
       ))}
     </div>
@@ -375,11 +407,13 @@ export function AcquisitionView({ pageKey, query, data, onCommit, onAction }: Op
 
 export function DealsView({ pageKey, query, data, onCommit, onAction }: OperationsViewProps) {
   const [officeFilter, setOfficeFilter] = useState("");
+  const [stageFilter, setStageFilter] = useState<DealFilter>("Aperte");
   const rows = useFilteredRows(data.deals, query, (deal) => {
     const property = propertyOf(data, deal.propertyId);
     return `${deal.clientName} ${propertyLabel(property)} ${deal.stage}`;
   });
   const visibleDeals = (officeFilter ? rows.filter((deal) => deal.officeId === officeFilter) : rows)
+    .filter((deal) => matchesDealFilter(deal, stageFilter))
     .slice()
     .sort((first, second) => first.expiryDate.localeCompare(second.expiryDate));
 
@@ -393,6 +427,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
         { name: "property", label: "Immobile", type: "select", required: true, options: propertyOptions(data), placeholder: "Seleziona immobile" },
         { name: "clientContact", label: "Acquirente o conduttore (contatto)", type: "select", required: false, options: contactOptions(data), placeholder: "Seleziona contatto esistente" },
         { name: "clientName", label: "Nuovo acquirente o conduttore", required: false },
+        { name: "request", label: "Richiesta collegata", type: "select", required: false, options: requestOptions(data), placeholder: "Nessuna richiesta" },
         { name: "type", label: "Tipo", type: "select", required: true, options: ["Vendita", "Affitto"] },
         { name: "offerAmount", label: "Importo offerto", type: "number", required: true },
         { name: "deposit", label: "Caparra", type: "number" },
@@ -443,6 +478,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
                 : mandate,
             )
           : currentData.mandates,
+        requests: closed ? closeLinkedRequest(currentData.requests, deal) : currentData.requests,
         activities: [
           createActivity({
             title: `Trattativa «${next}» per ${deal.clientName}`,
@@ -469,6 +505,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
             ? { ...item, stage: "Persa", stageChangedAt: new Date().toISOString(), updatedAt: nowLabel() }
             : item,
         ),
+        requests: closeLinkedRequest(currentData.requests, deal),
       }),
       `Trattativa con ${deal.clientName} segnata come persa.`,
     );
@@ -504,6 +541,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
                 clientContactId: client?.id,
                 type: values.type === "Affitto" ? "Affitto" : "Vendita",
                 stage: "Proposta",
+                requestId: values.request || undefined,
                 offerAmount: values.offerAmount,
                 deposit: values.deposit,
                 proposalDate: values.proposalDate || todayIso(),
@@ -557,8 +595,9 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
 
       <Panel className="span-12" title="Proposte e trattative">
         <OfficeFilter offices={data.offices} value={officeFilter} onChange={setOfficeFilter} />
+        <DealStageFilter value={stageFilter} onChange={setStageFilter} />
         <DataTable
-          emptyMessage="Nessuna trattativa aperta: registra una proposta da «Nuova»."
+          emptyMessage={`Nessuna trattativa ${dealFilterLabels[stageFilter]}: registra una proposta da «Nuova».`}
           columns={["Immobile", "Cliente", "Tipo", "Stadio", "Offerta", "Prezzo finale", "Provvigione incassata", "Scadenza", "Sede"]}
           rows={visibleDeals.map((deal) => [
             propertyLabel(propertyOf(data, deal.propertyId)),
@@ -724,6 +763,19 @@ export function LeasesView({ pageKey, query, data, onCommit, onAction }: Operati
     );
   }
 
+  function registerLease(lease: LeaseRecord) {
+    const date = todayIso();
+    onCommit(
+      (currentData) => ({
+        ...currentData,
+        leases: currentData.leases.map((item) =>
+          item.id === lease.id ? { ...markLeaseRegistered(item, date), updatedAt: nowLabel() } : item,
+        ),
+      }),
+      `Contratto di ${lease.tenantName} registrato il ${date}: la scadenza sparisce dalla coda.`,
+    );
+  }
+
   function closeLease(lease: LeaseRecord) {
     onCommit(
       (currentData) => ({
@@ -827,6 +879,7 @@ export function LeasesView({ pageKey, query, data, onCommit, onAction }: Operati
             ];
           })}
           actions={[
+            { label: "Registra", onClick: (rowIndex) => { const lease = visibleLeases[rowIndex]; if (lease) registerLease(lease); } },
             { label: "Incassi", onClick: (rowIndex) => { const lease = visibleLeases[rowIndex]; if (lease) generatePayments(lease); } },
             { label: "Rinnova", onClick: (rowIndex) => { const lease = visibleLeases[rowIndex]; if (lease) renewLease(lease); } },
             { label: "Chiudi", onClick: (rowIndex) => { const lease = visibleLeases[rowIndex]; if (lease) closeLease(lease); } },

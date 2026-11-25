@@ -261,6 +261,7 @@ export function migrateOperationsData(data: CrmData, today = new Date()): Operat
       deals.push({
         id: `deal-${request.id}`,
         propertyId: property.id,
+        requestId: request.id,
         clientName: request.client,
         clientContactId: client?.id,
         type: property.kind === "affitto" ? "Affitto" : "Vendita",
@@ -533,6 +534,30 @@ export function buildNextActions(data: CrmData, today = new Date()): NextAction[
   return actions
     .sort((first, second) => first.priority - second.priority)
     .slice(0, 12);
+}
+
+/* ------------------------------------------------------------------ */
+/* Trattativa e richiesta                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * La richiesta che ha generato la trattativa si chiude con lei, sia che
+ * l'affare si concluda sia che salti: altrimenti resta "in trattativa" e
+ * dopo due settimane torna nei prossimi passi come se fosse ferma.
+ */
+export function closeLinkedRequest(
+  requests: RequestRecord[],
+  deal: Pick<DealRecord, "requestId">,
+  today = new Date(),
+): RequestRecord[] {
+  if (!deal.requestId) {
+    return requests;
+  }
+  return requests.map((request) =>
+    request.id === deal.requestId
+      ? { ...request, status: "Chiusa", stageChangedAt: new Date().toISOString(), updatedAt: todayIso(today) }
+      : request,
+  );
 }
 
 /** Etichetta compatta dello stato di un pagamento. */

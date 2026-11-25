@@ -150,6 +150,51 @@ test("a deal that already carries closing values keeps them", () => {
   });
 });
 
+test("la tabella trattative separa aperte, chiuse e perse", () => {
+  const open = dealRecord({ stage: "Proposta" });
+  const won = dealRecord({ stage: "Chiusa" });
+  const lost = dealRecord({ stage: "Persa" });
+
+  assert.equal(domain.matchesDealFilter(open, "Aperte"), true, "il default mostra le trattative in corso");
+  assert.equal(domain.matchesDealFilter(won, "Aperte"), false);
+  assert.equal(domain.matchesDealFilter(lost, "Aperte"), false);
+  assert.equal(domain.matchesDealFilter(won, "Chiuse"), true);
+  assert.equal(domain.matchesDealFilter(open, "Chiuse"), false);
+  assert.equal(domain.matchesDealFilter(lost, "Perse"), true);
+  assert.equal(domain.matchesDealFilter(won, "Perse"), false);
+});
+
+test("registrare il contratto fissa la data e toglie la scadenza dalla coda", () => {
+  const lease = {
+    id: "lease-1",
+    propertyId: "property-1",
+    tenantName: "Inquilino",
+    contractType: "4+4 canone libero",
+    rent: "900",
+    deposit: "",
+    startDate: "2026-11-01",
+    endDate: "2030-11-01",
+    registrationDate: "",
+    taxRegime: "Cedolare secca",
+    istatAdjustment: "Si",
+    status: "Attivo",
+    payments: [],
+    agent: "",
+    officeId: "office-sede-principale",
+    notes: "",
+    updatedAt: "2026-11-24",
+  };
+  const keys = (item) => domain.leaseDeadlines(item, new Date(2026, 10, 24)).map((deadline) => deadline.key);
+
+  assert.ok(keys(lease).includes("registrazione"), "prima della registrazione la scadenza c'e'");
+
+  const registered = domain.markLeaseRegistered(lease, "2026-11-25");
+
+  assert.equal(registered.registrationDate, "2026-11-25");
+  assert.equal(lease.registrationDate, "", "il contratto di partenza non viene modificato");
+  assert.equal(keys(registered).includes("registrazione"), false, "dopo la registrazione la scadenza sparisce");
+});
+
 test("lease end date follows the contract type", () => {
   assert.equal(domain.suggestedLeaseEnd("2026-11-01", "4+4 canone libero"), "2030-11-01");
   assert.equal(domain.suggestedLeaseEnd("2026-11-01", "3+2 canone concordato"), "2029-11-01");

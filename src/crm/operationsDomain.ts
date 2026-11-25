@@ -103,6 +103,8 @@ export const dealStageOrder: DealStage[] = [
 export type DealRecord = {
   id: string;
   propertyId: string;
+  /** Richiesta del cliente da cui nasce la proposta: alla chiusura si chiude anche lei. */
+  requestId?: string;
   clientName: string;
   clientContactId?: string;
   type: "Vendita" | "Affitto";
@@ -353,4 +355,25 @@ export function nextDealStage(stage: DealStage): DealStage | null {
     return null;
   }
   return dealStageOrder[index + 1];
+}
+
+/** La tabella trattative mostra un blocco alla volta: le aperte di default. */
+export type DealFilter = "Aperte" | "Chiuse" | "Perse";
+
+export function matchesDealFilter(deal: { stage: DealStage }, filter: DealFilter) {
+  if (filter === "Chiuse") {
+    return deal.stage === "Chiusa";
+  }
+  if (filter === "Perse") {
+    return deal.stage === "Persa";
+  }
+  return deal.stage !== "Chiusa" && deal.stage !== "Persa";
+}
+
+/**
+ * Registrare il contratto fissa la data: da li' in poi la scadenza dei 30
+ * giorni non ha piu' senso e sparisce dalla coda dei prossimi passi.
+ */
+export function markLeaseRegistered(lease: LeaseRecord, today: string): LeaseRecord {
+  return { ...lease, registrationDate: lease.registrationDate || today };
 }

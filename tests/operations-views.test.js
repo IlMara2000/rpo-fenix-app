@@ -81,6 +81,57 @@ test("trattative: il select immobile, sede e contatti portano gli id", () => {
   assert.match(html, /value="contact-2"/);
 });
 
+function dealRecord(overrides = {}) {
+  return {
+    id: "deal-1",
+    propertyId: "property-1",
+    clientName: "Cliente",
+    type: "Vendita",
+    stage: "Proposta",
+    offerAmount: "250000",
+    deposit: "",
+    proposalDate: "2026-11-01",
+    expiryDate: "2026-11-15",
+    closingDate: "",
+    commission: "3%",
+    agent: "",
+    officeId: "office-1",
+    notes: "",
+    stageChangedAt: "2026-11-01T10:00:00.000Z",
+    updatedAt: "2026-11-24",
+    ...overrides,
+  };
+}
+
+test("trattative: di default la tabella mostra solo quelle aperte", () => {
+  const data = baseData();
+  data.deals = [
+    dealRecord({ id: "deal-open", clientName: "Cliente in corso" }),
+    dealRecord({ id: "deal-won", clientName: "Cliente con rogito", stage: "Chiusa", closingPrice: "250000" }),
+    dealRecord({ id: "deal-lost", clientName: "Cliente perso", stage: "Persa" }),
+  ];
+
+  const html = globalThis.renderDeals(data);
+
+  assert.match(html, /Cliente in corso/);
+  assert.doesNotMatch(html, /Cliente con rogito/, "le chiuse non stanno tra le aperte");
+  assert.doesNotMatch(html, /Cliente perso/, "le perse non stanno tra le aperte");
+});
+
+test("trattative: la richiesta collegata si sceglie per id e solo se e' aperta", () => {
+  const data = baseData();
+  data.requests = [
+    { id: "request-1", client: "Giulia Neri", target: "Trilocale", area: "", match: "", proposal: "", status: "Trattativa", updatedAt: "2026-11-24" },
+    { id: "request-2", client: "Paolo Bianchi", target: "Bilocale", area: "", match: "", proposal: "", status: "Chiusa", updatedAt: "2026-11-24" },
+  ];
+
+  const html = globalThis.renderDeals(data);
+
+  assert.match(html, /name="request"/);
+  assert.match(html, /value="request-1"/);
+  assert.doesNotMatch(html, /value="request-2"/, "una richiesta chiusa non si propone piu'");
+});
+
 test("locazioni: il select immobile e sede portano gli id", () => {
   const html = globalThis.renderLeases(baseData());
   assert.match(html, /value="property-1"/);
