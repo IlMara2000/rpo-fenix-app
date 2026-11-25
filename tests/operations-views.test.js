@@ -88,3 +88,10 @@ test("locazioni: il select immobile e sede portano gli id", () => {
   assert.match(html, /value="office-1"/);
   assert.match(html, /value="office-2"/);
 });
+
+test("locazioni: l'inquilino e' un contatto scelto per id, cosi' due omonimi restano distinti", () => {
+  const html = globalThis.renderLeases(baseData());
+  assert.match(html, /name="tenantContact"/);
+  assert.match(html, /value="contact-1"/);
+  assert.match(html, /value="contact-2"/);
+});

@@ -616,7 +616,8 @@ export function LeasesView({ pageKey, query, data, onCommit, onAction }: Operati
       description: "Registrazione entro 30 giorni, disdetta 6 mesi prima della scadenza: le scadenze si calcolano da qui.",
       fields: [
         { name: "property", label: "Immobile", type: "select", required: true, options: propertyOptions(data), placeholder: "Seleziona immobile" },
-        { name: "tenantName", label: "Inquilino", required: true },
+        { name: "tenantContact", label: "Inquilino (contatto)", type: "select", required: false, options: contactOptions(data), placeholder: "Seleziona contatto esistente" },
+        { name: "tenantName", label: "Nuovo inquilino", required: false },
         { name: "contractType", label: "Tipo contratto", type: "select", required: true, options: leaseTypeOptions },
         { name: "rent", label: "Canone mensile", type: "number", required: true },
         { name: "deposit", label: "Deposito cauzionale", type: "number" },
@@ -745,13 +746,23 @@ export function LeasesView({ pageKey, query, data, onCommit, onAction }: Operati
                 onAction("Immobile non trovato: ricarica la pagina e riprova.");
                 return;
               }
+              const selectedContact = values.tenantContact
+                ? data.contacts.find((contact) => contact.id === values.tenantContact)
+                : undefined;
+              const tenantName = (selectedContact?.name || values.tenantName || "").trim();
+              if (!tenantName) {
+                onAction("Inserisci un inquilino o seleziona un contatto.");
+                return;
+              }
+              const tenant = selectedContact ?? data.contacts.find((contact) => contact.name === tenantName);
               const startDate = values.startDate || todayIso();
               const contractType = (values.contractType as LeaseType) || "4+4 canone libero";
               const leaseId = makeId("lease");
               const lease: LeaseRecord = {
                 id: leaseId,
                 propertyId: property.id,
-                tenantName: values.tenantName,
+                tenantName,
+                tenantContactId: tenant?.id,
                 contractType,
                 rent: values.rent,
                 deposit: values.deposit,
