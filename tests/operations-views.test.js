@@ -13,6 +13,7 @@ async function loadViews() {
         import { AcquisitionView, DealsView, LeasesView } from "./src/crm/operationsViews.tsx";
         globalThis.renderAcquisition = (data) => renderToStaticMarkup(createElement(AcquisitionView, { pageKey: "acquisizione-nuovo", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
         globalThis.renderDeals = (data) => renderToStaticMarkup(createElement(DealsView, { pageKey: "trattative-nuova", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
+        globalThis.renderDealsList = (data) => renderToStaticMarkup(createElement(DealsView, { pageKey: "trattative-elenco", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
         globalThis.renderLeases = (data) => renderToStaticMarkup(createElement(LeasesView, { pageKey: "locazioni-nuova", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
       `,
       resolveDir: root,
@@ -117,6 +118,50 @@ test("trattative: di default la tabella mostra solo quelle aperte", () => {
   assert.match(html, /Cliente in corso/);
   assert.doesNotMatch(html, /Cliente con rogito/, "le chiuse non stanno tra le aperte");
   assert.doesNotMatch(html, /Cliente perso/, "le perse non stanno tra le aperte");
+});
+
+test("trattative: il riepilogo economico delle chiuse e' per periodo e per sede", () => {
+  const data = baseData();
+  data.deals = [
+    dealRecord({ id: "deal-open", stage: "Proposta", clientName: "Cliente in corso" }),
+    dealRecord({
+      id: "deal-won",
+      clientName: "Cliente con rogito",
+      stage: "Chiusa",
+      closingDate: "2026-11-20",
+      closingPrice: "250.000",
+      commissionEarned: "7500",
+      commissionPaidAt: "2026-11-22",
+      officeId: "office-1",
+    }),
+    dealRecord({
+      id: "deal-won-2",
+      clientName: "Cliente a Roma",
+      stage: "Chiusa",
+      closingDate: "2026-10-02",
+      closingPrice: "180000",
+      commissionEarned: "5400",
+      officeId: "office-2",
+    }),
+  ];
+
+  const html = globalThis.renderDealsList(data);
+
+  assert.match(html, /Provvigioni per periodo/);
+  assert.match(html, /Provvigioni per sede/);
+  assert.match(html, /novembre 2026/);
+  assert.match(html, /ottobre 2026/);
+  assert.match(html, /Totale/);
+  assert.match(html, /7\.500\s*€/, "la provvigione incassata compare in euro");
+  assert.match(html, /5\.400\s*€/, "la provvigione dovuta compare anche se non incassata");
+  assert.match(html, /430\.000\s*€/, "i prezzi finali si sommano per periodo");
+});
+
+test("trattative: senza chiusure il riepilogo economico non compare", () => {
+  const data = baseData();
+  data.deals = [dealRecord({ id: "deal-open" })];
+
+  assert.doesNotMatch(globalThis.renderDealsList(data), /Provvigioni per periodo/);
 });
 
 test("trattative: la richiesta collegata si sceglie per id e solo se e' aperta", () => {

@@ -15,13 +15,16 @@ import {
   addMonths,
   commissionLabel,
   dealClosingValues,
+  dealEconomics,
   dealStageOrder,
+  formatEuro,
   leaseDeadlines,
   leaseTypeOptions,
   mandateExclusivityOptions,
   mandateState,
   markLeaseRegistered,
   matchesDealFilter,
+  type DealEconomicsGroupBy,
   nextDealStage,
   officeOptionLabel,
   propertyLabel,
@@ -406,6 +409,44 @@ export function AcquisitionView({ pageKey, query, data, onCommit, onAction }: Op
 /* Trattative                                                          */
 /* ------------------------------------------------------------------ */
 
+const economicsColumns = ["Trattative", "Prezzi finali", "Provvigioni dovute", "Provvigioni incassate"];
+
+/** Riepilogo delle sole trattative chiuse: mese di chiusura e sede. */
+function DealsEconomicsPanel({ deals, offices }: { deals: DealRecord[]; offices: OfficeRecord[] }) {
+  const groups: { title: string; groupBy: DealEconomicsGroupBy }[] = [
+    { title: "Provvigioni per periodo", groupBy: "periodo" },
+    { title: "Provvigioni per sede", groupBy: "sede" },
+  ];
+  return (
+    <>
+      {groups.map(({ title, groupBy }) => {
+        const summary = dealEconomics(deals, offices, groupBy);
+        return (
+          <Panel className="span-6" key={groupBy} title={title}>
+            <DataTable
+              emptyMessage="Nessuna trattativa chiusa: il riepilogo si popola al primo rogito."
+              columns={[groupBy === "sede" ? "Sede" : "Periodo", ...economicsColumns]}
+              rows={[...summary.rows, summary.totals].map((row) => [
+                row.label,
+                String(row.deals),
+                formatEuro(row.finalPrices),
+                formatEuro(row.due),
+                formatEuro(row.collected),
+              ])}
+            />
+            {groupBy === "periodo" && summary.withoutCommission ? (
+              <p>
+                {summary.withoutCommission} trattative chiuse non hanno un importo di provvigione leggibile: restano
+                fuori dal totale dovuto.
+              </p>
+            ) : null}
+          </Panel>
+        );
+      })}
+    </>
+  );
+}
+
 export function DealsView({ pageKey, query, data, onCommit, onAction }: OperationsViewProps) {
   const [officeFilter, setOfficeFilter] = useState("");
   const [stageFilter, setStageFilter] = useState<DealFilter>("Aperte");
@@ -641,6 +682,10 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
           ]}
         />
       </Panel>
+
+      {data.deals.some((deal) => deal.stage === "Chiusa") ? (
+        <DealsEconomicsPanel deals={data.deals} offices={data.offices} />
+      ) : null}
     </div>
   );
 }

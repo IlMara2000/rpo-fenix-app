@@ -399,6 +399,133 @@ export function commissionLabel(deal: DealRecord): string {
     : `${deal.commissionEarned} € · dovuta`;
 }
 
+/**
+ * Importo in euro all'italiana. Non usa Intl per il raggruppamento: in
+ * alcune build di Node restituisce "7500" senza punto delle migliaia.
+ */
+export function formatEuro(value: number): string {
+  const rounded = Math.round(value * 100) / 100;
+  const [integer, decimals] = String(Math.abs(rounded)).split(".");
+  const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return `${rounded < 0 ? "-" : ""}${grouped}${decimals ? `,${decimals}` : ""} €`;
+}
+
+const monthLabels = [
+  "gennaio",
+  "febbraio",
+  "marzo",
+  "aprile",
+  "maggio",
+  "giugno",
+  "luglio",
+  "agosto",
+  "settembre",
+  "ottobre",
+  "novembre",
+  "dicembre",
+];
+
+/** Riga del riepilogo economico: un mese di chiusura o una sede. */
+export type DealEconomicsRow = {
+  key: string;
+  label: string;
+  deals: number;
+  finalPrices: number;
+  due: number;
+  collected: number;
+};
+
+export type DealEconomics = {
+  rows: DealEconomicsRow[];
+  totals: DealEconomicsRow;
+  /** Trattative chiuse senza un importo di provvigione leggibile. */
+  withoutCommission: number;
+};
+
+export type DealEconomicsGroupBy = "periodo" | "sede";
+
+function amountOrZero(value?: string): number {
+  const amount = parseAmount(value || "");
+  return Number.isFinite(amount) && amount > 0 ? amount : 0;
+}
+
+function dealPeriod(closingDate?: string) {
+  const match = /^(\d{4})-(\d{2})/.exec(String(closingDate || ""));
+  if (!match) {
+    return { key: "", label: "Senza data di chiusura" };
+  }
+  const month = monthLabels[Number(match[2]) - 1];
+  return { key: `${match[1]}-${match[2]}`, label: `${month ?? match[2]} ${match[1]}` };
+}
+
+/**
+ * Riepilogo economico delle sole trattative chiuse: prezzi finali,
+ * provvigioni dovute e incassate, per mese di chiusura o per sede. Gli
+ * importi passano da `parseAmount`, cosi' "250.000" non vale 250.
+ */
+export function dealEconomics(
+  deals: DealRecord[],
+  offices: Pick<OfficeRecord, "id" | "name">[] = [],
+  groupBy: DealEconomicsGroupBy = "periodo",
+): DealEconomics {
+  const rows = new Map<string, DealEconomicsRow>();
+  const totals: DealEconomicsRow = { key: "totale", label: "Totale", deals: 0, finalPrices: 0, due: 0, collected: 0 };
+  const officeOrder = new Map(offices.map((office, index) => [office.id, index]));
+  let withoutCommission = 0;
+
+  deals
+    .filter((deal) => deal.stage === "Chiusa")
+    .forEach((deal) => {
+      const index = officeOrder.get(deal.officeId);
+      const group =
+        groupBy === "sede"
+          ? index === undefined
+            ? { key: "", label: "Sede non assegnata" }
+            : { key: deal.officeId, label: offices[index].name }
+          : dealPeriod(deal.closingDate);
+
+      const row =
+        rows.get(group.key) ?? { key: group.key, label: group.label, deals: 0, finalPrices: 0, due: 0, collected: 0 };
+      const due = amountOrZero(deal.commissionEarned);
+      const values = {
+        deals: 1,
+        finalPrices: amountOrZero(deal.closingPrice || deal.offerAmount),
+        due,
+        collected: deal.commissionPaidAt ? due : 0,
+      };
+      if (!due) {
+        withoutCommission += 1;
+      }
+      [row, totals].forEach((target) => {
+        target.deals += values.deals;
+        target.finalPrices += values.finalPrices;
+        target.due += values.due;
+        target.collected += values.collected;
+      });
+      rows.set(group.key, row);
+    });
+
+  // Array.from e non spread: i test transpilano il dominio con il target
+  // predefinito, dove lo spread di un Map diventa una lista vuota.
+  const sorted = Array.from(rows.values()).sort((first, second) => {
+    if (groupBy === "sede") {
+      const firstIndex = officeOrder.get(first.key);
+      const secondIndex = officeOrder.get(second.key);
+      if (firstIndex === undefined || secondIndex === undefined) {
+        return firstIndex === undefined ? 1 : secondIndex === undefined ? -1 : 0;
+      }
+      return firstIndex - secondIndex;
+    }
+    // Il mese piu' recente in alto; le chiusure senza data in fondo.
+    if (!first.key || !second.key) {
+      return first.key ? -1 : second.key ? 1 : 0;
+    }
+    return second.key.localeCompare(first.key);
+  });
+
+  return { rows: sorted, totals, withoutCommission };
+}
+
 export function nextDealStage(stage: DealStage): DealStage | null {
   const index = dealStageOrder.indexOf(stage);
   if (index < 0 || index >= dealStageOrder.length - 1) {

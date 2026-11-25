@@ -170,6 +170,103 @@ test("senza data di incasso la provvigione resta dovuta", () => {
   assert.equal(domain.commissionLabel(dealRecord()), "-", "senza importo non c'e' niente da incassare");
 });
 
+test("il riepilogo economico somma solo le trattative chiuse, per mese e per sede", () => {
+  const offices = [
+    { id: "office-1", name: "Milano" },
+    { id: "office-2", name: "Roma" },
+  ];
+  const deals = [
+    dealRecord({
+      id: "deal-a",
+      stage: "Chiusa",
+      closingDate: "2026-11-20",
+      closingPrice: "250.000",
+      commissionEarned: "7500",
+      commissionPaidAt: "2026-11-22",
+      officeId: "office-1",
+    }),
+    dealRecord({
+      id: "deal-b",
+      stage: "Chiusa",
+      closingDate: "2026-11-05",
+      closingPrice: "180000",
+      commissionEarned: "5400",
+      officeId: "office-2",
+    }),
+    dealRecord({
+      id: "deal-c",
+      stage: "Chiusa",
+      closingDate: "2026-10-30",
+      closingPrice: "120000",
+      commissionEarned: "3600",
+      commissionPaidAt: "2026-10-31",
+      officeId: "office-1",
+    }),
+    dealRecord({ id: "deal-open", stage: "Proposta", closingDate: "2026-11-01", closingPrice: "999000" }),
+    dealRecord({ id: "deal-lost", stage: "Persa", closingDate: "2026-11-02", closingPrice: "999000" }),
+  ];
+
+  const perPeriodo = domain.dealEconomics(deals, offices, "periodo");
+  assert.deepEqual(
+    perPeriodo.rows.map((row) => [row.label, row.deals, row.finalPrices, row.due, row.collected]),
+    [
+      ["novembre 2026", 2, 430000, 12900, 7500],
+      ["ottobre 2026", 1, 120000, 3600, 3600],
+    ],
+    "un mese per riga, dal piu' recente, senza aperte e perse",
+  );
+  assert.deepEqual(
+    [perPeriodo.totals.deals, perPeriodo.totals.finalPrices, perPeriodo.totals.due, perPeriodo.totals.collected],
+    [3, 550000, 16500, 11100],
+  );
+  assert.equal(perPeriodo.withoutCommission, 0);
+
+  const perSede = domain.dealEconomics(deals, offices, "sede");
+  assert.deepEqual(
+    perSede.rows.map((row) => [row.label, row.deals, row.finalPrices, row.due, row.collected]),
+    [
+      ["Milano", 2, 370000, 11100, 11100],
+      ["Roma", 1, 180000, 5400, 0],
+    ],
+    "l'ordine delle sedi segue l'anagrafica",
+  );
+  assert.equal(perSede.totals.due, perPeriodo.totals.due, "il totale non dipende dal raggruppamento");
+});
+
+test("il riepilogo segnala le chiusure senza provvigione e quelle senza data", () => {
+  const deals = [
+    dealRecord({
+      id: "deal-1",
+      stage: "Chiusa",
+      closingDate: "",
+      closingPrice: "250000",
+      commissionEarned: "",
+      officeId: "office-1",
+    }),
+    dealRecord({
+      id: "deal-2",
+      stage: "Chiusa",
+      closingDate: "2026-11-20",
+      closingPrice: "1.250,50",
+      commissionEarned: "38",
+      officeId: "office-sconosciuta",
+    }),
+  ];
+
+  const summary = domain.dealEconomics(deals, [{ id: "office-1", name: "Milano" }], "sede");
+
+  assert.deepEqual(
+    summary.rows.map((row) => [row.label, row.deals, row.due]),
+    [
+      ["Milano", 1, 0],
+      ["Sede non assegnata", 1, 38],
+    ],
+    "una sede revocata non perde la sua provvigione",
+  );
+  assert.equal(summary.withoutCommission, 1);
+  assert.equal(summary.totals.finalPrices, 250000 + 1250.5, "i prezzi all'italiana si sommano giusti");
+});
+
 test("a deal that already carries closing values keeps them", () => {
   const deal = dealRecord({ closingDate: "2026-11-20", closingPrice: "245000", commissionEarned: "7350" });
 
