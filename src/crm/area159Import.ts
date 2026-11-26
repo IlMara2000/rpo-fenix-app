@@ -1,10 +1,14 @@
-import { makeId, type ContactRecord, type CrmData, type PropertyRecord } from "./kit";
+import { makeId, type CrmData, type PropertyRecord } from "./kit";
 
 /**
  * Import di un export testuale di Area159 (CSV/TSV con intestazione).
  * La lettura e' tollerante — separatore dedotto, virgolette, BOM — ma la
  * mappatura non indovina: le colonne che non riconosce le elenca, e i campi
  * che mancano finiscono tra le cose da verificare invece di diventare zeri.
+ *
+ * L'anteprima e' senza effetti: niente id e niente date, solo i dati letti.
+ * Identificativi e data di aggiornamento nascono nell'applicazione, cosi' una
+ * seconda anteprima dello stesso file produce lo stesso risultato.
  */
 
 export type ImportTable = { headers: string[]; rows: string[][] };
@@ -122,15 +126,31 @@ export function mapHeaders(headers: string[]) {
   return { columns, unrecognized };
 }
 
+/** Un immobile letto dal file, senza id né data: quelli arrivano applicando. */
+export type Area159PropertyDraft = {
+  code: string;
+  title: string;
+  zone: string;
+  status: string;
+  price: string;
+  owner: string;
+  kind: PropertyRecord["kind"];
+  portals: string;
+  phone?: string;
+  taxCode?: string;
+};
+
+export type Area159ContactDraft = { name: string; phone: string; taxCode: string };
+
 export type Area159ImportPreview = {
   rows: number;
   created: number;
   updated: number;
-  newContacts: ContactRecord[];
+  newContacts: Area159ContactDraft[];
   duplicateContacts: number;
   unrecognized: string[];
   missing: string[];
-  properties: PropertyRecord[];
+  properties: Area159PropertyDraft[];
 };
 
 function cell(row: string[], columns: Record<string, number>, field: string) {
@@ -171,11 +191,9 @@ export function previewArea159Import(data: CrmData, text: string): Area159Import
     const taxCode = cell(row, columns, "taxCode");
     const phone = cell(row, columns, "phone");
     const status = cell(row, columns, "status");
-    const kind = /affitt|locazion/i.test(cell(row, columns, "kind")) ? "affitto" : "vendita";
     const finalCode = code || `A159-${preview.properties.length + 1}`;
 
     preview.properties.push({
-      id: makeId("property"),
       code: finalCode,
       title: title || [zone, city].filter(Boolean).join(", ") || "Immobile senza titolo",
       zone: zone || city || "Zona da definire",
@@ -183,10 +201,9 @@ export function previewArea159Import(data: CrmData, text: string): Area159Import
       price: price || "Da valutare",
       owner: owner || "Proprietario da associare",
       portals: "Bozza",
-      kind,
+      kind: /affitt|locazion/i.test(cell(row, columns, "kind")) ? "affitto" : "vendita",
       phone: phone || undefined,
       taxCode: taxCode || undefined,
-      updatedAt: new Date().toISOString().slice(0, 10),
     });
 
     if (knownCodes.has(finalCode.trim().toLowerCase())) {
@@ -201,20 +218,7 @@ export function previewArea159Import(data: CrmData, text: string): Area159Import
         preview.duplicateContacts += 1;
       } else {
         knownContacts.add(key);
-        preview.newContacts.push({
-          id: makeId("contact"),
-          name: owner || "Proprietario senza nome",
-          type: "Proprietario",
-          status: "Attivo",
-          source: "Area159",
-          owner: "",
-          phone: phone || "",
-          email: "",
-          taxCode: taxCode || "",
-          note: "",
-          nextStep: "",
-          updatedAt: new Date().toISOString().slice(0, 10),
-        });
+        preview.newContacts.push({ name: owner || "Proprietario senza nome", phone: phone || "", taxCode: taxCode || "" });
       }
     }
   });
@@ -233,21 +237,56 @@ export function previewArea159Import(data: CrmData, text: string): Area159Import
   return preview;
 }
 
-/** Applica l'anteprima: gli immobili si aggiornano per codice, i contatti si aggiungono. */
-export function applyArea159Import(data: CrmData, preview: Area159ImportPreview): CrmData {
-  const byCode = new Map(preview.properties.map((property) => [property.code.trim().toLowerCase(), property]));
+/** Copia integrale da conservare prima di applicare: e' ciò che rende l'import annullabile. */
+export function importSnapshot(data: CrmData): CrmData {
+  return JSON.parse(JSON.stringify(data)) as CrmData;
+}
+
+/**
+ * Applica l'anteprima. Solo qui nascono id e data di aggiornamento: gli immobili
+ * con lo stesso codice si aggiornano (l'id esistente non cambia), gli altri si
+ * aggiungono, e i proprietari mai visti entrano in rubrica.
+ */
+export function applyArea159Import(
+  data: CrmData,
+  preview: Area159ImportPreview,
+  today = new Date(),
+): CrmData {
+  const updatedAt = today.toISOString().slice(0, 10);
+  const incoming: PropertyRecord[] = preview.properties.map((draft) => ({
+    ...draft,
+    id: makeId("property"),
+    updatedAt,
+  }));
+  const byCode = new Map(incoming.map((property) => [property.code.trim().toLowerCase(), property]));
+
   const properties = data.properties.map((property) => {
-    const incoming = byCode.get(property.code.trim().toLowerCase());
-    if (!incoming) {
+    const draft = byCode.get(property.code.trim().toLowerCase());
+    if (!draft) {
       return property;
     }
     byCode.delete(property.code.trim().toLowerCase());
-    return { ...property, ...incoming, id: property.id };
+    return { ...property, ...draft, id: property.id };
   });
+
+  const contacts = preview.newContacts.map((draft) => ({
+    id: makeId("contact"),
+    name: draft.name,
+    type: "Proprietario",
+    status: "Attivo",
+    source: "Area159",
+    owner: "",
+    phone: draft.phone,
+    email: "",
+    taxCode: draft.taxCode,
+    note: "",
+    nextStep: "",
+    updatedAt,
+  }));
 
   return {
     ...data,
     properties: [...properties, ...Array.from(byCode.values())],
-    contacts: [...data.contacts, ...preview.newContacts],
+    contacts: [...data.contacts, ...contacts],
   };
 }

@@ -18,12 +18,30 @@ export function Area159ImportPanel({
   onApply: (text: string) => void;
   onUndo: () => void;
 }) {
+  const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [fileName, setFileName] = useState("");
   const preview = useMemo(() => (text.trim() ? previewArea159Import(data, text) : null), [data, text]);
 
+  // Chiuso di default: l'import tocca l'archivio, non deve stare sotto il
+  // cursore di chi apre la dashboard per altro.
+  if (!open) {
+    return (
+      <Panel
+        className="span-12"
+        title="Import da Area159"
+        action="Apri"
+        onPanelAction={() => setOpen(true)}
+      >
+        <p className="panel-note">
+          Carica un export Area159 per vedere in anteprima cosa entrerebbe, prima di scrivere qualsiasi cosa.
+        </p>
+      </Panel>
+    );
+  }
+
   return (
-    <Panel className="span-12" title="Import da Area159">
+    <Panel className="span-12" title="Import da Area159" action="Chiudi" onPanelAction={() => setOpen(false)}>
       <div className="migration-detail">
         <p>
           Scarica l'export dal tuo account Area159 e caricalo qui: nulla viene scritto prima della conferma, e
@@ -93,6 +111,9 @@ export function Area159ImportPanel({
             <div className="migration-actions">
               <button className="toolbar-button is-primary" type="button" onClick={() => onApply(text)}>
                 Applica import
+              </button>
+              <button className="toolbar-button" type="button" onClick={() => setText("")}>
+                Svuota file
               </button>
             </div>
           </>

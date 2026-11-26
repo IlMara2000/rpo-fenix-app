@@ -8,11 +8,12 @@ async function loadImport() {
   const result = await build({
     stdin: {
       contents: `
-        import { parseDelimited, mapHeaders, previewArea159Import, applyArea159Import } from "./src/crm/area159Import.ts";
+        import { parseDelimited, mapHeaders, previewArea159Import, applyArea159Import, importSnapshot } from "./src/crm/area159Import.ts";
         globalThis.parseDelimited = parseDelimited;
         globalThis.mapHeaders = mapHeaders;
         globalThis.previewArea159Import = previewArea159Import;
         globalThis.applyArea159Import = applyArea159Import;
+        globalThis.importSnapshot = importSnapshot;
       `,
       resolveDir: root,
       loader: "tsx",
@@ -116,6 +117,59 @@ test("import Area159: applicare non muta l'archivio e un secondo import aggiorna
   const reapplied = globalThis.applyArea159Import(applied, again);
   assert.equal(reapplied.properties.length, 3);
   assert.equal(reapplied.properties[0].id, applied.properties[0].id, "l'id della scheda esistente non cambia");
+});
+
+test("import Area159: l'anteprima non inventa id né date", () => {
+  const preview = globalThis.previewArea159Import(emptyData(), exportCsv);
+
+  preview.properties.forEach((draft) => {
+    assert.equal(draft.id, undefined, "l'immobile in anteprima non ha id");
+    assert.equal(draft.updatedAt, undefined, "l'immobile in anteprima non ha data");
+  });
+  preview.newContacts.forEach((draft) => {
+    assert.equal(draft.id, undefined, "il proprietario in anteprima non ha id");
+    assert.equal(draft.updatedAt, undefined, "il proprietario in anteprima non ha data");
+  });
+
+  const applied = globalThis.applyArea159Import(emptyData(), preview, new Date("2026-11-26T10:00:00.000Z"));
+  assert.ok(applied.properties.every((property) => property.updatedAt === "2026-11-26"), "la data nasce applicando");
+  assert.ok(applied.properties.every((property) => Boolean(property.id)), "e anche l'id");
+});
+
+test("import Area159: la copia presa prima di applicare annulla ogni modifica", () => {
+  const data = emptyData();
+  data.properties = [
+    {
+      id: "property-existing",
+      code: "FS-100",
+      title: "Prima dell'import",
+      zone: "Centro",
+      status: "In gestione",
+      price: "100000",
+      owner: "Mario Rossi",
+      portals: "Bozza",
+      kind: "vendita",
+      updatedAt: "2026-11-01",
+    },
+  ];
+
+  const before = globalThis.importSnapshot(data);
+  const applied = globalThis.applyArea159Import(data, globalThis.previewArea159Import(data, exportCsv));
+
+  assert.equal(applied.properties.length, 4, "applicato: l'archivio cresce");
+  assert.equal(applied.contacts.length, 2);
+
+  // L'annullamento è il ripristino della copia: deve essere l'archivio di prima.
+  assert.deepEqual(before, data);
+  assert.equal(before.properties.length, 1);
+  assert.equal(before.contacts.length, 0);
+  assert.equal(before.properties[0].title, "Prima dell'import");
+
+  // E la copia è indipendente dal risultato: nessun riferimento condiviso.
+  applied.properties[0].title = "Cambiato dopo l'import";
+  applied.contacts.push({ id: "contact-x" });
+  assert.equal(before.properties[0].title, "Prima dell'import");
+  assert.equal(before.contacts.length, 0);
 });
 
 test("import Area159: senza colonne chiave l'anteprima lo dice", () => {

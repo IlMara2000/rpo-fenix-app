@@ -114,7 +114,7 @@ import {
 } from "./crm/operationsViews";
 import { backfillDealCommissions, migrateOperationsData } from "./crm/operations";
 import { Area159ImportPanel } from "./crm/Area159ImportPanel";
-import { applyArea159Import, previewArea159Import } from "./crm/area159Import";
+import { applyArea159Import, importSnapshot, previewArea159Import } from "./crm/area159Import";
 import {
   InformationArchivePanel,
   type ArchiveCandidate,
@@ -2614,7 +2614,7 @@ function Workspace({
     try {
       privateStorage.setItem(
         importBackupKey,
-        JSON.stringify({ savedAt: new Date().toISOString(), data: crmData }),
+        JSON.stringify({ savedAt: new Date().toISOString(), data: importSnapshot(crmData) }),
       );
     } catch {
       runAction("Spazio insufficiente per la copia di sicurezza: import non applicato.");
