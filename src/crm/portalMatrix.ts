@@ -26,6 +26,16 @@ const stateKey = (siteId: string) => `portal.${siteId}.state`;
 const dateKey = (siteId: string) => `portal.${siteId}.at`;
 
 /**
+ * Il giorno di una data ISO, completa ("2026-11-25T18:00:00.000Z") o semplice
+ * ("2026-11-25"). Confrontare le stringhe intere sbagliava proprio quando la
+ * scheda aveva un timestamp completo: lo stesso giorno risultava successivo
+ * solo perché più lungo.
+ */
+function isoDay(value: string): string {
+  return String(value || "").slice(0, 10);
+}
+
+/**
  * Esito di un immobile su un sito. Se la scheda e' cambiata dopo l'invio
  * l'esito e' «Da aggiornare»: un prezzo vecchio su un portale e' un danno,
  * non una svista da scoprire per caso.
@@ -35,8 +45,9 @@ export function portalOutcome(property: PortalProperty, site: PortalSite): strin
   if (details[stateKey(site.id)] !== "Pubblicato") {
     return "—";
   }
-  const sent = details[dateKey(site.id)] || "";
-  return sent && sent < property.updatedAt ? "Da aggiornare" : "Pubblicato";
+  const sent = isoDay(details[dateKey(site.id)] || "");
+  const edited = isoDay(property.updatedAt);
+  return sent && edited && sent < edited ? "Da aggiornare" : "Pubblicato";
 }
 
 export function portalTotals(property: PortalProperty, sites: PortalSite[] = portalSites) {

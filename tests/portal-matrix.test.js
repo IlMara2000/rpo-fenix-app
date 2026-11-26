@@ -66,6 +66,29 @@ test("matrice portali: se la scheda cambia dopo l'invio il sito va aggiornato", 
   assert.equal(globalThis.portalTotals(edited).published, 0);
 });
 
+test("matrice portali: con timestamp completo conta il giorno, non la lunghezza", () => {
+  const published = globalThis.publishOnEverySite(property(), "2026-11-25");
+  const sameDay = property({ details: published.details, updatedAt: "2026-11-25T18:42:00.000Z" });
+  const nextDay = property({ details: published.details, updatedAt: "2026-11-26T00:01:00.000Z" });
+
+  assert.equal(
+    globalThis.portalOutcome(sameDay, globalThis.portalSites[0]),
+    "Pubblicato",
+    "una modifica nello stesso giorno dell'invio non rende la scheda da aggiornare",
+  );
+  assert.equal(globalThis.portalOutcome(nextDay, globalThis.portalSites[0]), "Da aggiornare");
+  assert.equal(globalThis.portalTotals(sameDay).stale, 0);
+});
+
+test("matrice portali: anche l'invio puo' avere un timestamp completo", () => {
+  const published = globalThis.publishOnEverySite(property(), "2026-11-25T18:00:00.000Z");
+  const edited = property({ details: published.details, updatedAt: "2026-11-26T07:30:00.000Z" });
+  const sameDay = property({ details: published.details, updatedAt: "2026-11-25T23:59:00.000Z" });
+
+  assert.equal(globalThis.portalOutcome(sameDay, globalThis.portalSites[1]), "Pubblicato");
+  assert.equal(globalThis.portalOutcome(edited, globalThis.portalSites[1]), "Da aggiornare");
+});
+
 test("matrice portali: senza invii nessun sito risulta pubblicato", () => {
   const empty = property();
 
