@@ -419,13 +419,15 @@ export function AcquisitionView({ pageKey, query, data, onCommit, onAction }: Op
 /* ------------------------------------------------------------------ */
 
 const economicsColumns = ["Trattative", "Prezzi finali", "Provvigioni dovute", "Provvigioni incassate"];
+/** La prima colonna e' l'etichetta del gruppo, le altre sono importi. */
+const economicsAmountColumns = economicsColumns.map((_, index) => index + 1);
 
 function EconomicsTable({ summary, groupLabel }: { summary: DealEconomics; groupLabel: string }) {
   return (
     <DataTable
       emptyMessage="Nessuna trattativa chiusa: il riepilogo si popola al primo rogito."
       columns={[groupLabel, ...economicsColumns]}
-      align={["left", "right", "right", "right", "right"]}
+      alignRight={economicsAmountColumns}
       emphasizeLastRow
       rows={[...summary.rows, summary.totals].map((row) => [
         row.label,

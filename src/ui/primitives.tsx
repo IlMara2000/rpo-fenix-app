@@ -74,20 +74,20 @@ export function DataTable({
   rows,
   actions = [],
   emptyMessage = "Nessun dato disponibile per questa vista.",
-  align = [],
+  alignRight = [],
   emphasizeLastRow = false,
 }: {
   columns: string[];
   rows: string[][];
   actions?: { label: string; onClick: (rowIndex: number) => void }[];
   emptyMessage?: string;
-  /** Allineamento per colonna: le colonne non elencate restano a sinistra. */
-  align?: ("left" | "right")[];
+  /** Indici (da 0) delle colonne numeriche, allineate a destra. */
+  alignRight?: number[];
   /** Stacca l'ultima riga (il totale) con un bordo di chiusura e il grassetto. */
   emphasizeLastRow?: boolean;
 }) {
   const reduceMotion = useReducedMotion();
-  const alignClass = (index: number) => (align[index] === "right" ? "align-right" : undefined);
+  const alignClass = (index: number) => (alignRight.includes(index) ? "align-right" : undefined);
 
   return (
     <div className="table-wrap">

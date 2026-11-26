@@ -315,5 +315,6 @@
 .workspace-shell .table-wrap .align-right { text-align: right !important; font-variant-numeric: tabular-nums; }
 /* La riga Totale chiude la tabella invece di mescolarsi ai dati. */
 .workspace-shell .table-wrap tr.row-total td { border-top: 1px solid #ffffff2e !important; font-weight: 700 !important; color: #f8f8fa !important; }
-/* Postilla del pannello: piu' piccola e attaccata alla tabella che spiega. */
-.workspace-shell .panel-note { margin: 8px 14px 12px !important; font-size: 11px !important; line-height: 1.5; color: #9aa4b2 !important; }
+/* Postilla del pannello: piu' piccola e attaccata alla tabella che spiega.
+   Il grigio attenuato arriva gia' dalla regola dei paragrafi nei pannelli. */
+.workspace-shell .panel-note { margin: 8px 14px 12px !important; font-size: 11px !important; line-height: 1.5; }
