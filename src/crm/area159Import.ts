@@ -153,88 +153,101 @@ export type Area159ImportPreview = {
   properties: Area159PropertyDraft[];
 };
 
+/** Chiave d'identità di un immobile o di un proprietario, uguale in ogni punto. */
+function codeKey(value: string) {
+  return value.trim().toLowerCase();
+}
+
 function cell(row: string[], columns: Record<string, number>, field: string) {
   const index = columns[field];
   return index === undefined ? "" : (row[index] ?? "").trim();
+}
+
+/** Una riga diventa un immobile; senza codice né titolo non è una scheda. */
+function propertyDraftFrom(
+  row: string[],
+  columns: Record<string, number>,
+  fallbackIndex: number,
+): Area159PropertyDraft | null {
+  const code = cell(row, columns, "code");
+  const title = cell(row, columns, "title");
+  if (!code && !title) {
+    return null;
+  }
+  const city = cell(row, columns, "city");
+  const zone = cell(row, columns, "zone");
+  const phone = cell(row, columns, "phone");
+  const taxCode = cell(row, columns, "taxCode");
+  return {
+    code: code || `A159-${fallbackIndex}`,
+    title: title || [zone, city].filter(Boolean).join(", ") || "Immobile senza titolo",
+    zone: zone || city || "Zona da definire",
+    status: cell(row, columns, "status") || "In gestione",
+    price: cell(row, columns, "price") || "Da valutare",
+    owner: cell(row, columns, "owner") || "Proprietario da associare",
+    portals: "Bozza",
+    kind: /affitt|locazion/i.test(cell(row, columns, "kind")) ? "affitto" : "vendita",
+    phone: phone || undefined,
+    taxCode: taxCode || undefined,
+  };
+}
+
+/** Una riga porta al massimo un proprietario: senza nome né codice fiscale, nessuno. */
+function contactDraftFrom(row: string[], columns: Record<string, number>): Area159ContactDraft | null {
+  const owner = cell(row, columns, "owner");
+  const taxCode = cell(row, columns, "taxCode");
+  if (!owner && !taxCode) {
+    return null;
+  }
+  return { name: owner || "Proprietario senza nome", phone: cell(row, columns, "phone"), taxCode };
 }
 
 /** Anteprima senza effetti: cosa creerebbe, cosa aggiornerebbe, cosa resta da verificare. */
 export function previewArea159Import(data: CrmData, text: string): Area159ImportPreview {
   const { headers, rows } = parseDelimited(text);
   const { columns, unrecognized } = mapHeaders(headers);
-  const knownCodes = new Set(data.properties.map((property) => property.code.trim().toLowerCase()));
-  const knownContacts = new Set(
-    data.contacts.map((contact) => (contact.taxCode || contact.name).trim().toLowerCase()),
-  );
 
-  const preview: Area159ImportPreview = {
-    rows: rows.length,
-    created: 0,
-    updated: 0,
-    newContacts: [],
-    duplicateContacts: 0,
-    unrecognized,
-    missing: [],
-    properties: [],
-  };
+  const properties = rows
+    .map((row, index) => propertyDraftFrom(row, columns, index + 1))
+    .filter((draft): draft is Area159PropertyDraft => draft !== null);
+  const knownCodes = new Set(data.properties.map((property) => codeKey(property.code)));
+  const updated = properties.filter((draft) => knownCodes.has(codeKey(draft.code))).length;
 
-  rows.forEach((row) => {
-    const code = cell(row, columns, "code");
-    const title = cell(row, columns, "title");
-    if (!code && !title) {
+  const knownContacts = new Set(data.contacts.map((contact) => codeKey(contact.taxCode || contact.name)));
+  const contacts = rows
+    .map((row) => contactDraftFrom(row, columns))
+    .filter((draft): draft is Area159ContactDraft => draft !== null);
+  const newContacts: Area159ContactDraft[] = [];
+  contacts.forEach((contact) => {
+    const key = codeKey(contact.taxCode || contact.name);
+    if (knownContacts.has(key)) {
       return;
     }
-    const city = cell(row, columns, "city");
-    const zone = cell(row, columns, "zone");
-    const price = cell(row, columns, "price");
-    const owner = cell(row, columns, "owner");
-    const taxCode = cell(row, columns, "taxCode");
-    const phone = cell(row, columns, "phone");
-    const status = cell(row, columns, "status");
-    const finalCode = code || `A159-${preview.properties.length + 1}`;
-
-    preview.properties.push({
-      code: finalCode,
-      title: title || [zone, city].filter(Boolean).join(", ") || "Immobile senza titolo",
-      zone: zone || city || "Zona da definire",
-      status: status || "In gestione",
-      price: price || "Da valutare",
-      owner: owner || "Proprietario da associare",
-      portals: "Bozza",
-      kind: /affitt|locazion/i.test(cell(row, columns, "kind")) ? "affitto" : "vendita",
-      phone: phone || undefined,
-      taxCode: taxCode || undefined,
-    });
-
-    if (knownCodes.has(finalCode.trim().toLowerCase())) {
-      preview.updated += 1;
-    } else {
-      preview.created += 1;
-    }
-
-    if (owner || taxCode) {
-      const key = (taxCode || owner).trim().toLowerCase();
-      if (knownContacts.has(key)) {
-        preview.duplicateContacts += 1;
-      } else {
-        knownContacts.add(key);
-        preview.newContacts.push({ name: owner || "Proprietario senza nome", phone: phone || "", taxCode: taxCode || "" });
-      }
-    }
+    knownContacts.add(key);
+    newContacts.push(contact);
   });
 
-  const required: [string, string][] = [
-    ["price", "Prezzo: colonna non riconosciuta, resta «Da valutare»"],
-    ["owner", "Proprietario: colonna non riconosciuta, resta «da associare»"],
-    ["taxCode", "Codice fiscale: colonna non riconosciuta, la ricerca per codice non trovera' questi immobili"],
-  ];
-  required.forEach(([field, message]) => {
-    if (columns[field] === undefined) {
-      preview.missing.push(message);
-    }
-  });
+  const missing: string[] = [];
+  if (columns.price === undefined) {
+    missing.push("Prezzo: colonna non riconosciuta, resta «Da valutare»");
+  }
+  if (columns.owner === undefined) {
+    missing.push("Proprietario: colonna non riconosciuta, resta «da associare»");
+  }
+  if (columns.taxCode === undefined) {
+    missing.push("Codice fiscale: colonna non riconosciuta, la ricerca per codice non trovera' questi immobili");
+  }
 
-  return preview;
+  return {
+    rows: rows.length,
+    created: properties.length - updated,
+    updated,
+    newContacts,
+    duplicateContacts: contacts.length - newContacts.length,
+    unrecognized,
+    missing,
+    properties,
+  };
 }
 
 /** Copia integrale da conservare prima di applicare: e' ciò che rende l'import annullabile. */
@@ -245,7 +258,8 @@ export function importSnapshot(data: CrmData): CrmData {
 /**
  * Applica l'anteprima. Solo qui nascono id e data di aggiornamento: gli immobili
  * con lo stesso codice si aggiornano (l'id esistente non cambia), gli altri si
- * aggiungono, e i proprietari mai visti entrano in rubrica.
+ * aggiungono, e i proprietari mai visti entrano in rubrica. Se il file ripete un
+ * codice, vince l'ultima riga.
  */
 export function applyArea159Import(
   data: CrmData,
@@ -258,15 +272,15 @@ export function applyArea159Import(
     id: makeId("property"),
     updatedAt,
   }));
-  const byCode = new Map(incoming.map((property) => [property.code.trim().toLowerCase(), property]));
+  const pending = new Map(incoming.map((property) => [codeKey(property.code), property]));
 
-  const properties = data.properties.map((property) => {
-    const draft = byCode.get(property.code.trim().toLowerCase());
+  const properties = data.properties.map((existing) => {
+    const draft = pending.get(codeKey(existing.code));
     if (!draft) {
-      return property;
+      return existing;
     }
-    byCode.delete(property.code.trim().toLowerCase());
-    return { ...property, ...draft, id: property.id };
+    pending.delete(codeKey(existing.code));
+    return { ...existing, ...draft, id: existing.id };
   });
 
   const contacts = preview.newContacts.map((draft) => ({
@@ -286,7 +300,7 @@ export function applyArea159Import(
 
   return {
     ...data,
-    properties: [...properties, ...Array.from(byCode.values())],
+    properties: [...properties, ...Array.from(pending.values())],
     contacts: [...data.contacts, ...contacts],
   };
 }
