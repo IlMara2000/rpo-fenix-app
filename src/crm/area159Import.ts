@@ -88,18 +88,84 @@ export function parseDelimited(text: string): ImportTable {
   };
 }
 
-/** Intestazioni che ho visto nei gestionali italiani, per non legarsi a una sola. */
+/**
+ * Intestazioni attese nei due export di Area159 (immobili e contatti), scritte
+ * come le scrive il gestionale: senza accenti, senza punteggiatura, minuscole.
+ * `owner` e' il nome completo; `firstName`/`lastName` coprono gli export che
+ * tengono nome e cognome in due colonne. Una colonna che non sta qui non
+ * diventa un campo a indovinare: finisce tra le non riconosciute.
+ */
 const fieldAliases: Record<string, string[]> = {
-  code: ["codice", "codice immobile", "cod", "rif", "riferimento", "id"],
-  title: ["titolo", "indirizzo", "descrizione", "immobile", "via", "indirizzo immobile"],
-  zone: ["zona", "quartiere", "zona omogenea", "localita"],
-  city: ["comune", "citta", "comune immobile"],
-  price: ["prezzo", "prezzo richiesto", "prezzo vendita", "prezzo di vendita", "importo"],
-  owner: ["proprietario", "proprietari", "venditore", "intestatario"],
-  phone: ["telefono", "telefono proprietario", "cellulare", "recapito"],
-  taxCode: ["codice fiscale", "cf", "codice fiscale proprietario"],
-  status: ["stato", "stato immobile"],
-  kind: ["contratto", "tipo contratto", "tipologia contratto", "tipologia", "tipo"],
+  // Immobili
+  code: [
+    "codice",
+    "codice immobile",
+    "cod immobile",
+    "codice scheda",
+    "rif",
+    "rif immobile",
+    "riferimento",
+    "riferimento immobile",
+    "id immobile",
+    "id",
+  ],
+  title: [
+    "titolo",
+    "titolo immobile",
+    "indirizzo",
+    "indirizzo immobile",
+    "descrizione",
+    "descrizione immobile",
+    "ubicazione",
+    "immobile",
+    "via",
+  ],
+  zone: ["zona", "quartiere", "zona omogenea", "localita", "frazione", "macrozona"],
+  city: ["comune", "citta", "comune immobile", "citta immobile"],
+  price: [
+    "prezzo",
+    "prezzo richiesto",
+    "prezzo di richiesta",
+    "prezzo richiesta",
+    "prezzo vendita",
+    "prezzo di vendita",
+    "importo",
+  ],
+  status: ["stato", "stato immobile", "stato scheda", "situazione"],
+  // Solo il contratto: «Tipologia» nell'export e' il tipo di immobile, e
+  // indovinare su quella colonna sbaglierebbe affitto e vendita.
+  kind: ["contratto", "tipo contratto", "tipologia contratto"],
+  // Contatti e proprietari
+  owner: [
+    "proprietario",
+    "proprietari",
+    "nome e cognome",
+    "nome completo",
+    "venditore",
+    "intestatario",
+    "ragione sociale",
+    "contatto",
+    "cliente",
+  ],
+  firstName: ["nome", "nome contatto", "nome proprietario", "nome cliente"],
+  lastName: ["cognome", "cognome contatto", "cognome proprietario", "cognome cliente"],
+  phone: [
+    "telefono",
+    "telefono proprietario",
+    "cellulare",
+    "cellulare proprietario",
+    "telefono cellulare",
+    "recapito",
+    "cell",
+  ],
+  email: ["email", "e mail", "mail", "posta elettronica", "email proprietario", "email contatto"],
+  taxCode: [
+    "codice fiscale",
+    "cf",
+    "codice fiscale proprietario",
+    "codice fiscale contatto",
+    "codice fiscale p iva",
+  ],
 };
 
 function normalizeHeader(value: string) {
@@ -140,7 +206,7 @@ export type Area159PropertyDraft = {
   taxCode?: string;
 };
 
-export type Area159ContactDraft = { name: string; phone: string; taxCode: string };
+export type Area159ContactDraft = { name: string; phone: string; taxCode: string; email: string };
 
 export type Area159ImportPreview = {
   rows: number;
@@ -192,23 +258,47 @@ function propertyDraftFrom(
   };
 }
 
-/** Una riga porta al massimo un proprietario: senza nome né codice fiscale, nessuno. */
+/**
+ * Una riga porta al massimo un proprietario: senza nome né codice fiscale,
+ * nessuno. Il nome viene dalla colonna unica, oppure da nome e cognome.
+ */
 function contactDraftFrom(row: string[], columns: Record<string, number>): Area159ContactDraft | null {
   const owner = cell(row, columns, "owner");
+  const name =
+    owner ||
+    [cell(row, columns, "firstName"), cell(row, columns, "lastName")].filter(Boolean).join(" ");
   const taxCode = cell(row, columns, "taxCode");
-  if (!owner && !taxCode) {
+  if (!name && !taxCode) {
     return null;
   }
-  return { name: owner || "Proprietario senza nome", phone: cell(row, columns, "phone"), taxCode };
+  return {
+    name: name || "Proprietario senza nome",
+    phone: cell(row, columns, "phone"),
+    taxCode,
+    email: cell(row, columns, "email"),
+  };
+}
+
+/**
+ * Un export di contatti non ha una colonna per il titolo dell'immobile: senza
+ * quel riconoscimento le righe non devono diventare schede immobile, anche se
+ * il file ha una colonna ID o un indirizzo nel campo del proprietario.
+ */
+function isContactsOnly(columns: Record<string, number>) {
+  return (
+    columns.title === undefined &&
+    (columns.firstName !== undefined || columns.lastName !== undefined || columns.email !== undefined)
+  );
 }
 
 /** Anteprima senza effetti: cosa creerebbe, cosa aggiornerebbe, cosa resta da verificare. */
 export function previewArea159Import(data: CrmData, text: string): Area159ImportPreview {
   const { headers, rows } = parseDelimited(text);
   const { columns, unrecognized } = mapHeaders(headers);
+  const contactsOnly = isContactsOnly(columns);
 
   const properties = rows
-    .map((row, index) => propertyDraftFrom(row, columns, index + 1))
+    .map((row, index) => (contactsOnly ? null : propertyDraftFrom(row, columns, index + 1)))
     .filter((draft): draft is Area159PropertyDraft => draft !== null);
   const knownCodes = new Set(data.properties.map((property) => codeKey(property.code)));
   const updated = properties.filter((draft) => knownCodes.has(codeKey(draft.code))).length;
@@ -228,10 +318,10 @@ export function previewArea159Import(data: CrmData, text: string): Area159Import
   });
 
   const missing: string[] = [];
-  if (columns.price === undefined) {
+  if (!contactsOnly && columns.price === undefined) {
     missing.push("Prezzo: colonna non riconosciuta, resta «Da valutare»");
   }
-  if (columns.owner === undefined) {
+  if (!contactsOnly && columns.owner === undefined) {
     missing.push("Proprietario: colonna non riconosciuta, resta «da associare»");
   }
   if (columns.taxCode === undefined) {
@@ -291,7 +381,7 @@ export function applyArea159Import(
     source: "Area159",
     owner: "",
     phone: draft.phone,
-    email: "",
+    email: draft.email,
     taxCode: draft.taxCode,
     note: "",
     nextStep: "",

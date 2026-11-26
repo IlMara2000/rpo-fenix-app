@@ -172,6 +172,86 @@ test("import Area159: la copia presa prima di applicare annulla ogni modifica", 
   assert.equal(before.contacts.length, 0);
 });
 
+// Esempi scritti a mano con le intestazioni che l'import si aspetta dai due
+// export di Area159: servono a fissare gli alias, non sono dati veri.
+const immobiliCsv = [
+  "Codice Immobile;Indirizzo Immobile;Comune;Zona;Tipologia;Prezzo Richiesta;Proprietario;Telefono;Email;Codice Fiscale;Stato;Contratto;Mq",
+  'A159-1001;Via Garibaldi 12;Mogoro;Centro;Appartamento;185000;Maria Puddu;0783 123456;maria.puddu@example.it;PDDMRA75C45F272B;In gestione;Vendita;95',
+  'A159-1002;"Via Roma 3, interno 2";Oristano;San Nicola;Casa indipendente;"249.000";Paolo Frau;333 4455667;;FRAPLA68A01F205K;In gestione;Affitto;140',
+].join("\r\n");
+
+const contattiCsv = [
+  "ID;Nome;Cognome;Telefono;Email;Codice Fiscale;Tipologia Contatto",
+  "C-1;Maria;Puddu;0783 123456;maria.puddu@example.it;PDDMRA75C45F272B;Proprietario",
+  "C-2;Paolo;Frau;333 4455667;paolo.frau@example.it;FRAPLA68A01F205K;Proprietario",
+  "C-3;Paolo;Frau;333 4455667;paolo.frau@example.it;FRAPLA68A01F205K;Proprietario riparazioni",
+].join("\r\n");
+
+test("import Area159: le intestazioni dell'export immobili trovano tutti i campi attesi", () => {
+  const { columns, unrecognized } = globalThis.mapHeaders(globalThis.parseDelimited(immobiliCsv).headers);
+
+  assert.equal(columns.code, 0);
+  assert.equal(columns.title, 1);
+  assert.equal(columns.city, 2);
+  assert.equal(columns.zone, 3);
+  assert.equal(columns.price, 5);
+  assert.equal(columns.owner, 6);
+  assert.equal(columns.phone, 7);
+  assert.equal(columns.email, 8);
+  assert.equal(columns.taxCode, 9);
+  assert.equal(columns.status, 10);
+  assert.equal(columns.kind, 11);
+  assert.deepEqual(unrecognized, ["Tipologia", "Mq"], "tipologia e mq restano fuori invece di indovinare");
+
+  const preview = globalThis.previewArea159Import(emptyData(), immobiliCsv);
+  assert.equal(preview.rows, 2);
+  assert.equal(preview.created, 2);
+  assert.equal(preview.newContacts.length, 2);
+  assert.equal(preview.properties[0].zone, "Centro");
+  assert.equal(preview.properties[1].title, "Via Roma 3, interno 2");
+  assert.equal(preview.properties[1].kind, "affitto");
+  assert.deepEqual(preview.missing, []);
+});
+
+test("import Area159: l'export contatti riempie la rubrica e non crea immobili", () => {
+  const preview = globalThis.previewArea159Import(emptyData(), contattiCsv);
+
+  assert.equal(preview.rows, 3);
+  assert.equal(preview.properties.length, 0, "un export contatti non genera schede immobile, nemmeno con la colonna ID");
+  assert.equal(preview.created, 0);
+  assert.equal(preview.updated, 0);
+  assert.equal(
+    preview.newContacts.length,
+    2,
+    "Paolo Frau compare due volte ma è un solo contatto",
+  );
+  assert.equal(preview.duplicateContacts, 1);
+  assert.equal(preview.newContacts[0].name, "Maria Puddu", "nome e cognome si compongono");
+  assert.equal(preview.newContacts[0].email, "maria.puddu@example.it");
+  assert.equal(preview.newContacts[0].taxCode, "PDDMRA75C45F272B");
+  assert.deepEqual(preview.unrecognized, ["Tipologia Contatto"]);
+
+  const applied = globalThis.applyArea159Import(emptyData(), preview, new Date("2026-11-26T10:00:00.000Z"));
+  assert.equal(applied.properties.length, 0);
+  assert.equal(applied.contacts.length, 2);
+  assert.equal(applied.contacts[0].email, "maria.puddu@example.it", "l'email arriva in rubrica");
+  assert.equal(applied.contacts[0].source, "Area159");
+
+  const again = globalThis.previewArea159Import(applied, contattiCsv);
+  assert.equal(again.newContacts.length, 0, "un secondo import non duplica la rubrica");
+  assert.equal(again.duplicateContacts, 3);
+});
+
+test("import Area159: gli immobili importati e i contatti dello stesso export non si cercano per email", () => {
+  const preview = globalThis.previewArea159Import(emptyData(), immobiliCsv);
+  const applied = globalThis.applyArea159Import(emptyData(), preview);
+  const contacts = globalThis.previewArea159Import(applied, contattiCsv);
+
+  assert.equal(contacts.newContacts.length, 0, "stessi codici fiscali: i proprietari sono già in rubrica");
+  assert.equal(contacts.duplicateContacts, 3);
+  assert.equal(contacts.properties.length, 0);
+});
+
 test("import Area159: senza colonne chiave l'anteprima lo dice", () => {
   const preview = globalThis.previewArea159Import(emptyData(), "Codice;Indirizzo\nFS-201;Via Verdi 1");
 
