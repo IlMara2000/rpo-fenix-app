@@ -132,9 +132,10 @@ const fieldAliases: Record<string, string[]> = {
     "importo",
   ],
   status: ["stato", "stato immobile", "stato scheda", "situazione"],
-  // Solo il contratto: «Tipologia» nell'export e' il tipo di immobile, e
-  // indovinare su quella colonna sbaglierebbe affitto e vendita.
   kind: ["contratto", "tipo contratto", "tipologia contratto"],
+  // Ripiego: in molti export la colonna contratto manca e affitto/vendita si
+  // legge dalla tipologia (es. «Affitto», «Locazione», «Vendita»).
+  typeHint: ["tipologia", "tipo", "tipologia immobile", "tipo immobile"],
   // Contatti e proprietari
   owner: [
     "proprietario",
@@ -229,6 +230,16 @@ function cell(row: string[], columns: Record<string, number>, field: string) {
   return index === undefined ? "" : (row[index] ?? "").trim();
 }
 
+/**
+ * Affitto o vendita: decide la colonna contratto; se manca, la tipologia.
+ * Senza nessuna delle due resta vendita, il caso più frequente in archivio.
+ */
+function propertyKindOf(row: string[], columns: Record<string, number>): PropertyRecord["kind"] {
+  const explicit = cell(row, columns, "kind");
+  const hint = explicit ? "" : cell(row, columns, "typeHint");
+  return /affitt|locazion|fitto/i.test(explicit || hint) ? "affitto" : "vendita";
+}
+
 /** Una riga diventa un immobile; senza codice né titolo non è una scheda. */
 function propertyDraftFrom(
   row: string[],
@@ -252,7 +263,7 @@ function propertyDraftFrom(
     price: cell(row, columns, "price") || "Da valutare",
     owner: cell(row, columns, "owner") || "Proprietario da associare",
     portals: "Bozza",
-    kind: /affitt|locazion/i.test(cell(row, columns, "kind")) ? "affitto" : "vendita",
+    kind: propertyKindOf(row, columns),
     phone: phone || undefined,
     taxCode: taxCode || undefined,
   };

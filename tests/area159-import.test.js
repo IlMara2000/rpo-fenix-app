@@ -201,7 +201,8 @@ test("import Area159: le intestazioni dell'export immobili trovano tutti i campi
   assert.equal(columns.taxCode, 9);
   assert.equal(columns.status, 10);
   assert.equal(columns.kind, 11);
-  assert.deepEqual(unrecognized, ["Tipologia", "Mq"], "tipologia e mq restano fuori invece di indovinare");
+  assert.equal(columns.typeHint, 4, "la tipologia resta come ripiego, non come contratto");
+  assert.deepEqual(unrecognized, ["Mq"], "mq resta fuori invece di indovinare");
 
   const preview = globalThis.previewArea159Import(emptyData(), immobiliCsv);
   assert.equal(preview.rows, 2);
@@ -240,6 +241,35 @@ test("import Area159: l'export contatti riempie la rubrica e non crea immobili",
   const again = globalThis.previewArea159Import(applied, contattiCsv);
   assert.equal(again.newContacts.length, 0, "un secondo import non duplica la rubrica");
   assert.equal(again.duplicateContacts, 3);
+});
+
+const senzaContrattoCsv = [
+  "Codice Immobile;Indirizzo Immobile;Comune;Tipologia;Prezzo;Proprietario",
+  "A159-2001;Via Mannu 5;Mogoro;Affitto;650;Maria Puddu",
+  "A159-2002;Via Dessì 9;Mogoro;Locazione commerciale;1200;Maria Puddu",
+  "A159-2003;Via Sardegna 2;Oristano;Vendita;210000;Paolo Frau",
+  "A159-2004;Via Cagliari 7;Oristano;Appartamento;165000;Paolo Frau",
+].join("\r\n");
+
+test("import Area159: senza colonna contratto la tipologia decide affitto e vendita", () => {
+  const preview = globalThis.previewArea159Import(emptyData(), senzaContrattoCsv);
+
+  assert.equal(preview.properties[0].kind, "affitto", "«Affitto» nella tipologia basta");
+  assert.equal(preview.properties[1].kind, "affitto", "anche «Locazione»");
+  assert.equal(preview.properties[2].kind, "vendita");
+  assert.equal(preview.properties[3].kind, "vendita", "una tipologia senza contratto resta vendita");
+});
+
+test("import Area159: la colonna contratto vince sulla tipologia", () => {
+  const doppia = [
+    "Codice;Indirizzo;Tipologia;Contratto",
+    "A159-3001;Via Roma 1;Affitto;Vendita",
+    "A159-3002;Via Roma 2;Vendita;Locazione",
+  ].join("\n");
+  const preview = globalThis.previewArea159Import(emptyData(), doppia);
+
+  assert.equal(preview.properties[0].kind, "vendita", "il contratto esplicito non si fa sovrascrivere");
+  assert.equal(preview.properties[1].kind, "affitto");
 });
 
 test("import Area159: gli immobili importati e i contatti dello stesso export non si cercano per email", () => {
