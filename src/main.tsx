@@ -113,6 +113,8 @@ import {
   OfficesView,
 } from "./crm/operationsViews";
 import { backfillDealCommissions, migrateOperationsData } from "./crm/operations";
+import { Area159ImportPanel } from "./crm/Area159ImportPanel";
+import { applyArea159Import, previewArea159Import } from "./crm/area159Import";
 import {
   InformationArchivePanel,
   type ArchiveCandidate,
@@ -254,6 +256,8 @@ const migrationStorageKey = "fenix-suite-migration-v3";
 const deviceStorageKey = "fenix-suite-device-id";
 /** Copia integrale scritta subito prima della conversione al nuovo modello. */
 const migrationBackupKey = "fenix-suite-crm-pre-migration-v1";
+/** Copia integrale scritta prima di un import da Area159. */
+const importBackupKey = "fenix-suite-crm-pre-import-v1";
 const legacyCrmStorageKeys = [
   "fenix-suite-crm-data",
   "fenix-suite-crm-data-v1",
@@ -2512,6 +2516,9 @@ function Workspace({
   const [migrationBackup, setMigrationBackup] = useState(
     () => privateStorage.getItem(migrationBackupKey) !== null,
   );
+  const [importBackup, setImportBackup] = useState(
+    () => privateStorage.getItem(importBackupKey) !== null,
+  );
   const [agendaResetVersion, setAgendaResetVersion] = useState(0);
   const moduleNavRef = useScrollEdges<HTMLElement>();
   const submenuRef = useScrollEdges<HTMLElement>();
@@ -2595,6 +2602,51 @@ function Workspace({
       `Migrazione completata: ${result.report.mandates} incarichi, ${result.report.leases} contratti, ${result.report.deals} trattative, ${result.report.ownerContacts} proprietari collegati.`,
     );
     setMigrationBackup(true);
+  }
+
+  /** Import da Area159: anteprima gia' vista dall'utente, poi copia e scrittura. */
+  function applyArea159Data(text: string) {
+    const preview = previewArea159Import(crmData, text);
+    if (!preview.properties.length) {
+      runAction("Import fermo: il file non contiene immobili riconoscibili.");
+      return;
+    }
+    try {
+      privateStorage.setItem(
+        importBackupKey,
+        JSON.stringify({ savedAt: new Date().toISOString(), data: crmData }),
+      );
+    } catch {
+      runAction("Spazio insufficiente per la copia di sicurezza: import non applicato.");
+      return;
+    }
+    commitData(
+      (current) => applyArea159Import(current, preview),
+      `Import Area159: ${preview.created} immobili nuovi, ${preview.updated} aggiornati, ${preview.newContacts.length} proprietari in rubrica.`,
+    );
+    setImportBackup(true);
+  }
+
+  function undoArea159Data() {
+    const raw = privateStorage.getItem(importBackupKey);
+    if (!raw) {
+      setImportBackup(false);
+      runAction("Nessuna copia di import disponibile.");
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw) as { data?: CrmData };
+      if (!parsed?.data) {
+        throw new Error("backup vuoto");
+      }
+      // Come per la migrazione: ripristino esatto, senza riga di storico.
+      setCrmData(() => parsed.data as CrmData);
+      privateStorage.removeItem(importBackupKey);
+      setImportBackup(false);
+      runAction("Import annullato: i dati sono tornati a prima dell'import.");
+    } catch {
+      runAction("Copia di import illeggibile: nessuna modifica ai dati.");
+    }
   }
 
   function undoDataMigration() {
@@ -2780,6 +2832,15 @@ function Workspace({
               onApply={applyDataMigration}
               onUndo={undoDataMigration}
               onDismiss={() => setMigrationDismissed(true)}
+            />
+          ) : null}
+
+          {safeActiveModule === "start" ? (
+            <Area159ImportPanel
+              data={crmData}
+              backupAvailable={importBackup}
+              onApply={applyArea159Data}
+              onUndo={undoArea159Data}
             />
           ) : null}
 
