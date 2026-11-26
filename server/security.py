@@ -67,6 +67,9 @@ def require_active_user(headers):
     try:
         user = _get_json(f"{url}/auth/v1/user", token, key)
     except urllib.error.HTTPError as error:
+        # L'errore porta con sé il corpo della risposta: senza close() resta
+        # aperto fino alla garbage collection (Python 3.14 lo segnala).
+        error.close()
         if error.code in (401, 403):
             raise AuthError("Sessione non valida.", 401) from error
         raise AuthError("Verifica della sessione non disponibile.", 502) from error
@@ -81,6 +84,7 @@ def require_active_user(headers):
     try:
         profiles = _get_json(profile_url, token, key)
     except urllib.error.HTTPError as error:
+        error.close()
         raise AuthError("Verifica del profilo non disponibile.", 502) from error
     except (urllib.error.URLError, OSError, ValueError) as error:
         raise AuthError("Verifica del profilo non disponibile.", 502) from error

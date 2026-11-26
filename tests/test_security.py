@@ -59,10 +59,14 @@ class RequireActiveUserTests(unittest.TestCase):
     def test_invalid_session_is_rejected(self):
         import urllib.error
 
+        # HTTPError eredita da tempfile._TemporaryFileWrapper e apre un buffer:
+        # il test se lo chiude da sé, così non resta appeso alla GC.
+        error = urllib.error.HTTPError("url", 401, "Unauthorized", {}, None)
+        self.addCleanup(error.close)
+
         with mock.patch.dict(os.environ, {"SUPABASE_URL": "https://project.supabase.co",
                                           "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_key"}, clear=True):
-            with mock.patch("server.security._get_json",
-                            side_effect=urllib.error.HTTPError("url", 401, "Unauthorized", {}, None)):
+            with mock.patch("server.security._get_json", side_effect=error):
                 with self.assertRaises(AuthError) as raised:
                     require_active_user({"authorization": "Bearer token"})
         self.assertEqual(raised.exception.status_code, 401)
