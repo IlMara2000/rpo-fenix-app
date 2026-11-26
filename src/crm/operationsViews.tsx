@@ -136,6 +136,16 @@ function OfficeFilter({
 const dealFilters: DealFilter[] = ["Aperte", "Chiuse", "Perse"];
 const dealFilterLabels: Record<DealFilter, string> = { Aperte: "aperta", Chiuse: "chiusa", Perse: "persa" };
 
+/**
+ * Il vuoto della tabella rimanda ai riepiloghi solo se la sede scelta li riempie:
+ * riceve la stessa condizione che decide di mostrarli, così non può contraddirli.
+ */
+export function dealsEmptyMessage(filter: DealFilter, hasClosedDeals: boolean): string {
+  return hasClosedDeals
+    ? `Nessuna trattativa ${dealFilterLabels[filter]}: le chiuse restano contate nei riepiloghi qui sotto.`
+    : `Nessuna trattativa ${dealFilterLabels[filter]}: registra una proposta da «Nuova».`;
+}
+
 /** Le trattative chiuse restano in archivio, ma non si mescolano a quelle in corso. */
 function DealStageFilter({ value, onChange }: { value: DealFilter; onChange: (filter: DealFilter) => void }) {
   return (
@@ -487,7 +497,8 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
     .filter((deal) => matchesDealFilter(deal, stageFilter))
     .slice()
     .sort((first, second) => first.expiryDate.localeCompare(second.expiryDate));
-  const hasClosedDeals = data.deals.some((deal) => deal.stage === "Chiusa");
+  const scopedDeals = inOffice(data.deals, officeFilter);
+  const hasClosedDeals = scopedDeals.some((deal) => deal.stage === "Chiusa");
 
   const stages = [...dealStageOrder, "Persa"];
 
@@ -692,11 +703,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
         <OfficeFilter offices={data.offices} value={officeFilter} onChange={setOfficeFilter} />
         <DealStageFilter value={stageFilter} onChange={setStageFilter} />
         <DataTable
-          emptyMessage={
-            hasClosedDeals
-              ? `Nessuna trattativa ${dealFilterLabels[stageFilter]}: le chiuse restano contate nei riepiloghi qui sotto.`
-              : `Nessuna trattativa ${dealFilterLabels[stageFilter]}: registra una proposta da «Nuova».`
-          }
+          emptyMessage={dealsEmptyMessage(stageFilter, hasClosedDeals)}
           columns={["Immobile", "Cliente", "Tipo", "Stadio", "Offerta", "Prezzo finale", "Provvigione", "Scadenza", "Sede"]}
           rows={visibleDeals.map((deal) => [
             propertyLabel(propertyOf(data, deal.propertyId)),
@@ -719,7 +726,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
 
       {hasClosedDeals ? (
         <DealsEconomicsPanel
-          deals={inOffice(data.deals, officeFilter)}
+          deals={scopedDeals}
           offices={data.offices}
           scope={officeFilter ? officeOf(data, officeFilter) : ""}
         />

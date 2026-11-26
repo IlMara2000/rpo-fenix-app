@@ -10,8 +10,9 @@ async function loadViews() {
       contents: `
         import { createElement } from "react";
         import { renderToStaticMarkup } from "react-dom/server";
-        import { AcquisitionView, DealsView, DealsEconomicsPanel, LeasesView, inOffice } from "./src/crm/operationsViews.tsx";
+        import { AcquisitionView, DealsView, DealsEconomicsPanel, LeasesView, inOffice, dealsEmptyMessage } from "./src/crm/operationsViews.tsx";
         globalThis.inOffice = inOffice;
+        globalThis.dealsEmptyMessage = dealsEmptyMessage;
         globalThis.renderEconomics = (deals, offices, scope) => renderToStaticMarkup(createElement(DealsEconomicsPanel, { deals, offices, scope }));
         globalThis.renderAcquisition = (data) => renderToStaticMarkup(createElement(AcquisitionView, { pageKey: "acquisizione-nuovo", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
         globalThis.renderDeals = (data) => renderToStaticMarkup(createElement(DealsView, { pageKey: "trattative-nuova", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
@@ -188,14 +189,24 @@ test("trattative: senza chiusure il riepilogo economico non compare", () => {
   assert.doesNotMatch(globalThis.renderDealsList(data), /Provvigioni per periodo/);
 });
 
-test("trattative: senza aperte la tabella rimanda ai riepiloghi invece di sembrare vuota", () => {
+test("trattative: senza aperte la tabella rimanda ai riepiloghi solo se la sede li riempie", () => {
   const data = baseData();
-  data.deals = [dealRecord({ id: "deal-closed", stage: "Chiusa", closingDate: "2026-11-20", closingPrice: "250000", commissionEarned: "7500" })];
+  data.deals = [
+    dealRecord({ id: "deal-closed", stage: "Chiusa", closingDate: "2026-11-20", closingPrice: "250000", commissionEarned: "7500", officeId: "office-2" }),
+  ];
 
   const html = globalThis.renderDealsList(data);
-
   assert.match(html, /Nessuna trattativa aperta: le chiuse restano contate nei riepiloghi qui sotto/);
   assert.match(html, /Provvigioni per periodo/);
+
+  const milano = globalThis.inOffice(data.deals, "office-1");
+  assert.equal(milano.some((deal) => deal.stage === "Chiusa"), false, "a Milano non ci sono chiuse");
+  assert.match(
+    globalThis.dealsEmptyMessage("Aperte", false),
+    /registra una proposta da «Nuova»/,
+    "se la sede filtrata non ha chiuse il testo non rimanda a riepiloghi vuoti",
+  );
+  assert.match(globalThis.dealsEmptyMessage("Perse", true), /le chiuse restano contate nei riepiloghi/);
 });
 
 test("trattative: il riepilogo segue il filtro sede e ne dichiara il perimetro", () => {
