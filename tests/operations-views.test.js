@@ -188,6 +188,16 @@ test("trattative: senza chiusure il riepilogo economico non compare", () => {
   assert.doesNotMatch(globalThis.renderDealsList(data), /Provvigioni per periodo/);
 });
 
+test("trattative: senza aperte la tabella rimanda ai riepiloghi invece di sembrare vuota", () => {
+  const data = baseData();
+  data.deals = [dealRecord({ id: "deal-closed", stage: "Chiusa", closingDate: "2026-11-20", closingPrice: "250000", commissionEarned: "7500" })];
+
+  const html = globalThis.renderDealsList(data);
+
+  assert.match(html, /Nessuna trattativa aperta: le chiuse restano contate nei riepiloghi qui sotto/);
+  assert.match(html, /Provvigioni per periodo/);
+});
+
 test("trattative: il riepilogo segue il filtro sede e ne dichiara il perimetro", () => {
   const data = baseData();
   const deals = [
