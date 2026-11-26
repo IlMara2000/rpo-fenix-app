@@ -24,7 +24,7 @@ import {
   mandateState,
   markLeaseRegistered,
   matchesDealFilter,
-  type DealEconomicsGroupBy,
+  type DealEconomics,
   nextDealStage,
   officeOptionLabel,
   propertyLabel,
@@ -84,6 +84,15 @@ export function officeOptions(data: CrmData) {
   return data.offices
     .filter((office) => office.active === "Si")
     .map((office) => ({ value: office.id, label: officeOptionLabel(office) }));
+}
+
+/**
+ * Perimetro sede condiviso da incarichi, trattative e locazioni: senza sede
+ * scelta restano tutte le righe. Il riepilogo economico usa lo stesso filtro
+ * della tabella sopra, non la ricerca globale (che serve a trovare una pratica).
+ */
+export function inOffice<T extends { officeId: string }>(rows: T[], officeId: string): T[] {
+  return officeId ? rows.filter((row) => row.officeId === officeId) : rows;
 }
 
 /** Barra sedi: compare solo quando il gruppo ne ha piu' di una. */
@@ -157,7 +166,7 @@ export function AcquisitionView({ pageKey, query, data, onCommit, onAction }: Op
     const property = propertyOf(data, mandate.propertyId);
     return `${propertyLabel(property)} ${mandate.agent} ${mandate.type} ${mandate.exclusivity}`;
   });
-  const visibleMandates = (officeFilter ? mandateRows.filter((item) => item.officeId === officeFilter) : mandateRows)
+  const visibleMandates = inOffice(mandateRows, officeFilter)
     .slice()
     .sort((first, second) => first.endDate.localeCompare(second.endDate));
 
@@ -411,38 +420,54 @@ export function AcquisitionView({ pageKey, query, data, onCommit, onAction }: Op
 
 const economicsColumns = ["Trattative", "Prezzi finali", "Provvigioni dovute", "Provvigioni incassate"];
 
-/** Riepilogo delle sole trattative chiuse: mese di chiusura e sede. */
-function DealsEconomicsPanel({ deals, offices }: { deals: DealRecord[]; offices: OfficeRecord[] }) {
-  const groups: { title: string; groupBy: DealEconomicsGroupBy }[] = [
-    { title: "Provvigioni per periodo", groupBy: "periodo" },
-    { title: "Provvigioni per sede", groupBy: "sede" },
-  ];
+function EconomicsTable({ summary, groupLabel }: { summary: DealEconomics; groupLabel: string }) {
+  return (
+    <DataTable
+      emptyMessage="Nessuna trattativa chiusa: il riepilogo si popola al primo rogito."
+      columns={[groupLabel, ...economicsColumns]}
+      rows={[...summary.rows, summary.totals].map((row) => [
+        row.label,
+        String(row.deals),
+        formatEuro(row.finalPrices),
+        formatEuro(row.due),
+        formatEuro(row.collected),
+      ])}
+    />
+  );
+}
+
+/**
+ * Riepilogo delle sole trattative chiuse, per mese di chiusura e per sede.
+ * Segue il filtro sede e ne scrive il nome nel titolo: chi guarda i totali
+ * deve sapere su cosa sta contando. Resta invece indipendente dal filtro
+ * esito (e' per definizione delle chiuse) e dalla ricerca globale.
+ */
+export function DealsEconomicsPanel({
+  deals,
+  offices,
+  scope = "",
+}: {
+  deals: DealRecord[];
+  offices: OfficeRecord[];
+  scope?: string;
+}) {
+  const titleOf = (base: string) => (scope ? `${base} · ${scope}` : base);
+  const byPeriod = dealEconomics(deals, offices, "periodo");
+  const byOffice = dealEconomics(deals, offices, "sede");
   return (
     <>
-      {groups.map(({ title, groupBy }) => {
-        const summary = dealEconomics(deals, offices, groupBy);
-        return (
-          <Panel className="span-6" key={groupBy} title={title}>
-            <DataTable
-              emptyMessage="Nessuna trattativa chiusa: il riepilogo si popola al primo rogito."
-              columns={[groupBy === "sede" ? "Sede" : "Periodo", ...economicsColumns]}
-              rows={[...summary.rows, summary.totals].map((row) => [
-                row.label,
-                String(row.deals),
-                formatEuro(row.finalPrices),
-                formatEuro(row.due),
-                formatEuro(row.collected),
-              ])}
-            />
-            {groupBy === "periodo" && summary.withoutCommission ? (
-              <p>
-                {summary.withoutCommission} trattative chiuse non hanno un importo di provvigione leggibile: restano
-                fuori dal totale dovuto.
-              </p>
-            ) : null}
-          </Panel>
-        );
-      })}
+      <Panel className="span-6" title={titleOf("Provvigioni per periodo")}>
+        <EconomicsTable summary={byPeriod} groupLabel="Periodo" />
+        {byPeriod.withoutCommission ? (
+          <p>
+            {byPeriod.withoutCommission} trattative chiuse non hanno un importo di provvigione leggibile: restano
+            fuori dal totale dovuto.
+          </p>
+        ) : null}
+      </Panel>
+      <Panel className="span-6" title={titleOf("Provvigioni per sede")}>
+        <EconomicsTable summary={byOffice} groupLabel="Sede" />
+      </Panel>
     </>
   );
 }
@@ -454,7 +479,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
     const property = propertyOf(data, deal.propertyId);
     return `${deal.clientName} ${propertyLabel(property)} ${deal.stage}`;
   });
-  const visibleDeals = (officeFilter ? rows.filter((deal) => deal.officeId === officeFilter) : rows)
+  const visibleDeals = inOffice(rows, officeFilter)
     .filter((deal) => matchesDealFilter(deal, stageFilter))
     .slice()
     .sort((first, second) => first.expiryDate.localeCompare(second.expiryDate));
@@ -684,7 +709,11 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
       </Panel>
 
       {data.deals.some((deal) => deal.stage === "Chiusa") ? (
-        <DealsEconomicsPanel deals={data.deals} offices={data.offices} />
+        <DealsEconomicsPanel
+          deals={inOffice(data.deals, officeFilter)}
+          offices={data.offices}
+          scope={officeFilter ? officeOf(data, officeFilter) : ""}
+        />
       ) : null}
     </div>
   );
@@ -710,7 +739,7 @@ export function LeasesView({ pageKey, query, data, onCommit, onAction }: Operati
     const property = propertyOf(data, lease.propertyId);
     return `${lease.tenantName} ${propertyLabel(property)} ${lease.contractType}`;
   });
-  const visibleLeases = (officeFilter ? leaseRows.filter((lease) => lease.officeId === officeFilter) : leaseRows)
+  const visibleLeases = inOffice(leaseRows, officeFilter)
     .slice()
     .sort((first, second) => first.endDate.localeCompare(second.endDate));
 

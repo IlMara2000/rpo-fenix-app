@@ -487,20 +487,16 @@ export function dealEconomics(
       const row =
         rows.get(group.key) ?? { key: group.key, label: group.label, deals: 0, finalPrices: 0, due: 0, collected: 0 };
       const due = amountOrZero(deal.commissionEarned);
-      const values = {
-        deals: 1,
-        finalPrices: amountOrZero(deal.closingPrice || deal.offerAmount),
-        due,
-        collected: deal.commissionPaidAt ? due : 0,
-      };
+      const collected = deal.commissionPaidAt ? due : 0;
+      const finalPrice = amountOrZero(deal.closingPrice || deal.offerAmount);
       if (!due) {
         withoutCommission += 1;
       }
       [row, totals].forEach((target) => {
-        target.deals += values.deals;
-        target.finalPrices += values.finalPrices;
-        target.due += values.due;
-        target.collected += values.collected;
+        target.deals += 1;
+        target.finalPrices += finalPrice;
+        target.due += due;
+        target.collected += collected;
       });
       rows.set(group.key, row);
     });

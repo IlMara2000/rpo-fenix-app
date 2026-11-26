@@ -10,7 +10,9 @@ async function loadViews() {
       contents: `
         import { createElement } from "react";
         import { renderToStaticMarkup } from "react-dom/server";
-        import { AcquisitionView, DealsView, LeasesView } from "./src/crm/operationsViews.tsx";
+        import { AcquisitionView, DealsView, DealsEconomicsPanel, LeasesView, inOffice } from "./src/crm/operationsViews.tsx";
+        globalThis.inOffice = inOffice;
+        globalThis.renderEconomics = (deals, offices, scope) => renderToStaticMarkup(createElement(DealsEconomicsPanel, { deals, offices, scope }));
         globalThis.renderAcquisition = (data) => renderToStaticMarkup(createElement(AcquisitionView, { pageKey: "acquisizione-nuovo", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
         globalThis.renderDeals = (data) => renderToStaticMarkup(createElement(DealsView, { pageKey: "trattative-nuova", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
         globalThis.renderDealsList = (data) => renderToStaticMarkup(createElement(DealsView, { pageKey: "trattative-elenco", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
@@ -162,6 +164,24 @@ test("trattative: senza chiusure il riepilogo economico non compare", () => {
   data.deals = [dealRecord({ id: "deal-open" })];
 
   assert.doesNotMatch(globalThis.renderDealsList(data), /Provvigioni per periodo/);
+});
+
+test("trattative: il riepilogo segue il filtro sede e ne dichiara il perimetro", () => {
+  const data = baseData();
+  const deals = [
+    dealRecord({ id: "deal-milano", clientName: "Cliente Milano", stage: "Chiusa", closingDate: "2026-11-20", closingPrice: "250000", commissionEarned: "7500", officeId: "office-1" }),
+    dealRecord({ id: "deal-roma", clientName: "Cliente Roma", stage: "Chiusa", closingDate: "2026-11-21", closingPrice: "180000", commissionEarned: "5400", officeId: "office-2" }),
+  ];
+
+  assert.equal(globalThis.inOffice(deals, "").length, 2, "senza sede scelta restano tutte le trattative");
+  const scoped = globalThis.inOffice(deals, "office-1");
+  assert.deepEqual(scoped.map((deal) => deal.id), ["deal-milano"]);
+
+  const html = globalThis.renderEconomics(scoped, data.offices, "Sede");
+  assert.match(html, /Provvigioni per periodo · Sede/, "il titolo dice su quale sede si sta contando");
+  assert.match(html, /7\.500\s*€/, "resta la provvigione della sede scelta");
+  assert.doesNotMatch(html, /5\.400/, "l'altra sede non entra nel riepilogo filtrato");
+  assert.doesNotMatch(html, /ottobre 2026/, "nessun mese della sede esclusa");
 });
 
 test("trattative: la richiesta collegata si sceglie per id e solo se e' aperta", () => {
