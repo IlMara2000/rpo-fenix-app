@@ -8,6 +8,7 @@
  */
 import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { decideOutcome } from "./python-test-outcome.js";
 
 const wanted = readFileSync(new URL("../.python-version", import.meta.url), "utf8").trim();
 const wantedMinor = wanted.split(".").slice(0, 2).join(".");
@@ -68,13 +69,9 @@ if (run.error) {
   console.error(`Test Python non avviati: ${run.error.message}`);
   process.exit(1);
 }
-if (run.status !== 0) {
-  process.exit(typeof run.status === "number" ? run.status : 1);
-}
 
-const warnings = (run.stdout + run.stderr).match(/ResourceWarning/g)?.length ?? 0;
-if (warnings) {
-  console.error(`\nTest Python falliti: ${warnings} ResourceWarning.`);
-  console.error("Una risorsa non è stata chiusa: chiudila dove la apri, non filtrare l'avviso.");
-  process.exit(1);
+const outcome = decideOutcome(run);
+if (outcome.message) {
+  console.error(`\n${outcome.message}`);
 }
+process.exit(typeof outcome.exitCode === "number" ? outcome.exitCode : 1);
