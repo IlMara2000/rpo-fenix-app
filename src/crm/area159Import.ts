@@ -193,16 +193,19 @@ export function mapHeaders(headers: string[]) {
   return { columns, unrecognized };
 }
 
-/** Un immobile letto dal file, senza id né data: quelli arrivano applicando. */
+/**
+ * Un immobile letto dal file, senza id né data: quelli arrivano applicando.
+ * Prezzo, proprietario e stato restano assenti quando il file non li porta:
+ * scriverci un segnaposto qui cancellerebbe il dato buono già in archivio.
+ */
 export type Area159PropertyDraft = {
   code: string;
   title: string;
   zone: string;
-  status: string;
-  price: string;
-  owner: string;
   kind: PropertyRecord["kind"];
-  portals: string;
+  price?: string;
+  owner?: string;
+  status?: string;
   phone?: string;
   taxCode?: string;
 };
@@ -241,11 +244,7 @@ function propertyKindOf(row: string[], columns: Record<string, number>): Propert
 }
 
 /** Una riga diventa un immobile; senza codice né titolo non è una scheda. */
-function propertyDraftFrom(
-  row: string[],
-  columns: Record<string, number>,
-  fallbackIndex: number,
-): Area159PropertyDraft | null {
+function propertyDraftFrom(row: string[], columns: Record<string, number>): Area159PropertyDraft | null {
   const code = cell(row, columns, "code");
   const title = cell(row, columns, "title");
   if (!code && !title) {
@@ -253,20 +252,44 @@ function propertyDraftFrom(
   }
   const city = cell(row, columns, "city");
   const zone = cell(row, columns, "zone");
+  // Nome e cognome separati valgono come proprietario: è la stessa persona che
+  // `contactDraftFrom` mette in rubrica, così il legame per id si trova.
+  const owner =
+    cell(row, columns, "owner") ||
+    [cell(row, columns, "firstName"), cell(row, columns, "lastName")].filter(Boolean).join(" ");
+  const price = cell(row, columns, "price");
+  const status = cell(row, columns, "status");
   const phone = cell(row, columns, "phone");
   const taxCode = cell(row, columns, "taxCode");
   return {
-    code: code || `A159-${fallbackIndex}`,
+    code,
     title: title || [zone, city].filter(Boolean).join(", ") || "Immobile senza titolo",
     zone: zone || city || "Zona da definire",
-    status: cell(row, columns, "status") || "In gestione",
-    price: cell(row, columns, "price") || "Da valutare",
-    owner: cell(row, columns, "owner") || "Proprietario da associare",
-    portals: "Bozza",
     kind: propertyKindOf(row, columns),
-    phone: phone || undefined,
-    taxCode: taxCode || undefined,
+    ...(price ? { price } : {}),
+    ...(owner ? { owner } : {}),
+    ...(status ? { status } : {}),
+    ...(phone ? { phone } : {}),
+    ...(taxCode ? { taxCode } : {}),
   };
+}
+
+/**
+ * Codice stabile per una riga che non ne ha: deriva da indirizzo e zona, non
+ * dalla posizione nel file. Così riapplicare un export riordinato aggiorna le
+ * stesse schede invece di crearne di nuove; due righe identiche si distinguono
+ * con un suffisso, assegnato nell'ordine in cui compaiono.
+ */
+function stableCode(draft: Area159PropertyDraft, used: Map<string, number>) {
+  const seed = `${normalizeHeader(draft.title)}|${normalizeHeader(draft.zone)}`;
+  let hash = 5381;
+  for (const char of seed) {
+    hash = ((hash * 33) ^ (char.codePointAt(0) ?? 0)) >>> 0;
+  }
+  const base = `A159-${hash.toString(36).toUpperCase()}`;
+  const count = (used.get(base) ?? 0) + 1;
+  used.set(base, count);
+  return count === 1 ? base : `${base}-${count}`;
 }
 
 /**
@@ -308,9 +331,11 @@ export function previewArea159Import(data: CrmData, text: string): Area159Import
   const { columns, unrecognized } = mapHeaders(headers);
   const contactsOnly = isContactsOnly(columns);
 
+  const codeUses = new Map<string, number>();
   const properties = rows
-    .map((row, index) => (contactsOnly ? null : propertyDraftFrom(row, columns, index + 1)))
-    .filter((draft): draft is Area159PropertyDraft => draft !== null);
+    .map((row) => (contactsOnly ? null : propertyDraftFrom(row, columns)))
+    .filter((draft): draft is Area159PropertyDraft => draft !== null)
+    .map((draft) => (draft.code ? draft : { ...draft, code: stableCode(draft, codeUses) }));
   const knownCodes = new Set(data.properties.map((property) => codeKey(property.code)));
   const updated = properties.filter((draft) => knownCodes.has(codeKey(draft.code))).length;
 
@@ -368,21 +393,6 @@ export function applyArea159Import(
   today = new Date(),
 ): CrmData {
   const updatedAt = today.toISOString().slice(0, 10);
-  const incoming: PropertyRecord[] = preview.properties.map((draft) => ({
-    ...draft,
-    id: makeId("property"),
-    updatedAt,
-  }));
-  const pending = new Map(incoming.map((property) => [codeKey(property.code), property]));
-
-  const properties = data.properties.map((existing) => {
-    const draft = pending.get(codeKey(existing.code));
-    if (!draft) {
-      return existing;
-    }
-    pending.delete(codeKey(existing.code));
-    return { ...existing, ...draft, id: existing.id };
-  });
 
   const contacts = preview.newContacts.map((draft) => ({
     id: makeId("contact"),
@@ -399,9 +409,72 @@ export function applyArea159Import(
     updatedAt,
   }));
 
+  // Il proprietario si ritrova per codice fiscale, poi per nome: lo stesso
+  // export crea prima i contatti e poi li collega alle schede.
+  const contactByTaxCode = new Map<string, string>();
+  const contactByName = new Map<string, string>();
+  [...data.contacts, ...contacts].forEach((contact) => {
+    const taxCode = codeKey(contact.taxCode ?? "");
+    if (taxCode) {
+      contactByTaxCode.set(taxCode, contact.id);
+    }
+    contactByName.set(codeKey(contact.name), contact.id);
+  });
+  function ownerContactIdOf(draft: Area159PropertyDraft) {
+    const taxCode = codeKey(draft.taxCode ?? "");
+    if (taxCode) {
+      const found = contactByTaxCode.get(taxCode);
+      if (found) {
+        return found;
+      }
+    }
+    return contactByName.get(codeKey(draft.owner ?? ""));
+  }
+
+  const pending = new Map(preview.properties.map((draft) => [codeKey(draft.code), draft]));
+  const properties = data.properties.map((existing) => {
+    const draft = pending.get(codeKey(existing.code));
+    if (!draft) {
+      return existing;
+    }
+    pending.delete(codeKey(existing.code));
+    const ownerContactId = ownerContactIdOf(draft);
+    return {
+      ...existing,
+      title: draft.title,
+      zone: draft.zone,
+      kind: draft.kind,
+      // Solo i campi che il file porta davvero: un segnaposto non deve
+      // cancellare prezzo, proprietario e stato già inseriti a mano.
+      ...(draft.price ? { price: draft.price } : {}),
+      ...(draft.owner ? { owner: draft.owner } : {}),
+      ...(draft.status ? { status: draft.status } : {}),
+      ...(draft.phone ? { phone: draft.phone } : {}),
+      ...(draft.taxCode ? { taxCode: draft.taxCode } : {}),
+      // Il legame scelto a mano vince su quello letto nell'export.
+      ...(ownerContactId && !existing.ownerContactId ? { ownerContactId } : {}),
+      id: existing.id,
+      updatedAt,
+    };
+  });
+
+  const created: PropertyRecord[] = Array.from(pending.values()).map((draft) => {
+    const ownerContactId = ownerContactIdOf(draft);
+    return {
+      ...draft,
+      status: draft.status ?? "In gestione",
+      price: draft.price ?? "Da valutare",
+      owner: draft.owner ?? "Proprietario da associare",
+      portals: "Bozza",
+      ...(ownerContactId ? { ownerContactId } : {}),
+      id: makeId("property"),
+      updatedAt,
+    };
+  });
+
   return {
     ...data,
-    properties: [...properties, ...Array.from(pending.values())],
+    properties: [...properties, ...created],
     contacts: [...data.contacts, ...contacts],
   };
 }

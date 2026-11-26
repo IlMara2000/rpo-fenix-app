@@ -290,3 +290,164 @@ test("import Area159: senza colonne chiave l'anteprima lo dice", () => {
   assert.ok(preview.missing.some((note) => /Proprietario/.test(note)));
   assert.ok(preview.missing.some((note) => /Codice fiscale/.test(note)));
 });
+
+// Un export ridotto, senza prezzo, proprietario, stato e portali: è il caso in
+// cui i segnaposto non devono toccare quello che l'archivio già contiene.
+const senzaPrezzoCsv = ["Codice;Indirizzo;Comune", "FS-501;Via Primo Maggio 3;Cagliari"].join("\n");
+
+test("import Area159: un export senza prezzo, proprietario e portali non cancella i dati in archivio", () => {
+  const data = emptyData();
+  data.properties = [
+    {
+      id: "property-501",
+      code: "FS-501",
+      title: "Via Primo Maggio 3",
+      zone: "Cagliari",
+      status: "Trattativa aperta",
+      price: "249.000",
+      owner: "Maria Puddu",
+      portals: "Da sincronizzare",
+      kind: "vendita",
+      updatedAt: "2026-11-01",
+    },
+  ];
+
+  const preview = globalThis.previewArea159Import(data, senzaPrezzoCsv);
+  assert.equal(preview.updated, 1, "la riga aggiorna la scheda esistente");
+
+  const applied = globalThis.applyArea159Import(data, preview);
+  assert.equal(applied.properties[0].price, "249.000", "il prezzo scritto a mano resta");
+  assert.equal(applied.properties[0].owner, "Maria Puddu", "il proprietario resta");
+  assert.equal(applied.properties[0].portals, "Da sincronizzare", "lo stato sui portali resta");
+  assert.equal(applied.properties[0].status, "Trattativa aperta", "anche lo stato della scheda resta");
+});
+
+test("import Area159: i segnaposto restano solo sulle schede nuove", () => {
+  const nuovo = ["Codice;Indirizzo;Comune", "FS-502;Via Nuova 1;Cagliari"].join("\n");
+  const applied = globalThis.applyArea159Import(
+    emptyData(),
+    globalThis.previewArea159Import(emptyData(), nuovo),
+  );
+
+  assert.equal(applied.properties[0].price, "Da valutare");
+  assert.equal(applied.properties[0].owner, "Proprietario da associare");
+  assert.equal(applied.properties[0].portals, "Bozza");
+  assert.equal(applied.properties[0].status, "In gestione");
+});
+
+test("import Area159: l'immobile importato punta al contatto del proprietario", () => {
+  const applied = globalThis.applyArea159Import(
+    emptyData(),
+    globalThis.previewArea159Import(emptyData(), immobiliCsv),
+  );
+  const maria = applied.contacts.find((contact) => contact.taxCode === "PDDMRA75C45F272B");
+  const paolo = applied.contacts.find((contact) => contact.taxCode === "FRAPLA68A01F205K");
+
+  assert.ok(maria, "Maria Puddu entra in rubrica");
+  assert.ok(paolo, "Paolo Frau entra in rubrica");
+  assert.equal(applied.properties[0].ownerContactId, maria.id, "il legame usa l'id, non il nome");
+  assert.equal(applied.properties[1].ownerContactId, paolo.id);
+});
+
+test("import Area159: il proprietario si collega anche se è già in rubrica o senza codice fiscale", () => {
+  const data = emptyData();
+  data.contacts = [
+    {
+      id: "contact-maria",
+      name: "Maria Puddu",
+      type: "Proprietario",
+      status: "Attivo",
+      source: "Censimento",
+      owner: "",
+      phone: "",
+      note: "",
+      nextStep: "",
+      updatedAt: "2026-01-01",
+    },
+  ];
+  const csv = ["Codice;Indirizzo;Proprietario", "FS-601;Via Roma 2;Maria Puddu"].join("\n");
+
+  const applied = globalThis.applyArea159Import(data, globalThis.previewArea159Import(data, csv));
+  assert.equal(applied.properties[0].ownerContactId, "contact-maria", "si ritrova per nome");
+  assert.equal(applied.contacts.length, 1, "e non duplica il contatto già presente");
+});
+
+test("import Area159: un legame scelto a mano non viene sostituito dall'export", () => {
+  const data = emptyData();
+  data.properties = [
+    {
+      id: "property-1001",
+      code: "A159-1001",
+      title: "Scheda collegata a mano",
+      zone: "Mogoro",
+      status: "In gestione",
+      price: "185000",
+      owner: "Maria Puddu",
+      portals: "Bozza",
+      kind: "vendita",
+      ownerContactId: "contact-scelto-a-mano",
+      updatedAt: "2026-01-01",
+    },
+  ];
+
+  const applied = globalThis.applyArea159Import(
+    data,
+    globalThis.previewArea159Import(data, immobiliCsv),
+  );
+  const property = applied.properties.find((item) => item.code === "A159-1001");
+  assert.equal(property.ownerContactId, "contact-scelto-a-mano");
+});
+
+// Righe senza colonna codice: il codice nasce dal contenuto, non dalla riga.
+const senzaCodiceCsv = [
+  "Indirizzo;Comune;Zona;Contratto",
+  "Via Mannu 5;Mogoro;Centro;Vendita",
+  "Via Dessì 9;Mogoro;Periferia;Affitto",
+].join("\n");
+
+test("import Area159: le righe senza codice ricevono un codice stabile", () => {
+  const first = globalThis.previewArea159Import(emptyData(), senzaCodiceCsv);
+  const second = globalThis.previewArea159Import(emptyData(), senzaCodiceCsv);
+
+  assert.deepEqual(
+    first.properties.map((item) => item.code),
+    second.properties.map((item) => item.code),
+    "lo stesso file produce gli stessi codici",
+  );
+  assert.notEqual(first.properties[0].code, first.properties[1].code, "due immobili diversi non condividono il codice");
+  assert.match(first.properties[0].code, /^A159-/);
+
+  const invertito = globalThis.previewArea159Import(
+    emptyData(),
+    [
+      "Indirizzo;Comune;Zona;Contratto",
+      "Via Dessì 9;Mogoro;Periferia;Affitto",
+      "Via Mannu 5;Mogoro;Centro;Vendita",
+    ].join("\n"),
+  );
+  assert.deepEqual(
+    [...invertito.properties.map((item) => item.code)].sort(),
+    [...first.properties.map((item) => item.code)].sort(),
+    "l'ordine delle righe non cambia il codice",
+  );
+});
+
+test("import Area159: riapplicare un file senza codici non crea doppioni", () => {
+  const applied = globalThis.applyArea159Import(
+    emptyData(),
+    globalThis.previewArea159Import(emptyData(), senzaCodiceCsv),
+  );
+  assert.equal(applied.properties.length, 2);
+
+  const again = globalThis.previewArea159Import(applied, senzaCodiceCsv);
+  assert.equal(again.created, 0, "nessuna scheda nuova");
+  assert.equal(again.updated, 2, "le due schede si aggiornano");
+
+  const reapplied = globalThis.applyArea159Import(applied, again);
+  assert.equal(reapplied.properties.length, 2);
+  assert.deepEqual(
+    reapplied.properties.map((item) => item.id),
+    applied.properties.map((item) => item.id),
+    "gli id non cambiano"
+  );
+});
