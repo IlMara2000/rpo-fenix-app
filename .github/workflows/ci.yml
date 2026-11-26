@@ -12,10 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # La versione di Node arriva da .nvmrc: quella locale e quella della CI
+      # non possono piu' scollarsi.
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
 
       - name: Installa le dipendenze
         run: npm ci
@@ -25,6 +31,12 @@ jobs:
 
       - name: Test
         run: npm test
+
+      # server/security.py e server/uploads.py usano solo la stdlib, quindi qui
+      # non serve installare requirements.txt (pandas e openpyxl sono per gli
+      # script, non per i test).
+      - name: Test Python
+        run: npm run test:py
 
       - name: Build
         run: npm run build
