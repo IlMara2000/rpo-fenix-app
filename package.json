@@ -10,7 +10,7 @@
     "preview": "vite preview --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.js",
-    "test:py": "python3 -m unittest discover -s tests -p 'test_*.py'",
+    "test:py": "node scripts/run-python-tests.js",
     "check": "npm run typecheck && npm test && npm run test:py",
     "check:supabase-config": "node scripts/check-supabase-config.js"
   },
