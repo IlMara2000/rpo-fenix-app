@@ -16,6 +16,7 @@ async function loadViews() {
         globalThis.dealsBehindEconomicsRow = dealsBehindEconomicsRow;
         globalThis.renderEconomics = (deals, offices, scope) => renderToStaticMarkup(createElement(DealsEconomicsPanel, { deals, offices, scope }));
         globalThis.renderAcquisition = (data) => renderToStaticMarkup(createElement(AcquisitionView, { pageKey: "acquisizione-nuovo", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
+        globalThis.renderAcquisitionList = (data, query = "") => renderToStaticMarkup(createElement(AcquisitionView, { pageKey: "acquisizione-elenco", query, data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
         globalThis.renderDeals = (data) => renderToStaticMarkup(createElement(DealsView, { pageKey: "trattative-nuova", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
         globalThis.renderDealsList = (data) => renderToStaticMarkup(createElement(DealsView, { pageKey: "trattative-elenco", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
         globalThis.renderLeases = (data) => renderToStaticMarkup(createElement(LeasesView, { pageKey: "locazioni-nuova", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
@@ -209,6 +210,19 @@ test("riepilogo: una riga scelta isola le chiuse che compongono il suo totale", 
     data.offices,
   );
   assert.deepEqual(senzaSede.map((deal) => deal.id), ["senza-sede"], "la riga «Sede non assegnata» trova le sue trattative");
+});
+
+test("ricerca: il codice fiscale trova il proprietario da coltivare e l'incarico", () => {
+  const data = baseData();
+  data.contacts = [
+    { id: "contact-1", name: "Giulia Neri", firstName: "Giulia", lastName: "Neri", type: "Proprietario", status: "Attivo", source: "", owner: "", phone: "", email: "", taxCode: "NRIGLI80A41F205Z", note: "", nextStep: "", updatedAt: "2026-11-24" },
+    { id: "contact-2", name: "Paolo Serra", firstName: "Paolo", lastName: "Serra", type: "Proprietario", status: "Attivo", source: "", owner: "", phone: "", email: "", taxCode: "SRRPLA75B02H501W", note: "", nextStep: "", updatedAt: "2026-11-24" },
+  ];
+
+  const html = globalThis.renderAcquisitionList(data, "nrigli80a41f205z");
+
+  assert.match(html, /Giulia Neri/, "il codice fiscale in minuscolo trova il proprietario");
+  assert.doesNotMatch(html, /Paolo Serra/, "e non trascina gli altri proprietari");
 });
 
 test("riepilogo: le righe sono azionabili da mouse e da tastiera", () => {

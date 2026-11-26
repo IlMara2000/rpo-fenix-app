@@ -203,7 +203,7 @@ export function AcquisitionView({ pageKey, query, data, onCommit, onAction }: Op
 
   const mandateRows = useFilteredRows(data.mandates, query, (mandate) => {
     const property = propertyOf(data, mandate.propertyId);
-    return `${propertyLabel(property)} ${mandate.agent} ${mandate.type} ${mandate.exclusivity}`;
+    return `${propertyLabel(property)} ${property?.taxCode || ""} ${mandate.agent} ${mandate.type} ${mandate.exclusivity}`;
   });
   const visibleMandates = inOffice(mandateRows, officeFilter)
     .slice()
@@ -221,7 +221,7 @@ export function AcquisitionView({ pageKey, query, data, onCommit, onAction }: Op
         ownerNames.has(contact.name.trim().toLowerCase()),
     ),
     query,
-    (contact) => `${contact.name} ${contact.phone} ${contact.status}`,
+    (contact) => `${contact.name} ${contact.phone} ${contact.taxCode || ""} ${contact.status}`,
   ).slice(0, 40);
 
   const withoutMandate = data.properties.filter(

@@ -5522,7 +5522,7 @@ function AdvertisingContactsView({
     /portale|sito|campagna/i.test(contact.source) || /lead pubblicitario/i.test(contact.status),
   );
   const rows = useFilteredRows(leadContacts, query, (contact) =>
-    [contact.name, contact.firstName, contact.lastName, contact.phone, contact.email, contact.type, contact.status, contact.source, contact.note, contact.nextStep].join(" "),
+    [contact.name, contact.firstName, contact.lastName, contact.phone, contact.email, contact.taxCode, contact.type, contact.status, contact.source, contact.note, contact.nextStep].join(" "),
   );
 
   return (

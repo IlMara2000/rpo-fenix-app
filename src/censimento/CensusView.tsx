@@ -106,6 +106,7 @@ export function CensusView({
       property.title,
       property.zone,
       property.owner,
+      property.taxCode,
       property.status,
       property.sheet,
       property.parcel,
