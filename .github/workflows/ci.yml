@@ -19,9 +19,11 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      # Anche Python viene dal repo (.python-version), come Node da .nvmrc:
+      # la versione della CI non può scollarsi da quella locale.
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version-file: .python-version
 
       - name: Installa le dipendenze
         run: npm ci
