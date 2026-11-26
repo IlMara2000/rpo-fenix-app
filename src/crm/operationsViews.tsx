@@ -16,6 +16,7 @@ import {
   commissionLabel,
   dealClosingValues,
   dealEconomics,
+  dealPeriod,
   dealStageOrder,
   formatEuro,
   leaseDeadlines,
@@ -25,6 +26,7 @@ import {
   markLeaseRegistered,
   matchesDealFilter,
   type DealEconomics,
+  type DealEconomicsGroupBy,
   nextDealStage,
   officeOptionLabel,
   propertyLabel,
@@ -93,6 +95,33 @@ export function officeOptions(data: CrmData) {
  */
 export function inOffice<T extends { officeId: string }>(rows: T[], officeId: string): T[] {
   return officeId ? rows.filter((row) => row.officeId === officeId) : rows;
+}
+
+/** Una riga del riepilogo scelta: il gruppo (periodo o sede) e la sua chiave. */
+export type EconomicsDrill = { group: DealEconomicsGroupBy; key: string; label: string };
+
+/**
+ * Le trattative chiuse che compongono una riga del riepilogo, con la stessa
+ * chiave usata per raggrupparla: così il numero si verifica sulla tabella senza
+ * rifare i filtri a mano. La chiave "totale" vale tutto il perimetro.
+ */
+export function dealsBehindEconomicsRow(
+  deals: DealRecord[],
+  drill: EconomicsDrill,
+  offices: Pick<OfficeRecord, "id">[] = [],
+): DealRecord[] {
+  return deals.filter((deal) => {
+    if (deal.stage !== "Chiusa") {
+      return false;
+    }
+    if (drill.key === "totale") {
+      return true;
+    }
+    if (drill.group === "sede") {
+      return drill.key ? deal.officeId === drill.key : !offices.some((office) => office.id === deal.officeId);
+    }
+    return dealPeriod(deal.closingDate).key === drill.key;
+  });
 }
 
 /** Barra sedi: compare solo quando il gruppo ne ha piu' di una. */
@@ -432,14 +461,35 @@ const economicsColumns = ["Trattative", "Prezzi finali", "Provvigioni dovute", "
 /** La prima colonna e' l'etichetta del gruppo, le altre sono importi. */
 const economicsAmountColumns = economicsColumns.map((_, index) => index + 1);
 
-function EconomicsTable({ summary, groupLabel }: { summary: DealEconomics; groupLabel: string }) {
+function EconomicsTable({
+  summary,
+  group,
+  groupLabel,
+  onPick,
+}: {
+  summary: DealEconomics;
+  group: DealEconomicsGroupBy;
+  groupLabel: string;
+  onPick?: (drill: EconomicsDrill) => void;
+}) {
+  const summaryRows = [...summary.rows, summary.totals];
   return (
     <DataTable
       emptyMessage="Nessuna trattativa chiusa: il riepilogo si popola al primo rogito."
       columns={[groupLabel, ...economicsColumns]}
       alignRight={economicsAmountColumns}
       emphasizeLastRow
-      rows={[...summary.rows, summary.totals].map((row) => [
+      onRowClick={
+        onPick
+          ? (rowIndex) => {
+              const row = summaryRows[rowIndex];
+              if (row) {
+                onPick({ group, key: row.key, label: row.label });
+              }
+            }
+          : undefined
+      }
+      rows={summaryRows.map((row) => [
         row.label,
         String(row.deals),
         formatEuro(row.finalPrices),
@@ -460,10 +510,13 @@ export function DealsEconomicsPanel({
   deals,
   offices,
   scope = "",
+  onPickRow,
 }: {
   deals: DealRecord[];
   offices: OfficeRecord[];
   scope?: string;
+  /** Apre la tabella sulle chiuse che compongono la riga scelta. */
+  onPickRow?: (drill: EconomicsDrill) => void;
 }) {
   const titleOf = (base: string) => (scope ? `${base} · ${scope}` : base);
   const byPeriod = dealEconomics(deals, offices, "periodo");
@@ -471,7 +524,7 @@ export function DealsEconomicsPanel({
   return (
     <>
       <Panel className="span-6" title={titleOf("Provvigioni per periodo")}>
-        <EconomicsTable summary={byPeriod} groupLabel="Periodo" />
+        <EconomicsTable summary={byPeriod} group="periodo" groupLabel="Periodo" onPick={onPickRow} />
         {byPeriod.withoutCommission ? (
           <p className="panel-note">
             {byPeriod.withoutCommission} trattative chiuse non hanno un importo di provvigione leggibile: restano
@@ -480,7 +533,7 @@ export function DealsEconomicsPanel({
         ) : null}
       </Panel>
       <Panel className="span-6" title={titleOf("Provvigioni per sede")}>
-        <EconomicsTable summary={byOffice} groupLabel="Sede" />
+        <EconomicsTable summary={byOffice} group="sede" groupLabel="Sede" onPick={onPickRow} />
       </Panel>
     </>
   );
@@ -489,16 +542,26 @@ export function DealsEconomicsPanel({
 export function DealsView({ pageKey, query, data, onCommit, onAction }: OperationsViewProps) {
   const [officeFilter, setOfficeFilter] = useState("");
   const [stageFilter, setStageFilter] = useState<DealFilter>("Aperte");
+  const [drill, setDrill] = useState<EconomicsDrill | null>(null);
   const rows = useFilteredRows(data.deals, query, (deal) => {
     const property = propertyOf(data, deal.propertyId);
     return `${deal.clientName} ${propertyLabel(property)} ${deal.stage}`;
   });
-  const visibleDeals = inOffice(rows, officeFilter)
-    .filter((deal) => matchesDealFilter(deal, stageFilter))
-    .slice()
-    .sort((first, second) => first.expiryDate.localeCompare(second.expiryDate));
   const scopedDeals = inOffice(data.deals, officeFilter);
   const hasClosedDeals = scopedDeals.some((deal) => deal.stage === "Chiusa");
+  const visibleDeals = (
+    drill
+      ? dealsBehindEconomicsRow(scopedDeals, drill, data.offices)
+      : inOffice(rows, officeFilter).filter((deal) => matchesDealFilter(deal, stageFilter))
+  )
+    .slice()
+    .sort((first, second) => first.expiryDate.localeCompare(second.expiryDate));
+
+  /** Una riga del riepilogo porta la tabella sulle chiuse che la compongono. */
+  function pickDrill(next: EconomicsDrill) {
+    setDrill(next);
+    setStageFilter("Chiuse");
+  }
 
   const stages = [...dealStageOrder, "Persa"];
 
@@ -700,8 +763,28 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
       ) : null}
 
       <Panel className="span-12" title="Proposte e trattative">
-        <OfficeFilter offices={data.offices} value={officeFilter} onChange={setOfficeFilter} />
-        <DealStageFilter value={stageFilter} onChange={setStageFilter} />
+        <OfficeFilter
+          offices={data.offices}
+          value={officeFilter}
+          onChange={(officeId) => {
+            setOfficeFilter(officeId);
+            setDrill(null);
+          }}
+        />
+        <DealStageFilter
+          value={stageFilter}
+          onChange={(filter) => {
+            setStageFilter(filter);
+            setDrill(null);
+          }}
+        />
+        {drill ? (
+          <div className="panel-toolbar" aria-label="Riepilogo selezionato">
+            <button className="toolbar-button" type="button" onClick={() => setDrill(null)}>
+              {drill.group === "sede" ? "Sede" : "Periodo"}: {drill.label} · mostra tutte le chiuse
+            </button>
+          </div>
+        ) : null}
         <DataTable
           emptyMessage={dealsEmptyMessage(stageFilter, hasClosedDeals)}
           columns={["Immobile", "Cliente", "Tipo", "Stadio", "Offerta", "Prezzo finale", "Provvigione", "Scadenza", "Sede"]}
@@ -729,6 +812,7 @@ export function DealsView({ pageKey, query, data, onCommit, onAction }: Operatio
           deals={scopedDeals}
           offices={data.offices}
           scope={officeFilter ? officeOf(data, officeFilter) : ""}
+          onPickRow={pickDrill}
         />
       ) : null}
     </div>

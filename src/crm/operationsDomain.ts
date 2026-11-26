@@ -449,7 +449,8 @@ function amountOrZero(value?: string): number {
   return Number.isFinite(amount) && amount > 0 ? amount : 0;
 }
 
-function dealPeriod(closingDate?: string) {
+/** Chiave ed etichetta del mese di chiusura; senza data, chiave vuota. */
+export function dealPeriod(closingDate?: string) {
   const match = /^(\d{4})-(\d{2})/.exec(String(closingDate || ""));
   if (!match) {
     return { key: "", label: "Senza data di chiusura" };

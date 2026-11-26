@@ -76,6 +76,7 @@ export function DataTable({
   emptyMessage = "Nessun dato disponibile per questa vista.",
   alignRight = [],
   emphasizeLastRow = false,
+  onRowClick,
 }: {
   columns: string[];
   rows: string[][];
@@ -85,9 +86,18 @@ export function DataTable({
   alignRight?: number[];
   /** Stacca l'ultima riga (il totale) con un bordo di chiusura e il grassetto. */
   emphasizeLastRow?: boolean;
+  /** Rende la riga azionabile da mouse e da tastiera. */
+  onRowClick?: (rowIndex: number) => void;
 }) {
   const reduceMotion = useReducedMotion();
   const alignClass = (index: number) => (alignRight.includes(index) ? "align-right" : undefined);
+  const rowClass = (rowIndex: number) => {
+    const classes = [
+      emphasizeLastRow && rowIndex === rows.length - 1 ? "row-total" : "",
+      onRowClick ? "clickable" : "",
+    ].filter(Boolean);
+    return classes.length ? classes.join(" ") : undefined;
+  };
 
   return (
     <div className="table-wrap">
@@ -105,7 +115,19 @@ export function DataTable({
             rows.map((row, rowIndex) => (
               <motion.tr
                 key={row.join("-")}
-                className={emphasizeLastRow && rowIndex === rows.length - 1 ? "row-total" : undefined}
+                className={rowClass(rowIndex)}
+                onClick={onRowClick ? () => onRowClick(rowIndex) : undefined}
+                onKeyDown={
+                  onRowClick
+                    ? (event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          onRowClick(rowIndex);
+                        }
+                      }
+                    : undefined
+                }
+                tabIndex={onRowClick ? 0 : undefined}
                 initial={reduceMotion ? false : { opacity: 0, y: 4 }}
                 animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
                 transition={{ delay: Math.min(rowIndex * 0.015, 0.12), duration: 0.18 }}

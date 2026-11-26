@@ -10,9 +10,10 @@ async function loadViews() {
       contents: `
         import { createElement } from "react";
         import { renderToStaticMarkup } from "react-dom/server";
-        import { AcquisitionView, DealsView, DealsEconomicsPanel, LeasesView, inOffice, dealsEmptyMessage } from "./src/crm/operationsViews.tsx";
+        import { AcquisitionView, DealsView, DealsEconomicsPanel, LeasesView, inOffice, dealsEmptyMessage, dealsBehindEconomicsRow } from "./src/crm/operationsViews.tsx";
         globalThis.inOffice = inOffice;
         globalThis.dealsEmptyMessage = dealsEmptyMessage;
+        globalThis.dealsBehindEconomicsRow = dealsBehindEconomicsRow;
         globalThis.renderEconomics = (deals, offices, scope) => renderToStaticMarkup(createElement(DealsEconomicsPanel, { deals, offices, scope }));
         globalThis.renderAcquisition = (data) => renderToStaticMarkup(createElement(AcquisitionView, { pageKey: "acquisizione-nuovo", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
         globalThis.renderDeals = (data) => renderToStaticMarkup(createElement(DealsView, { pageKey: "trattative-nuova", query: "", data, onCommit: () => {}, onAction: () => {}, onOpenModule: () => {} }));
@@ -159,7 +160,7 @@ test("trattative: il riepilogo economico delle chiuse e' per periodo e per sede"
   assert.match(html, /5\.400\s*€/, "la provvigione dovuta compare anche se non incassata");
   assert.match(html, /430\.000\s*€/, "i prezzi finali si sommano per periodo");
   assert.match(html, /class="align-right"/, "gli importi stanno a destra, incolonnati");
-  assert.match(html, /class="row-total"/, "il totale si stacca dalle righe di dato");
+  assert.match(html, /class="[^"]*row-total/, "il totale si stacca dalle righe di dato");
 });
 
 test("trattative: la nota sulle provvigioni mancanti resta una postilla del pannello", () => {
@@ -180,6 +181,44 @@ test("le altre tabelle restano senza allineamento ne' riga totale forzati", () =
 
   assert.doesNotMatch(html, /align-right/);
   assert.doesNotMatch(html, /row-total/);
+  assert.doesNotMatch(html, /clickable/, "solo il riepilogo ha righe azionabili");
+});
+
+test("riepilogo: una riga scelta isola le chiuse che compongono il suo totale", () => {
+  const data = baseData();
+  const deals = [
+    dealRecord({ id: "nov-milano", stage: "Chiusa", closingDate: "2026-11-20", officeId: "office-1", commissionEarned: "7500" }),
+    dealRecord({ id: "nov-roma", stage: "Chiusa", closingDate: "2026-11-05", officeId: "office-2", commissionEarned: "5400" }),
+    dealRecord({ id: "ott-roma", stage: "Chiusa", closingDate: "2026-10-02", officeId: "office-2", commissionEarned: "3000" }),
+    dealRecord({ id: "aperta-nov", stage: "Proposta", closingDate: "2026-11-10", officeId: "office-2" }),
+  ];
+
+  const november = globalThis.dealsBehindEconomicsRow(deals, { group: "periodo", key: "2026-11", label: "novembre 2026" }, data.offices);
+  assert.deepEqual(november.map((deal) => deal.id), ["nov-milano", "nov-roma"], "solo le chiuse di quel mese");
+
+  const roma = globalThis.dealsBehindEconomicsRow(deals, { group: "sede", key: "office-2", label: "Sede" }, data.offices);
+  assert.deepEqual(roma.map((deal) => deal.id), ["nov-roma", "ott-roma"], "la riga sede prende le sue chiuse, di ogni mese");
+
+  const totale = globalThis.dealsBehindEconomicsRow(deals, { group: "periodo", key: "totale", label: "Totale" }, data.offices);
+  assert.equal(totale.length, 3, "il totale e' tutte le chiuse del perimetro");
+  assert.ok(totale.every((deal) => deal.stage === "Chiusa"), "le aperte non compongono mai il riepilogo");
+
+  const senzaSede = globalThis.dealsBehindEconomicsRow(
+    [dealRecord({ id: "senza-sede", stage: "Chiusa", officeId: "" })],
+    { group: "sede", key: "", label: "Sede non assegnata" },
+    data.offices,
+  );
+  assert.deepEqual(senzaSede.map((deal) => deal.id), ["senza-sede"], "la riga «Sede non assegnata» trova le sue trattative");
+});
+
+test("riepilogo: le righe sono azionabili da mouse e da tastiera", () => {
+  const data = baseData();
+  data.deals = [dealRecord({ id: "deal-closed", stage: "Chiusa", closingDate: "2026-11-20", closingPrice: "250000", commissionEarned: "7500" })];
+
+  const html = globalThis.renderDealsList(data);
+
+  assert.match(html, /class="[^"]*clickable[^"]*"/, "le righe del riepilogo si possono aprire");
+  assert.match(html, /tabindex="0"/, "e restano raggiungibili da tastiera");
 });
 
 test("trattative: senza chiusure il riepilogo economico non compare", () => {

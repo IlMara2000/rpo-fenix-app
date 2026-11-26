@@ -318,3 +318,8 @@
 /* Postilla del pannello: piu' piccola e attaccata alla tabella che spiega.
    Il grigio attenuato arriva gia' dalla regola dei paragrafi nei pannelli. */
 .workspace-shell .panel-note { margin: 8px 14px 12px !important; font-size: 11px !important; line-height: 1.5; }
+
+/* Riga del riepilogo azionabile: apre la tabella sulle trattative che la compongono. */
+.workspace-shell .table-wrap tr.clickable { cursor: pointer; }
+.workspace-shell .table-wrap tr.clickable:hover td { background: rgba(255, 255, 255, 0.06) !important; }
+.workspace-shell .table-wrap tr.clickable:focus-visible { outline: 2px solid var(--red); outline-offset: -2px; }
