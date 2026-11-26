@@ -33,6 +33,8 @@ import {
   type CrmCommit,
 } from "./crm/kit";
 import { portalExport } from "./crm/portalExport";
+import { portalOutcome, portalSites, portalTotals, publishOnEverySite } from "./crm/portalMatrix";
+import { todayIso } from "./crm/operationsDomain";
 import { pageForPath } from "./crm/routes";
 import { LEGAL_ENTITY, LegalPage, legalDocumentFor } from "./legal";
 import { privateStorage, setStorageOwner, clearPrivateStorage } from "./lib/privateStorage";
@@ -5832,6 +5834,49 @@ function UtilitiesView({
           ))}
         </div>
       </Panel>
+      {pageKey === "utilita-portali" ? (
+        <Panel className="span-12" title="Matrice portali">
+          <DataTable
+            emptyMessage="Nessun immobile in archivio: la matrice si popola con il primo immobile."
+            columns={["Immobile", ...portalSites.map((site) => site.label), "Pubblicati"]}
+            rows={data.properties.map((property) => {
+              const totals = portalTotals(property);
+              return [
+                `${property.code} · ${property.title}`,
+                ...portalSites.map((site) => portalOutcome(property, site)),
+                `${totals.published}/${totals.total}`,
+              ];
+            })}
+            actions={[
+              {
+                label: "Segna inviato",
+                onClick: (rowIndex) => {
+                  const property = data.properties[rowIndex];
+                  if (!property) {
+                    return;
+                  }
+                  const published = publishOnEverySite(property, todayIso());
+                  onCommit(
+                    (currentData) => ({
+                      ...currentData,
+                      properties: currentData.properties.map((item) =>
+                        item.id === property.id
+                          ? { ...item, details: published.details, portals: published.portals }
+                          : item,
+                      ),
+                    }),
+                    `${property.code} inviato a ${portalSites.length} siti.`,
+                  );
+                },
+              },
+            ]}
+          />
+          <p className="panel-note">
+            Segnare l'invio registra l'esito qui nel CRM: il caricamento sui portali resta manuale finché non
+            colleghiamo l'API di ciascun sito, e «Da aggiornare» compare quando la scheda cambia dopo l'invio.
+          </p>
+        </Panel>
+      ) : null}
       <Panel className="span-6" title={utilityTitle}>
         <DataTable columns={utilityColumns} rows={utilityRows} />
       </Panel>
