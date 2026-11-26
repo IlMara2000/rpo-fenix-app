@@ -310,3 +310,10 @@
 .workspace-shell .migration-detail p { margin: 6px 0 0; font-size: 12px; color: #dbe2ea; }
 .workspace-shell .migration-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 2px; }
 .workspace-shell .migration-actions .toolbar-button.is-primary { background: var(--red) !important; color: #fff !important; border-color: transparent !important; }
+
+/* Riepilogo economico: importi a destra e incolonnati (cifre a larghezza fissa). */
+.workspace-shell .table-wrap .align-right { text-align: right !important; font-variant-numeric: tabular-nums; }
+/* La riga Totale chiude la tabella invece di mescolarsi ai dati. */
+.workspace-shell .table-wrap tr.row-total td { border-top: 1px solid #ffffff2e !important; font-weight: 700 !important; color: #f8f8fa !important; }
+/* Postilla del pannello: piu' piccola e attaccata alla tabella che spiega. */
+.workspace-shell .panel-note { margin: 8px 14px 12px !important; font-size: 11px !important; line-height: 1.5; color: #9aa4b2 !important; }

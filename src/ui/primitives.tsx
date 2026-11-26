@@ -74,21 +74,28 @@ export function DataTable({
   rows,
   actions = [],
   emptyMessage = "Nessun dato disponibile per questa vista.",
+  align = [],
+  emphasizeLastRow = false,
 }: {
   columns: string[];
   rows: string[][];
   actions?: { label: string; onClick: (rowIndex: number) => void }[];
   emptyMessage?: string;
+  /** Allineamento per colonna: le colonne non elencate restano a sinistra. */
+  align?: ("left" | "right")[];
+  /** Stacca l'ultima riga (il totale) con un bordo di chiusura e il grassetto. */
+  emphasizeLastRow?: boolean;
 }) {
   const reduceMotion = useReducedMotion();
+  const alignClass = (index: number) => (align[index] === "right" ? "align-right" : undefined);
 
   return (
     <div className="table-wrap">
       <table>
         <thead>
           <tr>
-            {columns.map((column) => (
-              <th key={column}>{column}</th>
+            {columns.map((column, index) => (
+              <th key={column} className={alignClass(index)}>{column}</th>
             ))}
             {actions.length ? <th>Azioni</th> : null}
           </tr>
@@ -98,12 +105,13 @@ export function DataTable({
             rows.map((row, rowIndex) => (
               <motion.tr
                 key={row.join("-")}
+                className={emphasizeLastRow && rowIndex === rows.length - 1 ? "row-total" : undefined}
                 initial={reduceMotion ? false : { opacity: 0, y: 4 }}
                 animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
                 transition={{ delay: Math.min(rowIndex * 0.015, 0.12), duration: 0.18 }}
               >
                 {row.map((cell, index) => (
-                  <td key={`${cell}-${index}`}>{cell}</td>
+                  <td key={`${cell}-${index}`} className={alignClass(index)}>{cell}</td>
                 ))}
                 {actions.length ? (
                   <td className="row-actions">

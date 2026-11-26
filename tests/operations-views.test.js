@@ -157,6 +157,28 @@ test("trattative: il riepilogo economico delle chiuse e' per periodo e per sede"
   assert.match(html, /7\.500\s*€/, "la provvigione incassata compare in euro");
   assert.match(html, /5\.400\s*€/, "la provvigione dovuta compare anche se non incassata");
   assert.match(html, /430\.000\s*€/, "i prezzi finali si sommano per periodo");
+  assert.match(html, /class="align-right"/, "gli importi stanno a destra, incolonnati");
+  assert.match(html, /class="row-total"/, "il totale si stacca dalle righe di dato");
+});
+
+test("trattative: la nota sulle provvigioni mancanti resta una postilla del pannello", () => {
+  const data = baseData();
+  data.deals = [
+    dealRecord({ id: "deal-a", stage: "Chiusa", closingDate: "2026-11-20", closingPrice: "250000", commissionEarned: "7500" }),
+    dealRecord({ id: "deal-b", stage: "Chiusa", closingDate: "2026-11-21", closingPrice: "180000", commissionEarned: "" }),
+  ];
+
+  const html = globalThis.renderDealsList(data);
+
+  assert.match(html, /class="panel-note"/, "la nota ha la classe della postilla, non il paragrafo di default");
+  assert.match(html, /1 trattative chiuse|1\s*<\/p>/, "la nota conta le chiusure senza importo");
+});
+
+test("le altre tabelle restano senza allineamento ne' riga totale forzati", () => {
+  const html = globalThis.renderAcquisition(baseData());
+
+  assert.doesNotMatch(html, /align-right/);
+  assert.doesNotMatch(html, /row-total/);
 });
 
 test("trattative: senza chiusure il riepilogo economico non compare", () => {

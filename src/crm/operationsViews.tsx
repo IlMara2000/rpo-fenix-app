@@ -425,6 +425,8 @@ function EconomicsTable({ summary, groupLabel }: { summary: DealEconomics; group
     <DataTable
       emptyMessage="Nessuna trattativa chiusa: il riepilogo si popola al primo rogito."
       columns={[groupLabel, ...economicsColumns]}
+      align={["left", "right", "right", "right", "right"]}
+      emphasizeLastRow
       rows={[...summary.rows, summary.totals].map((row) => [
         row.label,
         String(row.deals),
@@ -459,7 +461,7 @@ export function DealsEconomicsPanel({
       <Panel className="span-6" title={titleOf("Provvigioni per periodo")}>
         <EconomicsTable summary={byPeriod} groupLabel="Periodo" />
         {byPeriod.withoutCommission ? (
-          <p>
+          <p className="panel-note">
             {byPeriod.withoutCommission} trattative chiuse non hanno un importo di provvigione leggibile: restano
             fuori dal totale dovuto.
           </p>
