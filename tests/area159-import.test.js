@@ -8,8 +8,9 @@ async function loadImport() {
   const result = await build({
     stdin: {
       contents: `
-        import { parseDelimited, mapHeaders, previewArea159Import, applyArea159Import, importSnapshot } from "./src/crm/area159Import.ts";
+        import { parseDelimited, mapHeaders, previewArea159Import, applyArea159Import, importSnapshot, decodeArea159File } from "./src/crm/area159Import.ts";
         globalThis.parseDelimited = parseDelimited;
+        globalThis.decodeArea159File = decodeArea159File;
         globalThis.mapHeaders = mapHeaders;
         globalThis.previewArea159Import = previewArea159Import;
         globalThis.applyArea159Import = applyArea159Import;
@@ -450,4 +451,210 @@ test("import Area159: riapplicare un file senza codici non crea doppioni", () =>
     applied.properties.map((item) => item.id),
     "gli id non cambiano"
   );
+});
+
+// Un export salvato da Windows: «ì», «è» ed «€» occupano un byte solo, quindi
+// il file non è UTF-8 valido e va letto con la tabella di Windows-1252.
+function windows1252Bytes(text) {
+  const bytes = [];
+  for (const char of text) {
+    const code = char.codePointAt(0);
+    if (code <= 0x7f) {
+      bytes.push(code);
+    } else if (char === "€") {
+      bytes.push(0x80);
+    } else if (code <= 0xff) {
+      // Nel range Latin-1 («à», «è», «ì») Windows-1252 coincide con il code point.
+      bytes.push(code);
+    } else {
+      throw new Error(`carattere non previsto da questo test: ${char}`);
+    }
+  }
+  return new Uint8Array(bytes);
+}
+
+const accentiCsv = [
+  "Codice;Indirizzo;Comune;Prezzo",
+  "FS-901;Via Dessì 9;Mogoro;€ 249.000",
+  "FS-902;Via Città 3;Mogoro;185000",
+].join("\r\n");
+
+test("import Area159: un file UTF-8 resta UTF-8", () => {
+  const decoded = globalThis.decodeArea159File(new TextEncoder().encode(accentiCsv));
+
+  assert.equal(decoded.encoding, "utf-8");
+  assert.equal(decoded.text, accentiCsv);
+});
+
+test("import Area159: un file Windows-1252 viene riletto senza caratteri di sostituzione", () => {
+  const bytes = windows1252Bytes(accentiCsv);
+
+  // Prova che il campione è realistico: letto come UTF-8 produrrebbe «DessÃ¬».
+  assert.ok(
+    new TextDecoder("utf-8").decode(bytes).includes("\uFFFD"),
+    "un export Windows-1252 letto come UTF-8 mostra caratteri di sostituzione",
+  );
+
+  const decoded = globalThis.decodeArea159File(bytes);
+  assert.equal(decoded.encoding, "windows-1252");
+  assert.equal(decoded.text, accentiCsv, "accenti e simbolo dell'euro tornano corretti");
+  assert.ok(!decoded.text.includes("\uFFFD"));
+
+  const table = globalThis.parseDelimited(decoded.text);
+  assert.equal(table.rows[0][1], "Via Dessì 9");
+  assert.equal(table.rows[0][3], "€ 249.000");
+
+  const preview = globalThis.previewArea159Import(emptyData(), decoded.text);
+  assert.equal(preview.created, 2);
+  assert.equal(preview.properties[0].title, "Via Dessì 9");
+});
+
+const statiCsv = [
+  "Codice;Indirizzo;Stato;Contratto",
+  "FS-801;Via Uno 1;Disponibile;Compravendita",
+  "FS-802;Via Due 2;In trattativa;Locazione commerciale",
+  "FS-803;Via Tre 3;Affittato;Affitto",
+  "FS-804;Via Quattro 4;Cantiere;Asta",
+  "FS-805;Via Sei 6;Cantiere;Vendita",
+].join("\n");
+
+test("import Area159: lo stato viene tradotto nel vocabolario dell'app", () => {
+  const preview = globalThis.previewArea159Import(emptyData(), statiCsv);
+
+  assert.equal(preview.properties[0].status, "In gestione", "«Disponibile» è una scheda in gestione");
+  assert.equal(preview.properties[1].status, "In trattativa");
+  assert.equal(preview.properties[2].status, "Affittato");
+  assert.equal(preview.properties[3].status, "Cantiere", "un valore sconosciuto resta com'è scritto");
+
+  const applied = globalThis.applyArea159Import(emptyData(), preview);
+  assert.deepEqual(
+    applied.properties.map((property) => property.status),
+    ["In gestione", "In trattativa", "Affittato", "Cantiere", "Cantiere"],
+  );
+});
+
+test("import Area159: lo stato e il contratto fuori vocabolario vengono segnalati", () => {
+  const preview = globalThis.previewArea159Import(emptyData(), statiCsv);
+
+  assert.deepEqual(preview.unmapped, [
+    { field: "contratto", value: "Asta", rows: 1 },
+    { field: "stato", value: "Cantiere", rows: 2 },
+  ], "due righe con lo stesso stato sconosciuto fanno un solo avviso");
+});
+
+test("import Area159: il contratto decide affitto e vendita, non il nome dell'immobile", () => {
+  const preview = globalThis.previewArea159Import(emptyData(), statiCsv);
+
+  assert.equal(preview.properties[0].kind, "vendita", "«Compravendita» è vendita");
+  assert.equal(preview.properties[1].kind, "affitto", "«Locazione commerciale» è affitto");
+  assert.equal(preview.properties[2].kind, "affitto");
+  assert.equal(preview.properties[3].kind, "vendita", "«Asta» resta vendita, ma è segnalata");
+});
+
+test("import Area159: un file già nel vocabolario dell'app non produce avvisi", () => {
+  const csv = [
+    "Codice;Indirizzo;Stato;Contratto",
+    "FS-811;Via Cinque 5;In gestione;Vendita",
+    "FS-812;Via Sette 7;In trattativa;Locazione",
+  ].join("\n");
+  const preview = globalThis.previewArea159Import(emptyData(), csv);
+
+  assert.deepEqual(preview.unmapped, []);
+  assert.equal(preview.properties[0].status, "In gestione");
+  assert.equal(preview.properties[1].status, "In trattativa");
+  assert.equal(preview.properties[1].kind, "affitto");
+});
+
+// Senza codice, l'identità di una scheda è indirizzo, zona e comune: due
+// «Via Roma 1, Centro» in comuni diversi sono due immobili diversi.
+const comuniCsv = [
+  "Indirizzo;Zona;Comune;Contratto",
+  "Via Roma 1;Centro;Mogoro;Vendita",
+  "Via Roma 1;Centro;Oristano;Vendita",
+].join("\n");
+
+test("import Area159: lo stesso indirizzo in comuni diversi prende due codici", () => {
+  const preview = globalThis.previewArea159Import(emptyData(), comuniCsv);
+
+  assert.equal(preview.properties.length, 2);
+  assert.notEqual(
+    preview.properties[0].code,
+    preview.properties[1].code,
+    "il comune fa parte del codice, altrimenti il secondo immobile sovrascrive il primo",
+  );
+  assert.equal(preview.created, 2);
+
+  const applied = globalThis.applyArea159Import(emptyData(), preview);
+  assert.equal(applied.properties.length, 2, "due schede, non una");
+
+  const again = globalThis.previewArea159Import(applied, comuniCsv);
+  assert.equal(again.created, 0, "riapplicando lo stesso file non nascono doppioni");
+  assert.equal(again.updated, 2);
+  assert.equal(again.collisions.length, 0);
+});
+
+test("import Area159: un codice generato non sovrascrive una scheda diversa che lo usa già", () => {
+  const riga = ["Indirizzo;Zona;Comune", "Via Collisione 7;Centro;Mogoro"].join("\n");
+  const occupato = globalThis.previewArea159Import(emptyData(), riga).properties[0].code;
+
+  const data = emptyData();
+  data.properties = [
+    {
+      id: "property-occupata",
+      code: occupato,
+      title: "Altra scheda",
+      zone: "Altrove",
+      status: "In gestione",
+      price: "100000",
+      owner: "Mario Rossi",
+      portals: "Bozza",
+      kind: "vendita",
+      updatedAt: "2026-01-01",
+    },
+  ];
+
+  const preview = globalThis.previewArea159Import(data, riga);
+  assert.equal(preview.properties[0].code, `${occupato}-2`, "prende il primo codice libero");
+  assert.equal(preview.updated, 0, "la scheda esistente non viene considerata aggiornata");
+  assert.equal(preview.created, 1);
+  assert.equal(preview.collisions.length, 1, "la collisione si dichiara in anteprima");
+
+  const applied = globalThis.applyArea159Import(data, preview);
+  assert.equal(applied.properties.length, 2);
+  assert.equal(applied.properties[0].title, "Altra scheda", "la scheda occupata resta intatta");
+  assert.equal(applied.properties[0].price, "100000");
+  assert.equal(applied.properties[1].code, `${occupato}-2`);
+  assert.equal(applied.properties[1].title, "Via Collisione 7");
+});
+
+test("import Area159: dopo una collisione lo stesso file aggiorna la scheda giusta", () => {
+  const riga = ["Indirizzo;Zona;Comune", "Via Collisione 8;Centro;Mogoro"].join("\n");
+  const occupato = globalThis.previewArea159Import(emptyData(), riga).properties[0].code;
+
+  const data = emptyData();
+  data.properties = [
+    {
+      id: "property-occupata",
+      code: occupato,
+      title: "Altra scheda",
+      zone: "Altrove",
+      status: "In gestione",
+      price: "100000",
+      owner: "Mario Rossi",
+      portals: "Bozza",
+      kind: "vendita",
+      updatedAt: "2026-01-01",
+    },
+  ];
+
+  const applied = globalThis.applyArea159Import(data, globalThis.previewArea159Import(data, riga));
+  const again = globalThis.previewArea159Import(applied, riga);
+
+  assert.equal(again.created, 0, "il suffisso è stabile: non nasce una terza scheda");
+  assert.equal(again.updated, 1);
+  assert.equal(again.properties[0].code, `${occupato}-2`);
+
+  const reapplied = globalThis.applyArea159Import(applied, again);
+  assert.equal(reapplied.properties.length, 2);
+  assert.equal(reapplied.properties[1].id, applied.properties[1].id, "l'id della scheda suffissata non cambia");
 });

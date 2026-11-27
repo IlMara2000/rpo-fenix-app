@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Panel } from "../ui/primitives";
 import type { CrmData } from "./kit";
-import { previewArea159Import } from "./area159Import";
+import { decodeArea159File, previewArea159Import } from "./area159Import";
 
 /**
  * Import da export Area159: prima si vede cosa verrebbe scritto, poi si applica,
@@ -21,6 +21,7 @@ export function Area159ImportPanel({
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [fileName, setFileName] = useState("");
+  const [encoding, setEncoding] = useState<"" | "utf-8" | "windows-1252">("");
   const preview = useMemo(() => (text.trim() ? previewArea159Import(data, text) : null), [data, text]);
 
   // Chiuso di default: l'import tocca l'archivio, non deve stare sotto il
@@ -56,10 +57,17 @@ export function Area159ImportPanel({
               return;
             }
             setFileName(file.name);
-            setText(await file.text());
+            const decoded = decodeArea159File(new Uint8Array(await file.arrayBuffer()));
+            setEncoding(decoded.encoding);
+            setText(decoded.text);
           }}
         />
-        {fileName ? <p>File letto: {fileName}</p> : null}
+        {fileName ? (
+          <p>
+            File letto: {fileName}
+            {encoding === "windows-1252" ? " — codifica Windows-1252, accenti recuperati" : ""}
+          </p>
+        ) : null}
 
         {preview ? (
           <>
@@ -92,6 +100,31 @@ export function Area159ImportPanel({
                 <ul>
                   {preview.unrecognized.slice(0, 8).map((header) => (
                     <li key={header}>{header}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {preview.unmapped.length ? (
+              <div>
+                <h3>Valori fuori vocabolario</h3>
+                <ul>
+                  {preview.unmapped.map((item) => (
+                    <li key={`${item.field}-${item.value}`}>
+                      {item.field === "stato" ? "Stato" : "Contratto"} «{item.value}» in {item.rows}{" "}
+                      {item.rows === 1 ? "riga" : "righe"}: la scheda resta com'è scritta nell'export
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {preview.collisions.length ? (
+              <div>
+                <h3>Codici in collisione</h3>
+                <ul>
+                  {preview.collisions.map((note) => (
+                    <li key={note}>{note}</li>
                   ))}
                 </ul>
               </div>

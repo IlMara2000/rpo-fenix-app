@@ -89,6 +89,70 @@ export function parseDelimited(text: string): ImportTable {
 }
 
 /**
+ * Caratteri 0x80-0x9F di Windows-1252: gli unici che non coincidono con Latin-1.
+ * Servono a leggere gli export salvati da Windows senza dipendere dal supporto
+ * ICU dell'ambiente: la tabella e' esplicita e sempre la stessa.
+ */
+const windows1252High: Record<number, string> = {
+  0x80: "\u20AC",
+  0x81: "\u0081",
+  0x82: "\u201A",
+  0x83: "\u0192",
+  0x84: "\u201E",
+  0x85: "\u2026",
+  0x86: "\u2020",
+  0x87: "\u2021",
+  0x88: "\u02C6",
+  0x89: "\u2030",
+  0x8A: "\u0160",
+  0x8B: "\u2039",
+  0x8C: "\u0152",
+  0x8D: "\u008D",
+  0x8E: "\u017D",
+  0x8F: "\u008F",
+  0x90: "\u0090",
+  0x91: "\u2018",
+  0x92: "\u2019",
+  0x93: "\u201C",
+  0x94: "\u201D",
+  0x95: "\u2022",
+  0x96: "\u2013",
+  0x97: "\u2014",
+  0x98: "\u02DC",
+  0x99: "\u2122",
+  0x9A: "\u0161",
+  0x9B: "\u203A",
+  0x9C: "\u0153",
+  0x9D: "\u009D",
+  0x9E: "\u017E",
+  0x9F: "\u0178",
+};
+
+function decodeWindows1252(bytes: Uint8Array) {
+  let text = "";
+  bytes.forEach((byte) => {
+    text += windows1252High[byte] ?? String.fromCharCode(byte);
+  });
+  return text;
+}
+
+export type Area159FileText = { text: string; encoding: "utf-8" | "windows-1252" };
+
+/**
+ * Legge il file: prima UTF-8 stretto, poi Windows-1252. Un export italiano
+ * salvato da Windows non e' UTF-8, e leggerlo come tale trasforma «Dessì» in
+ * «DessÃ¬»: un errore che finisce nei nomi e quindi nei codici stabili.
+ * La scelta viene restituita, cosi' il pannello puo' dire come ha letto il file.
+ */
+export function decodeArea159File(bytes: Uint8Array): Area159FileText {
+  try {
+    return { text: new TextDecoder("utf-8", { fatal: true }).decode(bytes), encoding: "utf-8" };
+  } catch {
+    return { text: decodeWindows1252(bytes), encoding: "windows-1252" };
+  }
+}
+
+/**
  * Intestazioni attese nei due export di Area159 (immobili e contatti), scritte
  * come le scrive il gestionale: senza accenti, senza punteggiatura, minuscole.
  * `owner` e' il nome completo; `firstName`/`lastName` coprono gli export che
@@ -212,6 +276,9 @@ export type Area159PropertyDraft = {
 
 export type Area159ContactDraft = { name: string; phone: string; taxCode: string; email: string };
 
+/** Un valore che l'app non sa rappresentare: resta com'è scritto, ma si segnala. */
+export type Area159UnmappedValue = { field: "stato" | "contratto"; value: string; rows: number };
+
 export type Area159ImportPreview = {
   rows: number;
   created: number;
@@ -220,6 +287,10 @@ export type Area159ImportPreview = {
   duplicateContacts: number;
   unrecognized: string[];
   missing: string[];
+  /** Stati e contratti fuori vocabolario, con quante righe li portano. */
+  unmapped: Area159UnmappedValue[];
+  /** Codici generati che hanno dovuto evitare un'altra scheda già in archivio. */
+  collisions: string[];
   properties: Area159PropertyDraft[];
 };
 
@@ -233,18 +304,126 @@ function cell(row: string[], columns: Record<string, number>, field: string) {
   return index === undefined ? "" : (row[index] ?? "").trim();
 }
 
+/** Il vocabolario di stato commerciale che l'app usa nelle schede immobile. */
+const propertyStatuses = [
+  "Bozza",
+  "Notizia",
+  "In valutazione",
+  "In acquisizione",
+  "In gestione",
+  "Sospeso",
+  "In trattativa",
+  "Venduto",
+  "Affittato",
+  "Archiviato",
+] as const;
+
 /**
- * Affitto o vendita: decide la colonna contratto; se manca, la tipologia.
- * Senza nessuna delle due resta vendita, il caso più frequente in archivio.
+ * Come Area159 (e chi scrive a mano) chiama gli stessi stati. Le chiavi sono
+ * normalizzate: minuscole, senza accenti, senza punteggiatura.
  */
-function propertyKindOf(row: string[], columns: Record<string, number>): PropertyRecord["kind"] {
-  const explicit = cell(row, columns, "kind");
-  const hint = explicit ? "" : cell(row, columns, "typeHint");
-  return /affitt|locazion|fitto/i.test(explicit || hint) ? "affitto" : "vendita";
+const statusAliases: Record<string, (typeof propertyStatuses)[number]> = {
+  bozza: "Bozza",
+  notizia: "Notizia",
+  "in valutazione": "In valutazione",
+  valutazione: "In valutazione",
+  "da valutare": "In valutazione",
+  "in acquisizione": "In acquisizione",
+  acquisizione: "In acquisizione",
+  "in gestione": "In gestione",
+  gestione: "In gestione",
+  attivo: "In gestione",
+  attiva: "In gestione",
+  disponibile: "In gestione",
+  libero: "In gestione",
+  sospeso: "Sospeso",
+  sospesa: "Sospeso",
+  sospesi: "Sospeso",
+  "in trattativa": "In trattativa",
+  trattativa: "In trattativa",
+  "trattativa aperta": "In trattativa",
+  "in trattazione": "In trattativa",
+  prenotato: "In trattativa",
+  riservato: "In trattativa",
+  proposta: "In trattativa",
+  venduto: "Venduto",
+  venduta: "Venduto",
+  affittato: "Affittato",
+  affittata: "Affittato",
+  locato: "Affittato",
+  locata: "Affittato",
+  archiviato: "Archiviato",
+  archiviata: "Archiviato",
+};
+
+function normalizeValue(value: string) {
+  return normalizeHeader(value).replace(/\s+/g, " ").trim();
 }
 
+/** Lo stato tradotto; se il valore non è nel vocabolario resta com'è ed è segnalato. */
+function statusOf(row: string[], columns: Record<string, number>): { status?: string; unknown?: string } {
+  const raw = cell(row, columns, "status");
+  if (!raw) {
+    return {};
+  }
+  const normalized = normalizeValue(raw);
+  const exact = propertyStatuses.find((status) => normalizeValue(status) === normalized);
+  if (exact) {
+    return { status: exact };
+  }
+  const alias = statusAliases[normalized];
+  if (alias) {
+    return { status: alias };
+  }
+  return { status: raw, unknown: raw };
+}
+
+/** Contratti che l'app non sa rappresentare: vendita o affitto, ma da segnalare. */
+const otherContract = /(asta|permut|nuda propriet|usufrutt|multipropriet|leasing|riscatto)/;
+
+/**
+ * Affitto o vendita: decide la colonna contratto; se manca, la tipologia.
+ * Il confronto è sull'inizio della parola, così «Locazione commerciale» è
+ * affitto e «Compravendita» è vendita; un contratto che l'app non conosce
+ * (asta, permuta) resta vendita ma viene segnalato invece di sparire.
+ */
+function propertyKindOf(
+  row: string[],
+  columns: Record<string, number>,
+): { kind: PropertyRecord["kind"]; unknown?: string } {
+  const explicit = cell(row, columns, "kind");
+  if (explicit) {
+    const value = normalizeValue(explicit);
+    if (/^(affitt|locazion|fitto)/.test(value)) {
+      return { kind: "affitto" };
+    }
+    if (/^(vendit|compravendit|cession)/.test(value)) {
+      return { kind: "vendita" };
+    }
+    return { kind: "vendita", unknown: explicit };
+  }
+  const hint = cell(row, columns, "typeHint");
+  const value = normalizeValue(hint);
+  if (/^(affitt|locazion|fitto)/.test(value)) {
+    return { kind: "affitto" };
+  }
+  // La tipologia descrive l'immobile (appartamento, villa) e non è un
+  // contratto: si segnala solo quando è chiaramente un contratto non gestito.
+  if (otherContract.test(value)) {
+    return { kind: "vendita", unknown: hint };
+  }
+  return { kind: "vendita" };
+}
+
+type DraftReading = {
+  draft: Area159PropertyDraft;
+  /** Il comune non è un campo della scheda: serve al codice stabile. */
+  city: string;
+  unknown: { field: Area159UnmappedValue["field"]; value: string }[];
+};
+
 /** Una riga diventa un immobile; senza codice né titolo non è una scheda. */
-function propertyDraftFrom(row: string[], columns: Record<string, number>): Area159PropertyDraft | null {
+function propertyDraftFrom(row: string[], columns: Record<string, number>): DraftReading | null {
   const code = cell(row, columns, "code");
   const title = cell(row, columns, "title");
   if (!code && !title) {
@@ -258,38 +437,76 @@ function propertyDraftFrom(row: string[], columns: Record<string, number>): Area
     cell(row, columns, "owner") ||
     [cell(row, columns, "firstName"), cell(row, columns, "lastName")].filter(Boolean).join(" ");
   const price = cell(row, columns, "price");
-  const status = cell(row, columns, "status");
   const phone = cell(row, columns, "phone");
   const taxCode = cell(row, columns, "taxCode");
+  const status = statusOf(row, columns);
+  const kind = propertyKindOf(row, columns);
   return {
-    code,
-    title: title || [zone, city].filter(Boolean).join(", ") || "Immobile senza titolo",
-    zone: zone || city || "Zona da definire",
-    kind: propertyKindOf(row, columns),
-    ...(price ? { price } : {}),
-    ...(owner ? { owner } : {}),
-    ...(status ? { status } : {}),
-    ...(phone ? { phone } : {}),
-    ...(taxCode ? { taxCode } : {}),
+    draft: {
+      code,
+      title: title || [zone, city].filter(Boolean).join(", ") || "Immobile senza titolo",
+      zone: zone || city || "Zona da definire",
+      kind: kind.kind,
+      ...(price ? { price } : {}),
+      ...(owner ? { owner } : {}),
+      ...(status.status ? { status: status.status } : {}),
+      ...(phone ? { phone } : {}),
+      ...(taxCode ? { taxCode } : {}),
+    },
+    city,
+    unknown: [
+      ...(status.unknown ? [{ field: "stato" as const, value: status.unknown }] : []),
+      ...(kind.unknown ? [{ field: "contratto" as const, value: kind.unknown }] : []),
+    ],
   };
 }
 
 /**
- * Codice stabile per una riga che non ne ha: deriva da indirizzo e zona, non
- * dalla posizione nel file. Così riapplicare un export riordinato aggiorna le
- * stesse schede invece di crearne di nuove; due righe identiche si distinguono
- * con un suffisso, assegnato nell'ordine in cui compaiono.
+ * Codice stabile per una riga che non ne ha: deriva da indirizzo, zona e comune,
+ * non dalla posizione nel file. Il comune è nel seme perché due «Via Roma 1,
+ * Centro» in comuni diversi sono due immobili diversi: senza, il secondo
+ * avrebbe preso il codice del primo e l'avrebbe sovrascritto.
+ *
+ * Se il codice generato è già in archivio su un'altra scheda (titolo o zona
+ * diversi) si prende il primo suffisso libero: meglio una scheda in più che una
+ * scheda altrui cancellata. Lo stesso export riapplicato ritrova la scheda per
+ * identità e quindi lo stesso suffisso, così non nascono doppioni.
  */
-function stableCode(draft: Area159PropertyDraft, used: Map<string, number>) {
-  const seed = `${normalizeHeader(draft.title)}|${normalizeHeader(draft.zone)}`;
+function stableCode(
+  draft: Area159PropertyDraft,
+  city: string,
+  context: { archived: Map<string, PropertyRecord>; assigned: Set<string> },
+): { code: string; collision: boolean } {
+  const seed = `${normalizeHeader(draft.title)}|${normalizeHeader(draft.zone)}|${normalizeHeader(city)}`;
   let hash = 5381;
   for (const char of seed) {
     hash = ((hash * 33) ^ (char.codePointAt(0) ?? 0)) >>> 0;
   }
   const base = `A159-${hash.toString(36).toUpperCase()}`;
-  const count = (used.get(base) ?? 0) + 1;
-  used.set(base, count);
-  return count === 1 ? base : `${base}-${count}`;
+  const identity = `${normalizeHeader(draft.title)}|${normalizeHeader(draft.zone)}`;
+  let collision = false;
+
+  for (let attempt = 1; attempt <= 999; attempt += 1) {
+    const code = attempt === 1 ? base : `${base}-${attempt}`;
+    const key = codeKey(code);
+    if (context.assigned.has(key)) {
+      continue;
+    }
+    const archived = context.archived.get(key);
+    if (archived) {
+      const archivedIdentity = `${normalizeHeader(archived.title)}|${normalizeHeader(archived.zone)}`;
+      if (archivedIdentity !== identity) {
+        collision = true;
+        continue;
+      }
+    }
+    context.assigned.add(key);
+    return { code, collision };
+  }
+
+  const fallback = `${base}-999`;
+  context.assigned.add(codeKey(fallback));
+  return { code: fallback, collision: true };
 }
 
 /**
@@ -331,12 +548,47 @@ export function previewArea159Import(data: CrmData, text: string): Area159Import
   const { columns, unrecognized } = mapHeaders(headers);
   const contactsOnly = isContactsOnly(columns);
 
-  const codeUses = new Map<string, number>();
-  const properties = rows
-    .map((row) => (contactsOnly ? null : propertyDraftFrom(row, columns)))
-    .filter((draft): draft is Area159PropertyDraft => draft !== null)
-    .map((draft) => (draft.code ? draft : { ...draft, code: stableCode(draft, codeUses) }));
-  const knownCodes = new Set(data.properties.map((property) => codeKey(property.code)));
+  const archived = new Map<string, PropertyRecord>();
+  data.properties.forEach((property) => archived.set(codeKey(property.code), property));
+  const assigned = new Set<string>();
+  const collisions: string[] = [];
+  const unmappedCounts = new Map<string, Area159UnmappedValue>();
+  function countUnmapped(field: Area159UnmappedValue["field"], value: string) {
+    const key = `${field}|${codeKey(value)}`;
+    const seen = unmappedCounts.get(key);
+    if (seen) {
+      seen.rows += 1;
+      return;
+    }
+    unmappedCounts.set(key, { field, value, rows: 1 });
+  }
+
+  const properties: Area159PropertyDraft[] = [];
+  if (!contactsOnly) {
+    rows.forEach((row) => {
+      const reading = propertyDraftFrom(row, columns);
+      if (!reading) {
+        return;
+      }
+      reading.unknown.forEach((item) => countUnmapped(item.field, item.value));
+      if (reading.draft.code) {
+        // Anche un codice esplicito occupa il suo posto: una riga generata non
+        // deve poterne prendere uno uguale.
+        assigned.add(codeKey(reading.draft.code));
+        properties.push(reading.draft);
+        return;
+      }
+      const generated = stableCode(reading.draft, reading.city, { archived, assigned });
+      if (generated.collision) {
+        collisions.push(
+          `«${reading.draft.title}» ha preso ${generated.code}: il codice naturale era già usato da un'altra scheda`,
+        );
+      }
+      properties.push({ ...reading.draft, code: generated.code });
+    });
+  }
+
+  const knownCodes = new Set(archived.keys());
   const updated = properties.filter((draft) => knownCodes.has(codeKey(draft.code))).length;
 
   const knownContacts = new Set(data.contacts.map((contact) => codeKey(contact.taxCode || contact.name)));
@@ -364,6 +616,10 @@ export function previewArea159Import(data: CrmData, text: string): Area159Import
     missing.push("Codice fiscale: colonna non riconosciuta, la ricerca per codice non trovera' questi immobili");
   }
 
+  const unmapped = [...unmappedCounts.values()].sort(
+    (a, b) => a.field.localeCompare(b.field) || a.value.localeCompare(b.value),
+  );
+
   return {
     rows: rows.length,
     created: properties.length - updated,
@@ -372,6 +628,8 @@ export function previewArea159Import(data: CrmData, text: string): Area159Import
     duplicateContacts: contacts.length - newContacts.length,
     unrecognized,
     missing,
+    unmapped,
+    collisions,
     properties,
   };
 }
